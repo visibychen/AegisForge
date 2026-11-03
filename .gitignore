@@ -1,0 +1,48 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
+# Node and frontend outputs
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Runtime inputs and sensitive outputs
+data/
+uploads/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+evaluation/raw/
+evaluation/runs/
+
+# Local tools and temporary files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+~$*
