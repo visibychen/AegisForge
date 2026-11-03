@@ -1,10 +1,10 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.0 · 基线日期：2026-11-03 · 项目：铸盾 AegisForge
+版本：1.1 · 基线日期：2026-11-03 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
-当前只建立计划与管理规范，尚未实现产品功能；下文的性能、准确率和修复率均为验收目标，不是已经取得的结果。课程要求及评分映射见 [docs/requirements.md](docs/requirements.md)。
+M1 工程骨架已完成本地及 Windows/Linux GitHub CI 验收，证据见 [M1 验证记录](docs/m1-verification.md)与 [PR #9](https://github.com/visibychen/AegisForge/pull/9)。下文的最终性能、准确率和修复率均为验收目标，不是已经取得的结果。课程要求及评分映射见 [docs/requirements.md](docs/requirements.md)。
 
 ## 1. 目标与范围
 
@@ -77,7 +77,7 @@ flowchart LR
 | 部署 | Windows 本地开发；Docker Compose 演示配置 | 本机基础检测不强制依赖 Docker；正式动态验证必须在 Docker 可用的环境验收 |
 | 协作 | Git + GitHub Issues / PR / Actions / Releases | 计划编号关联需求、代码、测试与提交 |
 
-运行时基线为 Python 3.13 与 Node.js 24.x，M1 验证具体依赖兼容性并提交 Python 与 npm 锁文件。依赖选择受支持且兼容的稳定版本；不使用浮动 `latest` 作为可复现交付依据。选型参考见第 13 节。
+运行时基线为 Python 3.13 与 Node.js 24.x。按用户要求，Python 统一使用 Anaconda/conda 的 `AegisForge` 环境，`environment.yml` 声明运行时；项目库通过该环境中的 `python -m pip` 管理并提交精确版本锁，不再使用 uv 环境或 uv.lock。M1 验证依赖兼容性并提交 npm 锁文件。依赖选择受支持且兼容的稳定版本；不使用浮动 `latest` 作为可复现交付依据。决策见 [ADR 0001](docs/decisions/0001-anaconda.md)。选型参考见第 13 节。
 
 ### 2.3 计划目录结构
 
@@ -85,6 +85,8 @@ flowchart LR
 AegisForge/
 ├── PLAN.md                       # 本计划和里程碑状态
 ├── AGENTS.md                     # 后续实施的目录与计划约束
+├── AGENT.md                      # 用户指定的环境约定入口
+├── environment.yml               # Anaconda/conda 运行时声明
 ├── README.md                     # 定位、入口、实际可用状态和启动说明
 ├── CONTRIBUTING.md               # Git / GitHub 工作流
 ├── .github/
@@ -93,7 +95,7 @@ AegisForge/
 │   └── workflows/                # M1 起建立 CI，随实现扩展
 ├── frontend/
 │   ├── src/{pages,components,api,types}/
-│   ├── tests/
+│   ├── tests/                    # 含同包管理的浏览器 e2e
 │   └── package-lock.json
 ├── backend/
 │   ├── app/
@@ -109,10 +111,10 @@ AegisForge/
 │   ├── migrations/
 │   ├── tests/{unit,integration,security}/
 │   ├── pyproject.toml
-│   └── uv.lock
+│   ├── requirements.lock          # 运行库精确版本
+│   └── requirements-dev.lock      # 开发/测试库精确版本
 ├── samples/{source,http,controlled}/
 ├── evaluation/                   # 标注、划分清单、评测程序与结果摘要
-├── tests/e2e/
 ├── scripts/                      # 启动、评测和受控验证入口
 ├── deploy/                       # Compose、Dockerfile 与固定镜像清单
 └── docs/
@@ -231,7 +233,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | 阶段 | 状态 | 依赖 | 交付与完成条件 | 估算 | GitHub Issue |
 | --- | --- | --- | --- | --- | --- |
 | M0 计划与管理基线 | 已完成 | 无 | PLAN、需求评分映射、协作规范、任务拆分；首个 Git 提交与远端同步 | 本次 | [#1](https://github.com/visibychen/AegisForge/issues/1) |
-| M1 工程骨架与协议 | 未开始 | M0 | 前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
+| M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
 | M2 输入与特征提取 | 未开始 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；准备开发样例和冻结评测划分规范 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
 | M3 智能检测闭环 | 未开始 | M2 | 真/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 未开始 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
@@ -314,7 +316,7 @@ M2 冻结划分清单与测试标签，M3/M4 调整规则和提示词只用开�
 
 ### 7.6 执行入口与结果归档
 
-M1–M6 逐步提供以下统一命令接口；本阶段仅约定，尚不可执行，README 应随实际实现更新。
+M1–M6 逐步提供以下统一命令接口。M1 已实现 `scripts/check.py` 和前端连接冒烟 E2E，其余评测、样例动态验证与总验收脚本仍为后续约定。所有 Python 命令均在 Anaconda AegisForge 环境执行，README 随实际实现更新。
 
 ```text
 python scripts/check.py             # 已实现检查项的统一入口：格式、类型、单元与集成
@@ -374,18 +376,19 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 
 | 需求 | 负责阶段 | 主要测试 | 当前状态 |
 | --- | --- | --- | --- |
-| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | 计划完成，待实现 |
+| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M1 Web 壳与配置完成；上传待 M2 |
 | R02 | M2 | AST/HTTP 正反例、行号与脱敏 | 计划完成，待实现 |
-| R03 | M3、M6 | Provider 故障、三策略真实评测 | 计划完成，待实现 |
-| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | 计划完成，待实现 |
+| R03 | M3、M6 | Provider 故障、三策略真实评测 | M1 Provider/schema 基础完成；真实分析待 M3 |
+| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M1 协议/界面壳完成；结果展示待 M3/M5 |
 | R05 | M4、M5 | 编辑校验、diff、修复 E2E | 计划完成，待实现 |
 | R06 | M4、M6 | 静态复检、18 例动态实验、沙箱约束 | 计划完成，待实现 |
-| R07 | M3、M5 | 持久化、删除、导出、脱敏 | 计划完成，待实现 |
-| R08 | M1、M6、M7 | CI、部署、报告及课程清单核对 | 计划完成，待实现 |
+| R07 | M3、M5 | 持久化、删除、导出、脱敏 | M1 基础迁移完成；历史/导出待实现 |
+| R08 | M1、M6、M7 | CI、部署、报告及课程清单核对 | M1 环境、锁文件、CI、设计及验证记录完成；最终交付待 M6/M7 |
 
 | 日期 | 版本 | 变更 | 原因 |
 | --- | --- | --- | --- |
 | 2026-11-03 | 1.0 | 建立架构、加分项、阶段任务、测试与协作基线 | 开始课程设计 |
+| 2026-11-03 | 1.1 | Python 统一由 Anaconda 的 AegisForge 环境管理，版本 3.13；版本锁改为 pip requirements；M1 实现及本地/远端 CI 验收完成 | 用户明确要求并推进 M1 |
 
 ## 13. 选型与安全参考
 
