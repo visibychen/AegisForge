@@ -27,7 +27,7 @@ docs: record detection evaluation protocol (Refs #7)
 
 ## 检查与证据
 
-M0 只检查文档一致性、相对链接、管理模板、敏感数据与 `git diff --check`。M1 起建立统一检查入口和 GitHub Actions；不能在未实现脚本前将 PLAN 中的目标命令写成已可运行。
+M0 只检查文档一致性、相对链接、管理模板、敏感数据与 `git diff --check`。M1 已建立统一检查入口和 GitHub Actions。所有 Python 工作使用 Anaconda/conda 的 `AegisForge` 环境（3.13），禁止使用 base/系统 Python 或额外 venv/uv 环境；运行 `conda run -n AegisForge python scripts/check.py`，细节见 README。未实现脚本不能写成已可运行。
 
 后续 PR 按影响范围运行后端、前端或 E2E 检查。真实 LLM 评测需有配置和预算，普通 PR CI 使用 fake provider。隔离执行、任务状态、输入处理及补丁逻辑必须覆盖正反例。
 
