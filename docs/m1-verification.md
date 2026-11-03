@@ -36,7 +36,7 @@
 
 ## CI 与已知限制
 
-GitHub Actions 配置包括 Windows/Linux 后端 conda 环境检查，以及 Linux 前端安装、类型、测试和构建。真实运行状态以 M1 PR 的检查与 Issue #2 中的证据链接为准，不能把仅存在 workflow 文件算作远端运行成功。
+GitHub Actions 在代码基线 `b2bb96d` 上完成远端验收：[CI run #1](https://github.com/visibychen/AegisForge/actions/runs/41636964502) 的 Windows 后端、Linux 后端、前端三项均为 success。后端使用新建同名 conda 环境，前端执行 npm ci、类型、测试和构建。[PR #9](https://github.com/visibychen/AegisForge/pull/9)与 Issue #2 保留集成证据；之后的验收状态提交只更新文档。
 
 当前锁定的 Starlette TestClient 对 httpx 兼容路径发出 1 条弃用提示；20 项测试均通过，后续模型适配/依赖更新时评估迁移。前端单入口资源约 501 kB（gzip 约 164 kB），构建有分块体积提示；M5 随页面分拆与编辑器按需加载优化。两者均保留事实，未隐藏警告或调高阈值。
 
