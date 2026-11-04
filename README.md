@@ -10,6 +10,8 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 **M1 工程骨架已实现，通过本地测试及 Windows/Linux GitHub CI。** 当前可以启动 Web 工作台、查看后端在线状态、用令牌连接服务、运行数据库迁移和基础测试。尚未开放上传、漏洞检测、真实模型、修复或动态验证；页面明确显示基础预览，不生成虚构结果。
 
+2026-11-04：完成 M1 的三轮 Claude/Codex 协作优化，使用深色科技风、流动盾牌与能量轨道，提供动态效果开关并尊重系统减少动画设置；手机布局更紧凑。[视觉验收记录](docs/m1-visual-verification.md)与 [协作记录](docs/collaboration-2026-11-04.md)保留实测证据。本轮仅提交 M1 优化 PR，M2 按用户要求暂缓。
+
 - [实施与验收计划](PLAN.md)：系统框架、必做加分项、阶段交付、测试数据及验收门槛。
 - [课程要求与评分映射](docs/requirements.md)：原始要求的项目化追踪。
 - [协作规范](CONTRIBUTING.md)：Git、GitHub Issues、PR 与检查流程。
@@ -74,7 +76,7 @@ npm --prefix frontend run dev
 
 打开 [Web 工作台](http://127.0.0.1:5173/)。从本地 `.env` 查看 `AEGISFORGE_API_TOKEN`，在工作台输入以连接服务；令牌不会保存到浏览器持久存储。后端 [健康检查](http://127.0.0.1:8000/health)为公开存活接口，[API 文档](http://127.0.0.1:8000/docs)描述当前开放接口。M1 无需真实模型密钥或 Docker。
 
-![M1 工作台基础预览](docs/screenshots/m1-workspace-desktop.png)
+![M1 科技流动工作台预览](docs/screenshots/m1-fluid-workspace-desktop.png)
 
 ## 检查与测试
 
@@ -103,4 +105,4 @@ M1 浏览器冒烟只验证服务连接与预览边界，不等同于最终漏�
 
 `environment.yml` 管理 conda 运行时，`backend/pyproject.toml` 声明 Python 库范围，`backend/requirements*.lock` 记录精确版本，前端由 `package-lock.json` 锁定。Python 锁文件由同一 conda 环境中的 pip-tools 生成；依赖调整同步声明、锁文件、测试及 PLAN。
 
-后续从 **[M2 输入与特征提取 #3](https://github.com/visibychen/AegisForge/issues/3)** 推进，通过阶段 Issue、功能分支和 PR 留存证据。真实模型接入与评测在 M3/M6，修复与验证闭环在 M4。范围或技术调整须同步更新 PLAN。
+**[M2 输入与特征提取 #3](https://github.com/visibychen/AegisForge/issues/3)** 按用户最新指示暂缓、未开始。后续仍通过阶段 Issue、功能分支和 PR 留存证据。真实模型接入与评测规划在 M3/M6，修复与验证闭环规划在 M4。范围或技术调整须同步更新 PLAN。

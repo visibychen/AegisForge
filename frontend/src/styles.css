@@ -9,7 +9,14 @@
 }
 body { margin: 0; min-width: 360px; background: var(--bg); }
 a { color: inherit; text-decoration: none; }
-a:focus-visible { outline: 2px solid var(--cyan-soft); outline-offset: 3px; border-radius: 8px; }
+/* One keyboard focus ring for every interactive element; parents of these controls never clip overflow. */
+a:focus-visible, .motion-toggle:focus-visible, .connection-panel .connect-button.ant-btn:focus-visible,
+.connection-panel .ant-input-affix-wrapper:has(input:focus-visible), .connection-panel .ant-input-password-icon:focus-visible {
+  outline: 2px solid var(--cyan-soft); outline-offset: 3px;
+}
+a:focus-visible { border-radius: 8px; }
+.connection-panel .ant-input-password-icon:focus-visible { border-radius: 4px; }
+p { text-wrap: pretty; }
 button, input { font: inherit; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
@@ -52,7 +59,6 @@ button, input { font: inherit; }
 .topbar-status { display: flex; align-items: center; gap: 14px; }
 .motion-toggle { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 9px 0 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(10, 20, 36, .75); color: var(--text-2); font-size: 12px; white-space: nowrap; cursor: pointer; }
 .motion-toggle:hover { border-color: var(--line-strong); color: var(--text); }
-.motion-toggle:focus-visible { outline: 2px solid var(--cyan-soft); outline-offset: 2px; }
 .motion-toggle[aria-pressed="true"] { color: #c5f6ff; border-color: rgba(34, 211, 238, .35); }
 .motion-toggle[aria-pressed="true"] .anticon { color: var(--cyan-soft); }
 .motion-toggle[aria-disabled="true"] { cursor: not-allowed; opacity: .6; }
@@ -146,7 +152,7 @@ h1 { font-size: 32px; font-weight: 650; margin: 10px 0 8px; letter-spacing: -.3p
 .workflow-list::before, .workflow-list::after { content: ''; position: absolute; left: 31.5px; top: 32px; bottom: 32px; width: 1px; }
 .workflow-list::before { background: linear-gradient(var(--line-strong), rgba(56, 189, 248, .1)); }
 .workflow-list::after { background: linear-gradient(transparent, var(--cyan-soft), transparent) no-repeat; background-size: 100% 30%; background-position: 0 50%; }
-.workflow-item { position: relative; display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 12px; border-radius: 12px; transition: background-color .2s ease; }
+.workflow-item { position: relative; display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 12px; border-radius: 12px; }
 .workflow-item:hover { background: rgba(56, 189, 248, .05); }
 .step-icon { position: relative; z-index: 1; display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; color: var(--cyan-soft); font-size: 17px; background: #0a1830; border: 1px solid rgba(56, 189, 248, .36); box-shadow: 0 0 0 4px rgba(5, 10, 20, .9); }
 .workflow-item h3 { margin: 0 0 4px; font-weight: 600; font-size: 14px; color: var(--text); }
@@ -160,6 +166,8 @@ h1 { font-size: 32px; font-weight: 650; margin: 10px 0 8px; letter-spacing: -.3p
 .connection-panel .connect-button.ant-btn:not(:disabled):not(.ant-btn-disabled) { position: relative; overflow: hidden; color: #03131f; border: 0; background: linear-gradient(90deg, #22d3ee, #38bdf8 55%, #60a5fa); box-shadow: 0 12px 28px -14px rgba(34, 211, 238, .8); }
 .connection-panel .connect-button.ant-btn:not(:disabled):not(.ant-btn-disabled):hover,
 .connection-panel .connect-button.ant-btn:not(:disabled):not(.ant-btn-disabled):active { color: #03131f; background: linear-gradient(90deg, #67e8f9, #38bdf8 55%, #60a5fa); box-shadow: 0 14px 34px -12px rgba(34, 211, 238, .95); }
+/* Disabled: readable label, but flat, dashed and glow-free so it still reads as not actionable. */
+.connection-panel .connect-button.ant-btn:disabled { color: #93a7bf; background: rgba(120, 170, 220, .07); border: 1px dashed rgba(120, 170, 220, .32); box-shadow: none; cursor: not-allowed; }
 .connect-button.ant-btn::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .45) 50%, transparent 65%) no-repeat; background-size: 250% 100%; background-position: 130% 0; }
 .connect-button.ant-btn:not(:disabled):hover::before { background-position: -30% 0; }
 .connection-panel .ant-alert { margin-bottom: 12px; font-size: 13px; }
@@ -248,6 +256,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; font-size: 12
   .motion-on .risk-card::before { transition: opacity .25s ease; }
   .motion-on .risk-card::after { transition: background-position .9s ease; }
   .motion-on .risk-card:hover { transform: translateY(-3px); }
+  .motion-on .workflow-item { transition: background-color .2s ease; }
   .motion-on .connect-button.ant-btn::before { transition: background-position .7s ease; }
   .motion-on .motion-track::after { transition: left .2s ease, background-color .2s ease; }
 }

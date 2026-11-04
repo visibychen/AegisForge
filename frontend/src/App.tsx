@@ -59,15 +59,15 @@ export default function App() {
 
       <aside className="sidebar" aria-label="主导航">
         <a href="#workspace" className="brand">
-          <span className="brand-mark"><SafetyCertificateOutlined /></span>
+          <span className="brand-mark" aria-hidden="true"><SafetyCertificateOutlined /></span>
           <span className="brand-text"><strong>AegisForge</strong><small>铸盾 · 代码安全</small></span>
         </a>
         <div className="nav-label">WORKSPACE</div>
         <nav>
-          <a href="#workspace" className="nav-item active" aria-current="page" title="工作台"><DashboardOutlined /><span className="nav-text">工作台</span></a>
-          <span className="nav-item unavailable" aria-disabled="true" title="检测任务（即将开放）"><FileSearchOutlined /><span className="nav-text">检测任务</span><span className="nav-soon">即将开放</span></span>
-          <span className="nav-item unavailable" aria-disabled="true" title="修复工作台（未开放）"><ToolOutlined /><span className="nav-text">修复工作台</span></span>
-          <span className="nav-item unavailable" aria-disabled="true" title="历史记录（未开放）"><HistoryOutlined /><span className="nav-text">历史记录</span></span>
+          <a href="#workspace" className="nav-item active" aria-current="page" title="工作台"><DashboardOutlined aria-hidden="true" /><span className="nav-text">工作台</span></a>
+          <span className="nav-item unavailable" aria-disabled="true" title="检测任务（即将开放）"><FileSearchOutlined aria-hidden="true" /><span className="nav-text">检测任务</span><span className="nav-soon">即将开放</span></span>
+          <span className="nav-item unavailable" aria-disabled="true" title="修复工作台（未开放）"><ToolOutlined aria-hidden="true" /><span className="nav-text">修复工作台</span></span>
+          <span className="nav-item unavailable" aria-disabled="true" title="历史记录（未开放）"><HistoryOutlined aria-hidden="true" /><span className="nav-text">历史记录</span></span>
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note"><span className="small-dot" />本地安全工作空间</div>
@@ -78,7 +78,7 @@ export default function App() {
 
       <div className="main-shell" id="workspace">
         <header className="topbar">
-          <a href="#workspace" className="topbar-brand"><SafetyCertificateOutlined /><strong>AegisForge</strong></a>
+          <a href="#workspace" className="topbar-brand"><SafetyCertificateOutlined aria-hidden="true" /><strong>AegisForge</strong></a>
           <span className="breadcrumb">工作空间 <span>/</span> <strong>总览</strong></span>
           <div className="topbar-status">
             <MotionToggle enabled={motionEnabled} systemReduced={systemReducedMotion} onChange={setMotionEnabled} />
@@ -113,7 +113,7 @@ export default function App() {
           <section className="risk-grid" aria-label="计划覆盖的风险类型">
             {risks.map(risk => (
               <article className={`risk-card tone-${risk.tone}`} key={risk.cwe}>
-                <div className="risk-head"><span className="risk-icon">{risk.icon}</span><span className="cwe">CWE-{risk.cwe}</span></div>
+                <div className="risk-head"><span className="risk-icon" aria-hidden="true">{risk.icon}</span><span className="cwe">CWE-{risk.cwe}</span></div>
                 <h3>{risk.label}<small>{risk.name}</small></h3>
                 <p>{risk.description}</p>
                 <span className="planned-badge">计划支持</span>
@@ -125,22 +125,22 @@ export default function App() {
             <section className="surface workflow-panel" aria-labelledby="workflow-title">
               <div className="section-heading"><h2 id="workflow-title">分析与修复流程</h2><span>完整流程规划</span></div>
               <div className="workflow-list">{workflow.map(item => (
-                <div className="workflow-item" key={item.step}><span className="step-icon">{item.icon}</span><div><h3>{item.title}</h3><p>{item.detail}</p></div><span className="step-number">{item.step}</span></div>
+                <div className="workflow-item" key={item.step}><span className="step-icon" aria-hidden="true">{item.icon}</span><div><h3>{item.title}</h3><p>{item.detail}</p></div><span className="step-number">{item.step}</span></div>
               ))}</div>
               <p className="boundary-note">HTTP 请求中的攻击特征仅提示潜在风险，服务端漏洞需要结合源码与验证证据判断。</p>
             </section>
 
             <section className="surface connection-panel" aria-labelledby="connection-title">
-              <div className="section-heading"><h2 id="connection-title"><ApiOutlined /> 服务连接</h2><span className="session-chip"><LockOutlined aria-hidden="true" />仅限当前会话</span></div>
+              <div className="section-heading"><h2 id="connection-title"><ApiOutlined aria-hidden="true" /> 服务连接</h2><span className="session-chip"><LockOutlined aria-hidden="true" />仅限当前会话</span></div>
               <p className="connection-intro">使用本地配置中的访问令牌，查看当前服务能力。</p>
               <form onSubmit={event => { event.preventDefault(); void connect(); }}>
                 <label htmlFor="api-token">访问令牌</label>
                 <Input.Password id="api-token" value={token} onChange={event => setToken(event.target.value)} placeholder="输入本地访问令牌" autoComplete="off" />
-                <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined />}>连接服务</Button>
+                <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined aria-hidden="true" />}>连接服务</Button>
               </form>
               {error && <Alert type="error" showIcon title={error} role="alert" />}
-              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined /><div><strong>已连接本地服务</strong><p>模拟模式 · 真实模型尚未接入</p><p>漏洞检测与修复尚未开放。</p></div></div>}
-              <div className="privacy-note"><SafetyCertificateOutlined />令牌仅用于当前连接，不保存到浏览器存储。</div>
+              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>模拟模式 · 真实模型尚未接入</p><p>漏洞检测与修复尚未开放。</p></div></div>}
+              <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>
           <footer>AegisForge 铸盾<span>面向代码安全的分析与修复工作空间</span></footer>

@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 
+// Pin the motion precondition so the host OS accessibility setting cannot change the outcome.
+test.use({ reducedMotion: 'no-preference' });
+
 test('connects the real local frontend and backend without claiming analysis', async ({ page }) => {
   const config = readFileSync(fileURLToPath(new URL('../../../.env', import.meta.url)), 'utf8');
   const token = /^AEGISFORGE_API_TOKEN=(.+)$/m.exec(config)?.[1].trim();
@@ -34,8 +37,9 @@ test('connects the real local frontend and backend without claiming analysis', a
   await expect.poll(runningAnimations).toBe(0);
   await motion.dispatchEvent('click'); // aria-disabled blocks Playwright's actionable click; force the attempt.
   await expect(motion).toHaveAttribute('aria-pressed', 'false');
-  await page.emulateMedia({ reducedMotion: null });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(motion).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(runningAnimations).toBeGreaterThan(0);
 
   // Return to the top so fixed elements are not offset in full-page captures.
   await page.evaluate(() => window.scrollTo(0, 0));
