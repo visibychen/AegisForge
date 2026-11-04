@@ -47,6 +47,41 @@ describe('workspace foundation', () => {
     await waitFor(() => expect(screen.queryByText('已连接本地服务')).not.toBeInTheDocument());
   });
 
+  it('lets the user pause decorative motion without persisting anything', async () => {
+    const { container } = render(<App />);
+    const toggle = screen.getByRole('button', { name: '动态效果' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(container.querySelector('.app-shell')).not.toHaveClass('motion-on');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    await screen.findByText('本地服务在线');
+  });
+
+  it('never lets the toggle override a system reduced-motion preference', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = (query: string) => ({
+      matches: query.includes('reduce'), media: query, onchange: null,
+      addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {},
+      dispatchEvent() { return false; },
+    }) as unknown as MediaQueryList;
+    try {
+      render(<App />);
+      const toggle = screen.getByRole('button', { name: '动态效果' });
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      expect(toggle).toHaveAttribute('aria-disabled', 'true');
+      expect(toggle).toHaveAccessibleDescription(/系统已设置减少动态效果/);
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await screen.findByText('本地服务在线');
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('keeps the workspace visible when the backend is offline', async () => {
     vi.mocked(getHealth).mockRejectedValue(new TypeError('offline'));
     render(<App />);
