@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
   ApiOutlined, ArrowRightOutlined, CheckCircleOutlined, CodeOutlined, DashboardOutlined, DatabaseOutlined,
-  FileSearchOutlined, HistoryOutlined, Html5Outlined, SafetyCertificateOutlined, ToolOutlined,
+  FileSearchOutlined, HistoryOutlined, Html5Outlined, LockOutlined, SafetyCertificateOutlined, ToolOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Input, Tag } from 'antd';
 import { ApiError, getCapabilities, getHealth } from './api/client';
 import HeroVisual from './components/HeroVisual';
+import MotionToggle, { useSystemReducedMotion } from './components/MotionToggle';
 import type { Capabilities } from './types/api';
 
 const workflow = [
@@ -27,6 +28,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
+  const [motionEnabled, setMotionEnabled] = useState(true); // In-memory only; resets on reload.
+  const systemReducedMotion = useSystemReducedMotion();
 
   useEffect(() => {
     let active = true;
@@ -51,7 +54,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${motionEnabled ? ' motion-on' : ''}`}>
       <div className="backdrop" aria-hidden="true"><div className="backdrop-grid" /><div className="aurora aurora-a" /><div className="aurora aurora-b" /></div>
 
       <aside className="sidebar" aria-label="主导航">
@@ -78,6 +81,7 @@ export default function App() {
           <a href="#workspace" className="topbar-brand"><SafetyCertificateOutlined /><strong>AegisForge</strong></a>
           <span className="breadcrumb">工作空间 <span>/</span> <strong>总览</strong></span>
           <div className="topbar-status">
+            <MotionToggle enabled={motionEnabled} systemReduced={systemReducedMotion} onChange={setMotionEnabled} />
             <span className={`status-pill ${health}`}>
               <span className={`status-dot ${health}`} />
               <span role="status">{health === 'loading' ? '正在检查服务' : health === 'ok' ? '本地服务在线' : '后端尚未连接'}</span>
@@ -127,7 +131,7 @@ export default function App() {
             </section>
 
             <section className="surface connection-panel" aria-labelledby="connection-title">
-              <div className="section-heading"><h2 id="connection-title"><ApiOutlined /> 服务连接</h2><span className="endpoint">GET /api/v1/capabilities</span></div>
+              <div className="section-heading"><h2 id="connection-title"><ApiOutlined /> 服务连接</h2><span className="session-chip"><LockOutlined aria-hidden="true" />仅限当前会话</span></div>
               <p className="connection-intro">使用本地配置中的访问令牌，查看当前服务能力。</p>
               <form onSubmit={event => { event.preventDefault(); void connect(); }}>
                 <label htmlFor="api-token">访问令牌</label>
