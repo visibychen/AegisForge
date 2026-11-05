@@ -61,6 +61,8 @@ class Finding(Contract):
     severity: Literal["critical", "high", "medium", "low", "info"]
     location: Annotated[SourceLocation | HttpLocation, Field(discriminator="kind")]
     evidence: str = Field(min_length=1, max_length=4000)
+    # True only when a rule cut an original excerpt at 4,000 chars; never append filler text.
+    evidence_truncated: bool = False
     explanation: str = Field(min_length=1, max_length=8000)
     recommendation: str = Field(min_length=1, max_length=8000)
     sources: list[Literal["rule", "llm"]] = Field(min_length=1, max_length=2)

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Input, Select, Tag } from 'antd';
+import { Alert, Button, ConfigProvider, Input, Select, Tag } from 'antd';
 import { ApiError, uploadArtifact } from '../api/client';
 import type { ArtifactPreview, Finding } from '../types/api';
 
@@ -67,7 +67,9 @@ export default function IngestPanel({ token }: { token: string }) {
     }
   }
 
-  return <section className="surface ingest-panel" aria-labelledby="ingest-title" id="new-scan">
+  // The portaled wave can retain desktop coordinates for a frame after resizing.
+  // Input controls stay static; decorative workspace motion has its own user control.
+  return <ConfigProvider wave={{ disabled: true }}><section className="surface ingest-panel" aria-labelledby="ingest-title" id="new-scan">
     <div className="section-heading"><h2 id="ingest-title">新建检测 · 输入预览</h2><Tag>静态特征</Tag></div>
     <p>提交 Python 文件或离线 HTTP 请求。单文件上限 2 MiB，内容上限 80,000 字符；原始快照仅保存在本地私有目录，预览与规则证据均已脱敏（尽力而为，并非绝对）。</p>
     <label htmlFor="input-kind">输入类型</label>
@@ -94,8 +96,9 @@ export default function IngestPanel({ token }: { token: string }) {
       <pre>{artifact.content}</pre>
       <p>规则线索 {artifact.rule_findings.length} 项{artifact.rule_findings_truncated ? '（已达上限，未全部展示）' : ''}；规则无命中不代表安全。</p>
       {artifact.rule_findings.map((finding, index) => <div key={index}>
-        <Tag>{finding.cwe}</Tag><span>{locate(finding, artifact)}</span> {finding.explanation}<pre>{finding.evidence}</pre>
+        <Tag>{finding.cwe}</Tag>{finding.evidence_truncated && <Tag color="warning">证据已截断</Tag>}
+        <span>{locate(finding, artifact)}</span> {finding.explanation}<pre>{finding.evidence}</pre>
       </div>)}
     </div>}
-  </section>;
+  </section></ConfigProvider>;
 }

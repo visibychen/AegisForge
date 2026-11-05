@@ -29,7 +29,9 @@ def install_artifact_routes(application, require_token):
     ):
         settings = request.app.state.settings
         declared = request.headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > settings.max_file_bytes:
+        if declared and (not declared.isascii() or not declared.isdecimal()):
+            raise DomainError("INVALID_LENGTH", "Content-Length 格式无效。", 400)
+        if declared and (len(declared) > 10 or int(declared) > settings.max_file_bytes):
             raise DomainError("FILE_SIZE", "超过单文件大小限制。", 413)
         body = bytearray()
         async for part in request.stream():

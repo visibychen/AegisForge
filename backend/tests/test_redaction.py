@@ -26,6 +26,16 @@ SOURCE_LEAKS = [
         'PRIVATE_KEY = """-----BEGIN PRIVATE KEY-----\nLEAK_ALPHA1\n-----END PRIVATE KEY-----"""',
         "LEAK_ALPHA1",
     ),
+    ('note = f"api_key=SYNTHETIC_ONLY_SECRET"', "SYNTHETIC_ONLY_SECRET"),
+    ('note = f"user {name} api_key=SYNTHETIC_ONLY_SECRET"', "SYNTHETIC_ONLY_SECRET"),
+    ('note = f"{{literal}} api_key=SYNTHETIC_ONLY_SECRET {x}"', "SYNTHETIC_ONLY_SECRET"),
+    ('def h():\n    return "Bearer SYNTHETICLETTERS"', "SYNTHETICLETTERS"),
+    ('auth = "Token SYNTHETICLETTERS"', "SYNTHETICLETTERS"),
+    ('''note = f"{'Bearer SYNTHETICLETTERS'}"''', "SYNTHETICLETTERS"),
+    ('''note = f"{'sk-SYNTHETICTOKENaaaaaaaaaaaa'}"''', "SYNTHETICTOKEN"),
+    ('''note = f"{dict(api_key='SYNTHETIC_ONLY_SECRET')}"''', "SYNTHETIC_ONLY_SECRET"),
+    ('hdr = "Basic dXNlcjpwYXNz"', "dXNlcjpwYXNz"),
+    ('hdr = "Digest username=\\"u\\", response=\\"SYNTHETICDIGEST\\""', "SYNTHETICDIGEST"),
 ]
 
 
@@ -61,6 +71,18 @@ def test_source_structure_and_business_logic_stay_readable():
     result = detect(uuid4(), "source", parsed)
     assert [(f.category, f.location.start_line) for f in result.findings] == [("cmdi", 8)]
     assert not result.warnings
+
+
+def test_fstring_literals_are_redacted_but_expressions_and_markup_stay():
+    code = 'def f(name, rows):\n    return f"<td>{name}</td> rows={rows} Bearer ABCDEFGHIJ"\n'
+    parsed = parse_input("source", code)
+    assert '<td>{name}</td> rows={rows} Bearer [REDACTED]"' in parsed.content
+    result = detect(uuid4(), "source", parsed)
+    assert [f.category for f in result.findings] == ["xss"]
+
+
+def test_basic_prose_is_not_masked():
+    assert redact_text("Basic usage and Basic auth notes") == "Basic usage and Basic auth notes"
 
 
 def test_untokenizable_source_falls_back_to_line_preserving_redaction():

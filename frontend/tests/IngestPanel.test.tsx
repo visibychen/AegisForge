@@ -36,6 +36,20 @@ describe('ingest panel', () => {
     expect(await screen.findByText(/脱敏预览/)).toBeInTheDocument();
   });
 
+  it('labels truncated evidence without altering the excerpt', async () => {
+    const finding = {
+      category: 'cmdi' as const, cwe: 'CWE-78', severity: 'high', evidence: 'os.system(x', evidence_truncated: true,
+      explanation: 'e', recommendation: 'r', sources: ['rule'], evidence_status: 'potential',
+      location: { kind: 'source' as const, artifact_id: 'a', start_line: 2, end_line: 9 },
+    };
+    vi.mocked(uploadArtifact).mockResolvedValueOnce({ artifact: { ...preview, rule_findings: [finding] } });
+    render(<IngestPanel token="session" />);
+    fireEvent.change(screen.getByLabelText('或粘贴内容'), { target: { value: 'print(1)' } });
+    fireEvent.click(screen.getByRole('button', { name: /保存并预览特征/ }));
+    expect(await screen.findByText('证据已截断')).toBeInTheDocument();
+    expect(screen.getByText('os.system(x')).toBeInTheDocument();
+  });
+
   it('clears the native file input when switching to the sample', () => {
     render(<IngestPanel token="session" />);
     const input = screen.getByLabelText('选择文件（优先于粘贴内容）') as HTMLInputElement;

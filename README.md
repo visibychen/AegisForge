@@ -8,9 +8,9 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
-**M1 工程骨架已实现，通过本地测试及 Windows/Linux GitHub CI。** 当前可以启动 Web 工作台、查看后端在线状态、用令牌连接服务、运行数据库迁移和基础测试。尚未开放上传、漏洞检测、真实模型、修复或动态验证；页面明确显示基础预览，不生成虚构结果。
+**M2 输入与特征提取已实现并通过本地验证。** 当前可连接服务、上传/粘贴 Python 源码或离线 HTTP 请求、载入示例、查看脱敏预览及三类启发式规则线索。规则线索不等于已确认漏洞；真实 LLM、检测任务、修复和动态验证尚未开放，M3 按用户要求暂缓。
 
-2026-11-04：完成 M1 的三轮 Claude/Codex 协作优化，使用深色科技风、流动盾牌与能量轨道，提供动态效果开关并尊重系统减少动画设置；手机布局更紧凑。[视觉验收记录](docs/m1-visual-verification.md)与 [协作记录](docs/collaboration-2026-11-04.md)保留实测证据。本轮仅提交 M1 优化 PR，M2 按用户要求暂缓。
+M1 的深色科技风、流动盾牌与能量轨道、动效开关和减少动画设置继续保留。2026-11-05 完成 M2 的三轮 Claude/Codex 协作：[M2 设计](docs/m2-design.md)、[验证记录](docs/m2-verification.md)与 [协作记录](docs/collaboration-2026-11-05.md)。本地 141 后端通过、1 平台跳过，14 前端与 2 浏览器场景通过；120 源码/60 HTTP 样例已冻结，人工标注复核仍 pending。
 
 - [实施与验收计划](PLAN.md)：系统框架、必做加分项、阶段交付、测试数据及验收门槛。
 - [课程要求与评分映射](docs/requirements.md)：原始要求的项目化追踪。
@@ -74,9 +74,11 @@ conda run --no-capture-output -n AegisForge python scripts/dev.py api
 npm --prefix frontend run dev
 ```
 
-打开 [Web 工作台](http://127.0.0.1:5173/)。从本地 `.env` 查看 `AEGISFORGE_API_TOKEN`，在工作台输入以连接服务；令牌不会保存到浏览器持久存储。后端 [健康检查](http://127.0.0.1:8000/health)为公开存活接口，[API 文档](http://127.0.0.1:8000/docs)描述当前开放接口。M1 无需真实模型密钥或 Docker。
+打开 [Web 工作台](http://127.0.0.1:5173/)。从本地 `.env` 查看 `AEGISFORGE_API_TOKEN`，在工作台输入以连接服务；令牌仅保留在当前页面会话内存，不保存到浏览器持久存储。连接后，在“新建检测 · 输入预览”选择类型、上传文件或粘贴内容，点击“保存并预览特征”。后端 [健康检查](http://127.0.0.1:8000/health)为公开存活接口，[API 文档](http://127.0.0.1:8000/docs)描述当前开放接口。M2 无需真实模型密钥或 Docker。
 
-![M1 科技流动工作台预览](docs/screenshots/m1-fluid-workspace-desktop.png)
+接受 UTF-8/UTF-8 BOM：源码 `.py`，HTTP `.http/.req/.txt`；单文件最多 2 MiB、内容最多 80,000 字符。原始快照仅存在被 Git 忽略的私有目录，预览使用尽力而为的凭据脱敏。HTTP 不重放，源码不执行。组合任务及模型预算将在 M3 开放任务时执行。
+
+![M2 输入与特征预览](docs/screenshots/m2-input-desktop.png)
 
 ## 检查与测试
 
@@ -99,10 +101,12 @@ $env:PLAYWRIGHT_CHANNEL = 'chrome'
 npm --prefix frontend run test:e2e
 ```
 
-M1 浏览器冒烟只验证服务连接与预览边界，不等同于最终漏洞检测/修复 E2E。其他平台可安装 Playwright Chromium 并使用默认 channel，后续阶段将扩展完整浏览器测试。
+当前浏览器场景覆盖服务连接/动效与 M2 上传/脱敏/三类规则线索/HTTP 边界/手机布局，不等同于最终真实模型和修复 E2E。其他平台可安装 Playwright Chromium 并使用默认 channel。
+
+`scripts/check.py` 也校验 [冻结清单](samples/freeze.json)。开发代码仅使用 `samples/dev/`；保留集只作完整性、语法和解析预算检查，正式检测评测留待 M6。18 个受控修复例已预登记，实际隔离测试留待 M4。不要为适配规则结果改写保留标签或静默重新冻结。
 
 ## 依赖与后续推进
 
 `environment.yml` 管理 conda 运行时，`backend/pyproject.toml` 声明 Python 库范围，`backend/requirements*.lock` 记录精确版本，前端由 `package-lock.json` 锁定。Python 锁文件由同一 conda 环境中的 pip-tools 生成；依赖调整同步声明、锁文件、测试及 PLAN。
 
-**[M2 输入与特征提取 #3](https://github.com/visibychen/AegisForge/issues/3)** 按用户最新指示暂缓、未开始。后续仍通过阶段 Issue、功能分支和 PR 留存证据。真实模型接入与评测规划在 M3/M6，修复与验证闭环规划在 M4。范围或技术调整须同步更新 PLAN。
+**[M2 输入与特征提取 #3](https://github.com/visibychen/AegisForge/issues/3)** 已实现，PR 集成与人工标注复核状态见 Issue；**[M3 智能检测 #4](https://github.com/visibychen/AegisForge/issues/4) 暂缓，未开始实现**。后续仍通过阶段 Issue、功能分支和 PR 留存证据；修复与验证加分项保留在 M4，真实模型和最终评测保留在 M3/M6。

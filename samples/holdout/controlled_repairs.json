@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "purpose": "PLAN 7.2: 18 controlled runnable samples (6 per CWE) for the M4 repair experiment, pre-registered from the holdout source split. They are holdout detection samples too and are never counted as additional independent samples.",
+  "status": "planned",
+  "note": "Nothing here has been executed. M4 adds the fixed container runner, normal-business inputs, security regression assertions and human reference fixes; reference fixes and hidden tests must never be given to the repair model.",
+  "samples": [
+    {"id": "SRC-XSS-09-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-XSS-11-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-XSS-13-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-XSS-14-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-XSS-17-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-XSS-19-V", "cwe": "CWE-79", "status": "planned"},
+    {"id": "SRC-SQLI-09-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-SQLI-10-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-SQLI-12-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-SQLI-14-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-SQLI-17-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-SQLI-19-V", "cwe": "CWE-89", "status": "planned"},
+    {"id": "SRC-CMDI-09-V", "cwe": "CWE-78", "status": "planned"},
+    {"id": "SRC-CMDI-10-V", "cwe": "CWE-78", "status": "planned"},
+    {"id": "SRC-CMDI-12-V", "cwe": "CWE-78", "status": "planned"},
+    {"id": "SRC-CMDI-14-V", "cwe": "CWE-78", "status": "planned"},
+    {"id": "SRC-CMDI-18-V", "cwe": "CWE-78", "status": "planned"},
+    {"id": "SRC-CMDI-20-V", "cwe": "CWE-78", "status": "planned"}
+  ]
+}

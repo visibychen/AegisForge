@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 
 import pytest
+from app.services.artifacts import storage_path, store_artifact
+from sqlalchemy.orm import Session
 
 
 def upload(api, raw=b"print('hello')", filename="example.py", kind="source"):
@@ -47,6 +49,27 @@ def test_stream_size_limit_and_bad_encoding(api):
     api.app.state.settings.max_file_bytes = 16
     assert upload(api, b"a" * 17).status_code == 413
     assert upload(api, b"\xff").status_code == 422
+
+
+def test_exclusive_key_collision_does_not_delete_an_existing_snapshot(api, monkeypatch):
+    settings = api.app.state.settings
+    key = "11" * 16 + ".blob"
+    path = storage_path(settings, key)
+    path.write_bytes(b"immutable-original")
+    monkeypatch.setattr("app.services.artifacts.os.urandom", lambda _n: bytes.fromhex("11" * 16))
+    with Session(api.app.state.engine) as session, pytest.raises(FileExistsError):
+        store_artifact(session, settings, "example.py", "source", b"print(1)")
+    assert path.read_bytes() == b"immutable-original"
+
+
+def test_huge_or_invalid_outer_content_length_is_rejected_before_conversion(api):
+    for declared, status in [("9" * 5000, 413), ("-1", 400)]:
+        response = api.post(
+            "/api/v1/artifacts?filename=a.py&input_type=source",
+            content=b"print(1)",
+            headers={"Content-Length": declared},
+        )
+        assert response.status_code == status
 
 
 def test_http_upload_preview_is_offline_and_redacted(api):

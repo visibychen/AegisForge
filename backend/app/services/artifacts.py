@@ -56,8 +56,13 @@ def storage_path(settings: Settings, key: str) -> Path:
 
 def _write_snapshot(path: Path, raw: bytes) -> None:
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | _NOFOLLOW | _BINARY
-    with os.fdopen(os.open(path, flags, 0o600), "wb") as stream:
-        stream.write(raw)
+    descriptor = os.open(path, flags, 0o600)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(raw)
+    except BaseException:
+        path.unlink(missing_ok=True)  # Only clean up a file this call created.
+        raise
 
 
 def _read_snapshot(path: Path, limit: int) -> bytes:
@@ -120,13 +125,16 @@ def store_artifact(session: Session, settings: Settings, name: str, kind: str, r
     payload = build_preview(artifact, parsed, detect(UUID(artifact.id), kind, parsed))
     json.dumps(payload)  # a preview that cannot be served must fail now, not after commit
     path = storage_path(settings, artifact.storage_key)
+    created = False
     try:
         _write_snapshot(path, raw)
+        created = True
         session.add(artifact)
         session.commit()
     except Exception:
         session.rollback()
-        path.unlink(missing_ok=True)
+        if created:
+            path.unlink(missing_ok=True)
         raise
     return payload
 

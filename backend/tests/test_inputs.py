@@ -52,6 +52,28 @@ def test_chunk_budget_and_complete_coverage():
             chunks_for(text)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "a" * 12_000 + "\n",
+        "a" * 12_000 + "\n" + "b" * 12_000 + "\n" + "c" * 3,
+        "\n".join(f"line {i} " + "x" * (i % 300) for i in range(350)) + "\n",
+    ],
+)
+def test_chunks_cover_every_line_within_model_limit(text):
+    lines = text.split("\n")[:-1] if text.endswith("\n") else text.split("\n")
+    chunks = chunks_for(text)
+    covered = set()
+    for chunk in chunks:
+        assert 0 < len(chunk.content) <= 12_000 and not chunk.content.endswith("\n")
+        assert chunk.content == "\n".join(lines[chunk.start_line - 1 : chunk.end_line])
+        covered |= set(range(chunk.start_line, chunk.end_line + 1))
+    assert covered == set(range(1, len(lines) + 1))
+    for a, b in zip(chunks, chunks[1:], strict=False):
+        shared = lines[b.start_line - 1 : a.end_line]
+        assert sum(len(line) + 1 for line in shared) <= 1_000
+
+
 def test_http_payload_in_sensitive_field_is_detected_but_not_echoed():
     raw = (
         "POST /login HTTP/1.1\nHost: portal.example.test\n"

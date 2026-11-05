@@ -16,7 +16,7 @@ from urllib.parse import unquote, unquote_plus, urlsplit
 from app.core.errors import DomainError
 from app.core.redaction import MASK, redact_name, redact_source, redact_text, sensitive
 
-PARSER_VERSION = "inputs-1.1"
+PARSER_VERSION = "inputs-1.2"
 MAX_NORMALIZED = 80_000
 MAX_LINE = 12_000
 MAX_CHUNKS = 8
@@ -60,25 +60,38 @@ def check_budget(text: str) -> None:
 
 
 def chunks_for(text: str) -> list[Chunk]:
+    """Line-aligned chunks: lines joined by LF without a trailing LF, each <= MAX_LINE chars.
+
+    Every line is covered, chunk line numbers are global, overlap stays <= MAX_OVERLAP chars.
+    """
     check_budget(text)
-    parts = text.split("\n")
-    lines = [line + "\n" for line in parts[:-1]] + ([parts[-1]] if parts[-1] else [])
+    lines = text.split("\n")
+    if len(lines) > 1 and lines[-1] == "":
+        lines.pop()  # a final LF does not start another line
     chunks: list[Chunk] = []
     start = 0
     while start < len(lines):
-        end, count = start, 0
-        while end < len(lines) and count + len(lines[end]) <= MAX_LINE:
-            count += len(lines[end])
+        end, size = start, 0
+        while end < len(lines):
+            added = len(lines[end]) + (1 if end > start else 0)
+            if size + added > MAX_LINE:
+                break
+            size += added
             end += 1
-        chunks.append(Chunk(start + 1, end, "".join(lines[start:end])))
+        if end == start:  # unreachable after check_budget; never emit an empty chunk
+            raise DomainError("LINE_BUDGET", "单行超过 12,000 字符，请缩小输入。")
+        chunks.append(Chunk(start + 1, end, "\n".join(lines[start:end])))
         if len(chunks) > MAX_CHUNKS:
             raise DomainError("CHUNK_BUDGET", "输入超过 8 个分析分块，请缩小输入。")
         if end == len(lines):
             break
         overlap, next_start = 0, end
-        while next_start > start + 1 and overlap + len(lines[next_start - 1]) <= MAX_OVERLAP:
+        while next_start > start + 1:
+            added = len(lines[next_start - 1]) + 1
+            if overlap + added > MAX_OVERLAP:
+                break
             next_start -= 1
-            overlap += len(lines[next_start])
+            overlap += added
         start = next_start
     return chunks
 

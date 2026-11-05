@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.3（实施中） · 基线日期：2026-11-03 · 更新日期：2026-11-05 · 项目：铸盾 AegisForge
+版本：1.3 · 基线日期：2026-11-03 · 更新日期：2026-11-05 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -9,6 +9,8 @@ M1 工程骨架已完成本地及 Windows/Linux GitHub CI 验收，证据见 [M1
 2026-11-04 追加 M1 科技流动视觉优化：Claude 主开发、Codex 审查，沿同一会话完成三轮，交付暗色控制台、连续装饰动效、可暂停/系统偏好优先控制和响应式细化，见 [协作记录](docs/collaboration-2026-11-04.md)与 [视觉验收](docs/m1-visual-verification.md)。按用户最新指示，本次只提交 M1 优化 PR 供审阅；**M2 暂缓且未开始**。
 
 2026-11-05 用户恢复 M2，并授权 M3；两阶段各按“Codex 开发/Claude 审 → Claude 开发/Codex 审 → 讨论敲定、Claude 开发/Codex 审”协作三轮。真实模型验收经用户选择延后，不能将离线替身测试写成真实模型通过。当前进展与异常恢复见 [本次协作记录](docs/collaboration-2026-11-05.md)。上段暂缓状态为历史记录。
+
+用户随后收窄为只完成 M2，M3 暂缓。M2 已完成三轮协作、上传/解析/脱敏/规则及最小输入页，冻结 120 源码/60 HTTP 的家族划分与哈希，预登记 18 个受控修复例。本地 141 后端通过、1 平台跳过、14 前端及 2 浏览器场景通过；见 [M2 验证记录](docs/m2-verification.md)。PR 集成与人工标注复核仍待完成，不以此代替 M6 准确率或 M4 动态验证。
 
 ## 1. 目标与范围
 
@@ -238,8 +240,8 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | --- | --- | --- | --- | --- | --- |
 | M0 计划与管理基线 | 已完成 | 无 | PLAN、需求评分映射、协作规范、任务拆分；首个 Git 提交与远端同步 | 本次 | [#1](https://github.com/visibychen/AegisForge/issues/1) |
 | M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
-| M2 输入与特征提取 | 实施中 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；准备开发样例和冻结评测划分规范 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
-| M3 智能检测闭环 | 未开始 | M2 | 真/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
+| M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
+| M3 智能检测闭环 | 用户暂缓，未开始实现 | M2 | 真/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 未开始 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 未开始 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
@@ -380,8 +382,8 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 
 | 需求 | 负责阶段 | 主要测试 | 当前状态 |
 | --- | --- | --- | --- |
-| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M1 Web 壳与配置完成；上传待 M2 |
-| R02 | M2 | AST/HTTP 正反例、行号与脱敏 | 计划完成，待实现 |
+| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；组合任务及完整页面待 M3/M5 |
+| R02 | M2 | AST/HTTP 正反例、行号与脱敏 | M2 AST/HTTP、规则、预算和脱敏已通过自动化验证；标注人工复核待补 |
 | R03 | M3、M6 | Provider 故障、三策略真实评测 | M1 Provider/schema 基础完成；真实分析待 M3 |
 | R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M1 协议/界面壳完成；结果展示待 M3/M5 |
 | R05 | M4、M5 | 编辑校验、diff、修复 E2E | 计划完成，待实现 |
@@ -394,6 +396,7 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 | 2026-11-03 | 1.0 | 建立架构、加分项、阶段任务、测试与协作基线 | 开始课程设计 |
 | 2026-11-03 | 1.1 | Python 统一由 Anaconda 的 AegisForge 环境管理，版本 3.13；版本锁改为 pip requirements；M1 实现及本地/远端 CI 验收完成 | 用户明确要求并推进 M1 |
 | 2026-11-04 | 1.2 | M1 科技流动视觉优化，Claude/Codex同会话三轮开发与交叉审查；M2暂缓未开始；提交优化PR待审 | 用户追加审美要求并收窄本轮范围 |
+| 2026-11-05 | 1.3 | M2 三轮协作实现、180 样例冻结与18受控例登记、本地/API/浏览器验证；M3 按最新指示暂缓未开始；保留人工复核与后续真实评测边界 | 用户恢复开发后再次收窄范围；超时后经用户指示恢复同会话 |
 
 ## 13. 选型与安全参考
 

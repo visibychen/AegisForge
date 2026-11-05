@@ -42,10 +42,13 @@ _KNOWN_SECRETS = [
     re.compile(r"\bxox[abpors]-[A-Za-z0-9-]{10,255}"),
     re.compile(r"\beyJ[A-Za-z0-9_-]{8,4096}\.eyJ[A-Za-z0-9_-]{8,4096}\.[A-Za-z0-9_-]{0,4096}"),
 ]
-_SCHEME = re.compile(
-    r"(?i)\b(Bearer|Basic|Digest|Token)([ \t]+)"
-    r"(?=[A-Za-z0-9._~+/=-]{0,4096}[0-9+/=])[A-Za-z0-9._~+/=-]{8,4096}"
-)
+# Bearer/Token credentials are masked even when purely alphabetic (prose such as
+# "Token refreshed" may be over-masked; accepted cost). Basic is masked when the value has a
+# base64 shape (length multiple of 4, or digits/+/=); Digest when a parameter list follows.
+_BEARER = re.compile(r"(?i)\b(Bearer|Token)([ \t]+)[A-Za-z0-9._~+/=-]{8,4096}")
+_BASIC = re.compile(r"(?i)\b(Basic)([ \t]+)([A-Za-z0-9+/]{6,4096}={0,2})(?![A-Za-z0-9+/=])")
+_DIGEST = re.compile(r"(?i)\b(Digest)([ \t]+)(?=[A-Za-z_]{1,32}=)[^\n]{1,4096}")
+_BASE64_HINT = re.compile(r"[0-9+/=]")
 _USERINFO = re.compile(r"\b([a-zA-Z][a-zA-Z0-9+.-]{1,15}://[^/\s:@]{1,256}:)[^/\s@]{1,256}@")
 _HEADER_LINE = re.compile(r"(?m)^([A-Za-z][A-Za-z0-9-]{0,63})([ \t]*:[ \t]*)([^\n]+)")
 _QUOTED_ASSIGN = re.compile(
@@ -84,7 +87,12 @@ def redact_text(text: str) -> str:
     """Redact credentials in free text (HTTP values, comments, string literals)."""
     for pattern in _KNOWN_SECRETS:
         text = pattern.sub(_mask_preserving_lines, text)
-    text = _SCHEME.sub(lambda m: m[1] + m[2] + MASK, text)
+    text = _BEARER.sub(lambda m: m[1] + m[2] + MASK, text)
+    text = _BASIC.sub(
+        lambda m: m[1] + m[2] + MASK if len(m[3]) % 4 == 0 or _BASE64_HINT.search(m[3]) else m[0],
+        text,
+    )
+    text = _DIGEST.sub(lambda m: m[1] + m[2] + MASK, text)
     text = _USERINFO.sub(lambda m: m[1] + MASK + "@", text)
     text = _HEADER_LINE.sub(lambda m: m[1] + m[2] + MASK if sensitive(m[1]) else m[0], text)
     text = _QUOTED_ASSIGN.sub(
@@ -123,6 +131,7 @@ _ASSIGN_OPS = frozenset({"=", ":", "==", "!=", ":=", "+="})
 _STOP_OPS = frozenset({",", "(", "{", "[", ";", "->"})
 _FSTRING_START = getattr(tokenize, "FSTRING_START", None)
 _FSTRING_END = getattr(tokenize, "FSTRING_END", None)
+_FSTRING_MIDDLE = getattr(tokenize, "FSTRING_MIDDLE", None)
 _IGNORED = frozenset({tokenize.NL, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT})
 
 
@@ -168,6 +177,29 @@ def redact_source(text: str) -> str:
     def located(token: tokenize.TokenInfo) -> bool:
         return text[position(token.start) : position(token.end)] == token.string
 
+    def fstring_literal_edits(inner, start: int, stop: int) -> list[tuple[int, int, str]]:
+        """Redact literal fragments of an f-string; mask the whole body if offsets are unsure."""
+        found = []
+        for part in inner:
+            if part.type != _FSTRING_MIDDLE or not part.string:
+                continue
+            if not located(part):  # e.g. "{{" escapes: token text differs from the source
+                raw = text[start:stop]
+                changed = redact_text(raw) != raw
+                return [(start, stop, MASK + "\n" * raw.count("\n"))] if changed else []
+            replacement = redact_text(part.string)
+            if replacement != part.string:
+                found.append((position(part.start), position(part.end), replacement))
+        # Literal strings can also occur inside an interpolation expression, not only
+        # FSTRING_MIDDLE tokens (e.g. f"{'Bearer credential'}"). If a credential remains
+        # after fragment edits, conservatively mask this body while keeping its lines.
+        candidate = text[start:stop]
+        for left, right, replacement in sorted(found, reverse=True):
+            candidate = candidate[: left - start] + replacement + candidate[right - start :]
+        if redact_text(candidate) != candidate:
+            return [(start, stop, MASK + "\n" * text.count("\n", start, stop))]
+        return found
+
     edits: list[tuple[int, int, str]] = []
     previous: list[tokenize.TokenInfo] = []
     index = 0
@@ -181,10 +213,13 @@ def redact_source(text: str) -> str:
             closing = tokens[end - 1]
             if not (located(token) and located(closing)):
                 return _checked(text, redact_text(text))
-            if _sensitive_context(previous) and closing.type == _FSTRING_END:
-                start, stop = position(token.end), position(closing.start)
-                if stop > start:
-                    edits.append((start, stop, MASK + "\n" * text.count("\n", start, stop)))
+            start, stop = position(token.end), position(closing.start)
+            whole = MASK + "\n" * text.count("\n", start, stop)
+            if closing.type == _FSTRING_END and stop > start:
+                if _sensitive_context(previous):
+                    edits.append((start, stop, whole))
+                else:
+                    edits += fstring_literal_edits(tokens[index + 1 : end - 1], start, stop)
             previous.append(closing)
             index = end
             continue

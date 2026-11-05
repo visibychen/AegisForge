@@ -76,7 +76,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="sidebar-note"><span className="small-dot" />本地安全工作空间</div>
           <p>发现风险，修复缺陷。<br />让每一次改动更有依据。</p>
-          <span className="build-label">FOUNDATION PREVIEW</span>
+          <span className="build-label">INPUT PREVIEW</span>
         </div>
       </aside>
 
@@ -97,7 +97,7 @@ export default function App() {
         <main>
           <section className="page-heading">
             <div><div className="eyebrow">CODE SECURITY WORKSPACE</div><h1>代码安全工作台</h1><p>从风险发现到修复验证，让安全分析有迹可循。</p></div>
-            <Tag className="preview-tag">基础预览</Tag>
+            <Tag className="preview-tag">输入与特征</Tag>
           </section>
 
           <Alert type="info" showIcon className="preview-alert"
@@ -108,19 +108,19 @@ export default function App() {
             <div className="hero-copy">
               <span className="hero-kicker"><span className="kicker-dot" />智能分析 · 证据驱动</span>
               <h2 id="hero-title">洞察代码风险，<br /><span>构筑安全防线。</span></h2>
-              <p>计划支持 Python Web 源码与 HTTP 请求文本，<br className="desktop-break" />围绕 XSS、SQL 注入和命令执行风险提供分析与修复。</p>
+              <p>提交 Python Web 源码与离线 HTTP 请求，<br className="desktop-break" />查看脱敏预览与风险线索，为后续分析和修复建立依据。</p>
               <div className="hero-flow"><span>漏洞检测</span><i className="flow-link" /><span>补丁生成</span><i className="flow-link" /><span>修复验证</span></div>
             </div>
             <HeroVisual />
           </section>
 
-          <section className="risk-grid" aria-label="计划覆盖的风险类型">
+          <section className="risk-grid" aria-label="规则覆盖的风险类型">
             {risks.map(risk => (
               <article className={`risk-card tone-${risk.tone}`} key={risk.cwe}>
                 <div className="risk-head"><span className="risk-icon" aria-hidden="true">{risk.icon}</span><span className="cwe">CWE-{risk.cwe}</span></div>
                 <h3>{risk.label}<small>{risk.name}</small></h3>
                 <p>{risk.description}</p>
-                <span className="planned-badge">计划支持</span>
+                <span className="planned-badge">规则线索</span>
               </article>
             ))}
           </section>
@@ -136,7 +136,7 @@ export default function App() {
 
             <section className="surface connection-panel" aria-labelledby="connection-title">
               <div className="section-heading"><h2 id="connection-title"><ApiOutlined aria-hidden="true" /> 服务连接</h2><span className="session-chip"><LockOutlined aria-hidden="true" />仅限当前会话</span></div>
-              <p className="connection-intro">使用本地配置中的访问令牌，查看当前服务能力。</p>
+              <p className="connection-intro">使用本地访问令牌连接服务，即可上传输入并查看脱敏特征。</p>
               <form onSubmit={event => { event.preventDefault(); void connect(); }}>
                 <label htmlFor="api-token">访问令牌</label>
                 <Input.Password id="api-token" value={token} onChange={event => setToken(event.target.value)} placeholder="输入本地访问令牌" autoComplete="off" />

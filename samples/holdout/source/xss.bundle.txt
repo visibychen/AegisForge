@@ -1,0 +1,331 @@
+#@@ bundle aegisforge-holdout source CWE-79 (AI-authored, human_review pending; see ../manifest.json)
+#@@ HOLDOUT: do not read during rule/prompt development. Line 1 = first non-blank line.
+
+#@@ sample SRC-XSS-09-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/welcome")
+def welcome():
+    return "<p>Welcome back, {}.</p>".format(request.args.get("user", ""))
+
+#@@ sample SRC-XSS-09-S
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/welcome")
+def welcome():
+    return "<p>Welcome back, {}.</p>".format(escape(request.args.get("user", "")))
+
+#@@ sample SRC-XSS-10-V
+from flask import Flask, Response, request
+
+app = Flask(__name__)
+
+
+@app.route("/tags")
+def tags():
+    items = ["<li>" + tag + "</li>" for tag in request.args.getlist("tag")]
+    body = "<ul>" + "".join(items) + "</ul>"
+    return Response(body, mimetype="text/html")
+
+#@@ sample SRC-XSS-10-S
+from flask import Flask, Response, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/tags")
+def tags():
+    items = ["<li>" + str(escape(tag)) + "</li>" for tag in request.args.getlist("tag")]
+    body = "<ul>" + "".join(items) + "</ul>"
+    return Response(body, mimetype="text/html")
+
+#@@ sample SRC-XSS-11-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/theme")
+def theme():
+    return "<body class='" + request.cookies.get("theme", "light") + "'>Preferences</body>"
+
+#@@ sample SRC-XSS-11-S
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/theme")
+def theme():
+    return "<body class='" + escape(request.cookies.get("theme", "light")) + "'>Preferences</body>"
+
+#@@ sample SRC-XSS-12-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/debug/client")
+def client_info():
+    agent = request.headers.get("User-Agent", "unknown")
+    return f"<pre>Your browser: {agent}</pre>"
+
+#@@ sample SRC-XSS-12-S
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/debug/client")
+def client_info():
+    agent = request.headers.get("User-Agent", "unknown")
+    return f"<pre>Your browser: {escape(agent)}</pre>"
+
+#@@ sample SRC-XSS-13-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/api/coupons/redeem")
+def redeem():
+    payload = request.get_json(silent=True) or {}
+    code = payload.get("code", "")
+    if not code.isalnum():
+        return f"<h1>Invalid coupon</h1><p>{code} is not a valid code.</p>", 400
+    return {"redeemed": code}
+
+#@@ sample SRC-XSS-13-S
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/api/coupons/redeem")
+def redeem():
+    payload = request.get_json(silent=True) or {}
+    code = payload.get("code", "")
+    if not code.isalnum():
+        return {"error": "invalid coupon", "code": code}, 400
+    return {"redeemed": code}
+
+#@@ sample SRC-XSS-14-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/search-widget")
+def widget():
+    query = request.args.get("q", "")
+    return "<script>var initialQuery = '%s';</script><div id='app'></div>" % query
+
+#@@ sample SRC-XSS-14-S
+import json
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/search-widget")
+def widget():
+    query = json.dumps(request.args.get("q", "")).replace("<", "\\u003c")
+    return "<script>var initialQuery = %s;</script><div id='app'></div>" % query
+
+#@@ sample SRC-XSS-15-V
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+BANNER = "<div class='banner'>{{ message|safe }}</div>"
+
+
+@app.route("/banner")
+def banner():
+    return render_template_string(BANNER, message=request.args.get("message", ""))
+
+#@@ sample SRC-XSS-15-S
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+BANNER = "<div class='banner'>{{ message }}</div>"
+
+
+@app.route("/banner")
+def banner():
+    return render_template_string(BANNER, message=request.args.get("message", ""))
+
+#@@ sample SRC-XSS-16-V
+from flask import Flask, flash, get_flashed_messages, redirect, request
+from markupsafe import Markup
+
+app = Flask(__name__)
+app.secret_key = "dev-only"
+
+
+@app.post("/rename")
+def rename():
+    flash("Project renamed to <b>" + request.form["name"] + "</b>")
+    return redirect("/projects")
+
+
+@app.route("/projects")
+def projects():
+    notes = "".join(Markup("<p class='flash'>%s</p>" % message) for message in get_flashed_messages())
+    return "<main>" + notes + "</main>"
+
+#@@ sample SRC-XSS-16-S
+from flask import Flask, flash, get_flashed_messages, redirect, request
+from markupsafe import Markup
+
+app = Flask(__name__)
+app.secret_key = "dev-only"
+
+
+@app.post("/rename")
+def rename():
+    flash("Project renamed to " + request.form["name"])
+    return redirect("/projects")
+
+
+@app.route("/projects")
+def projects():
+    notes = "".join(Markup("<p class='flash'>{}</p>").format(message) for message in get_flashed_messages())
+    return "<main>" + notes + "</main>"
+
+#@@ sample SRC-XSS-17-V
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/u/<username>")
+def public_profile(username):
+    return "<h2>Profile of " + username + "</h2><p>No public posts yet.</p>"
+
+#@@ sample SRC-XSS-17-S
+from flask import Flask
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/u/<username>")
+def public_profile(username):
+    return "<h2>Profile of " + escape(username) + "</h2><p>No public posts yet.</p>"
+
+#@@ sample SRC-XSS-18-V
+from string import Template
+
+from flask import Flask, request
+
+app = Flask(__name__)
+CARD = Template("<div class='card'><h3>$title</h3><p>$summary</p></div>")
+
+
+@app.route("/card")
+def card():
+    values = {"title": request.args.get("title", ""), "summary": request.args.get("summary", "")}
+    return CARD.substitute(values)
+
+#@@ sample SRC-XSS-18-S
+from string import Template
+
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+CARD = Template("<div class='card'><h3>$title</h3><p>$summary</p></div>")
+
+
+@app.route("/card")
+def card():
+    values = {key: escape(request.args.get(key, "")) for key in ("title", "summary")}
+    return CARD.substitute(values)
+
+#@@ sample SRC-XSS-19-V
+from flask import Flask, request
+from flask.views import MethodView
+
+app = Flask(__name__)
+
+
+class SearchView(MethodView):
+    def get(self):
+        term = request.args.get("term", "")
+        return f"<h1>Results for {term}</h1><ul></ul>"
+
+
+app.add_url_rule("/find", view_func=SearchView.as_view("find"))
+
+#@@ sample SRC-XSS-19-S
+from flask import Flask, request
+from flask.views import MethodView
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+class SearchView(MethodView):
+    def get(self):
+        term = request.args.get("term", "")
+        return f"<h1>Results for {escape(term)}</h1><ul></ul>"
+
+
+app.add_url_rule("/find", view_func=SearchView.as_view("find"))
+
+#@@ sample SRC-XSS-20-V
+from functools import wraps
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def require_form(view):
+    @wraps(view)
+    def wrapper():
+        if not request.form:
+            return "missing form", 400
+        return view()
+    return wrapper
+
+
+@app.post("/rsvp")
+@require_form
+def rsvp():
+    return "<p>%(name)s will attend with %(guests)s guests.</p>" % request.form
+
+#@@ sample SRC-XSS-20-S
+from functools import wraps
+
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+def require_form(view):
+    @wraps(view)
+    def wrapper():
+        if not request.form:
+            return "missing form", 400
+        return view()
+    return wrapper
+
+
+@app.post("/rsvp")
+@require_form
+def rsvp():
+    fields = {key: escape(request.form.get(key, "")) for key in ("name", "guests")}
+    return "<p>%(name)s will attend with %(guests)s guests.</p>" % fields

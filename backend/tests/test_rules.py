@@ -62,6 +62,15 @@ def test_truncation_is_reported_instead_of_silently_dropping():
     assert len(result.findings) == MAX_RULE_FINDINGS and result.truncated and result.warnings
 
 
+def test_long_evidence_is_cut_from_the_original_and_flagged():
+    code = "import os\nos.system('echo ' + x +\n" + "    'a' +\n" * 700 + "    'end')\n"
+    finding = detect(uuid4(), "source", parse_input("source", code)).findings[0]
+    assert finding.evidence_truncated is True and len(finding.evidence) == 4000
+    assert code.split("\n", 1)[1].startswith(finding.evidence)
+    short = detect(uuid4(), "source", parse_input("source", "import os\nos.system(x)\n"))
+    assert short.findings[0].evidence_truncated is False
+
+
 def test_deeply_nested_expressions_do_not_crash():
     code = "def f(x):\n    return ('<p>'\n" + "+x\n" * 20_000 + ")\n"
     result = detect(uuid4(), "source", parse_input("source", code))

@@ -20,7 +20,7 @@ export interface Capabilities {
 
 export interface Finding {
   category: 'xss' | 'sqli' | 'cmdi'; cwe: string; severity: string;
-  evidence: string; explanation: string; recommendation: string;
+  evidence: string; evidence_truncated: boolean; explanation: string; recommendation: string;
   sources: string[]; evidence_status: string;
   location: { kind: 'source'; artifact_id: string; start_line: number; end_line: number } | { kind: 'http'; artifact_id: string; field: string };
 }

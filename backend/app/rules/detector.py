@@ -72,6 +72,7 @@ def finding(category: str, evidence: str, location, http=False) -> Finding:
         severity="medium" if http else "high",
         location=location,
         evidence=(evidence or MASK)[:4000],
+        evidence_truncated=len(evidence or MASK) > 4000,
         explanation="规则发现攻击载荷特征；不证明服务端漏洞。"
         if http
         else "启发式规则发现危险操作与未净化的动态文本；需要结合上下文确认。",
