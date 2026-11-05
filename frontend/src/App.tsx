@@ -6,6 +6,7 @@ import {
 import { Alert, Button, Input, Tag } from 'antd';
 import { ApiError, getCapabilities, getHealth } from './api/client';
 import HeroVisual from './components/HeroVisual';
+import IngestPanel from './components/IngestPanel';
 import MotionToggle, { useSystemReducedMotion } from './components/MotionToggle';
 import type { Capabilities } from './types/api';
 
@@ -25,6 +26,7 @@ const risks = [
 export default function App() {
   const [health, setHealth] = useState<'loading' | 'ok' | 'offline'>('loading');
   const [token, setToken] = useState('');
+  const [sessionToken, setSessionToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
@@ -45,6 +47,7 @@ export default function App() {
     try {
       const response = await getCapabilities(token.trim());
       setCapabilities(response);
+      setSessionToken(token.trim());
       setToken(''); // Keep the shared token out of persistent browser storage.
     } catch (exception) {
       setError(exception instanceof ApiError ? exception.message : '无法连接服务，请确认后端已启动。');
@@ -143,6 +146,7 @@ export default function App() {
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>
+          <IngestPanel token={sessionToken} />
           <footer>AegisForge 铸盾<span>面向代码安全的分析与修复工作空间</span></footer>
         </main>
       </div>

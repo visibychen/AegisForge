@@ -118,12 +118,12 @@ class HealthResponse(Contract):
 class CapabilitiesResponse(Contract):
     request_id: str
     version: str
-    stage: Literal["M1"] = "M1"
+    stage: Literal["M2"] = "M2"
     model_mode: Literal["fake"] = "fake"
     analysis_available: Literal[False] = False
     repair_available: Literal[False] = False
     dynamic_validation_available: Literal[False] = False
-    supported_input_types: list[str] = Field(default_factory=list)
+    supported_input_types: list[str] = ["source", "http"]
     planned_input_types: list[str] = ["source", "http"]
     max_file_bytes: int
     max_files: int

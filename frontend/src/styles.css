@@ -264,3 +264,11 @@ footer { display: flex; justify-content: space-between; gap: 12px; font-size: 12
   .hero-copy h2 span { background: none; -webkit-text-fill-color: currentColor; }
   .backdrop, .hero-streams, .hero-visual { display: none; }
 }
+.ingest-panel { margin-top: 24px; padding: 28px; min-width: 0; }
+.ingest-panel label { display: block; margin: 16px 0 8px; color: var(--text, #dce8fa); }
+.ingest-panel .ant-select { width: 220px; max-width: 100%; }
+.ingest-panel input[type=file] { max-width: 100%; }
+.ingest-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.artifact-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; background: #050a14; border-radius: 8px; max-height: 360px; overflow: auto; }
+.artifact-preview .ant-alert { margin-bottom: 8px; }
+@media (max-width: 590px) { .ingest-panel { padding: 18px; } }

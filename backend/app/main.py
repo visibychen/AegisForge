@@ -10,7 +10,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
+from app.api.artifacts import install_artifact_routes
 from app.core.config import Settings
+from app.core.errors import DomainError
 from app.schemas.contracts import CapabilitiesResponse, ErrorResponse, HealthResponse
 
 
@@ -21,7 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
-        allow_methods=["GET"],
+        allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type"],
         expose_headers=["X-Request-ID"],
     )
@@ -58,6 +60,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def validation_error(request: Request, _exception: RequestValidationError):
         # Do not echo submitted content, secrets, or validation input back to the client.
         return error_response(request, 422, "INVALID_REQUEST", "请求参数格式不正确。")
+
+    @application.exception_handler(DomainError)
+    async def domain_error(request: Request, exception: DomainError):
+        return error_response(request, exception.status, exception.code, exception.message)
 
     @application.exception_handler(Exception)
     async def unexpected_error(request: Request, _exception: Exception):
@@ -108,6 +114,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             max_total_bytes=settings.max_total_bytes,
         )
 
+    install_artifact_routes(application, require_token)
     return application
 
 

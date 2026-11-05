@@ -1,4 +1,4 @@
-import type { Capabilities, Health } from '../types/api';
+import type { ArtifactPreview, Capabilities, Health } from '../types/api';
 
 export class ApiError extends Error {
   constructor(message: string, public readonly requestId?: string) {
@@ -21,3 +21,13 @@ async function get<T>(path: string, token?: string): Promise<T> {
 
 export const getHealth = () => get<Health>('/health');
 export const getCapabilities = (token: string) => get<Capabilities>('/api/v1/capabilities', token);
+
+export async function uploadArtifact(token: string, kind: string, filename: string, content: Blob): Promise<{ artifact: ArtifactPreview }> {
+  const response = await fetch(`/api/v1/artifacts?${new URLSearchParams({ filename, input_type: kind })}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
+    body: content, signal: AbortSignal.timeout(20000), cache: 'no-store',
+  });
+  const data = await response.json();
+  if (!response.ok) throw new ApiError(data.error?.message ?? '输入提交失败。', data.request_id);
+  return data;
+}
