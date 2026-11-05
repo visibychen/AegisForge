@@ -29,6 +29,47 @@ MAX_JSON_DEPTH = 32
 MAX_FEATURES = 2_000
 LINE_SEPARATORS = frozenset("\x85  ")
 SUPPORTED_BODIES = "仅支持 JSON、application/x-www-form-urlencoded 与 text/plain 正文"
+REQUEST_FIELDS = frozenset(
+    {
+        "args",
+        "form",
+        "values",
+        "json",
+        "data",
+        "cookies",
+        "headers",
+        "view_args",
+        "get_json",
+        "get_data",
+    }
+)
+SHELL_CALLS = frozenset(
+    {
+        "os.system",
+        "os.popen",
+        "subprocess.run",
+        "subprocess.call",
+        "subprocess.Popen",
+        "subprocess.check_call",
+        "subprocess.check_output",
+        "subprocess.getoutput",
+        "subprocess.getstatusoutput",
+    }
+)
+TEXT_CALL = re.compile(
+    r"\b((?:[A-Za-z_]\w{0,63}\.){0,4}(?:system|popen|execute|executemany|executescript|"
+    r"render_template_string|Markup|make_response))\s*\("
+)
+
+
+def sink_category(name: str) -> str | None:
+    if name in SHELL_CALLS:
+        return "cmdi"
+    if name.rsplit(".", 1)[-1] in {"execute", "executemany", "executescript"}:
+        return "sqli"
+    if name.rsplit(".", 1)[-1] in {"render_template_string", "Markup", "make_response"}:
+        return "xss"
+    return None
 
 
 @dataclass(frozen=True)
@@ -133,14 +174,64 @@ def parse_source(text: str) -> ParsedInput:
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         warnings.append("Python AST 解析失败：仅提供文本线索，源码规则未运行，分析能力受限。")
     if tree is not None:
+        aliases = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    aliases[alias.asname or alias.name.split(".")[0]] = (
+                        alias.name if alias.asname else alias.name.split(".")[0]
+                    )
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                for alias in node.names:
+                    aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+
+        def canonical(name: str) -> str:
+            root, dot, rest = name.partition(".")
+            return aliases.get(root, root) + dot + rest
+
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
-                name = redact_name(qualified(node.func))[:200]
-                features.append({"kind": "call", "name": name, "line": node.lineno})
-            elif isinstance(node, (ast.JoinedStr, ast.BinOp)):
+                original = qualified(node.func)
+                feature = {"kind": "call", "name": redact_name(original)[:200], "line": node.lineno}
+                category = sink_category(canonical(original))
+                if category:
+                    feature["sink_candidate"] = category  # A sink alone is not a vulnerability.
+                features.append(feature)
+            elif isinstance(node, ast.JoinedStr) or (
+                isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Mod))
+            ):
                 features.append({"kind": "string_expression", "line": node.lineno})
+            elif isinstance(node, ast.Attribute):
+                original = qualified(node)
+                name = canonical(original)
+                root, _, member = name.rpartition(".")
+                if root in {"request", "flask.request"} and member in REQUEST_FIELDS:
+                    features.append(
+                        {
+                            "kind": "input_source",
+                            "name": redact_name(original)[:200],
+                            "line": node.lineno,
+                        }
+                    )
             if len(features) >= MAX_FEATURES:
                 warnings.append("特征预览达到 2,000 项上限；模型仍覆盖全部预算内文本。")
+                break
+    else:
+        # Text hints never become AST-verified rule findings. Expose names/line numbers,
+        # not raw snippets or credentials from the private matching view.
+        for line_number, line in enumerate(text.split("\n"), 1):
+            for match in TEXT_CALL.finditer(line):
+                features.append(
+                    {
+                        "kind": "text_call_hint",
+                        "name": redact_name(match[1])[:200],
+                        "line": line_number,
+                    }
+                )
+                if len(features) >= MAX_FEATURES:
+                    break
+            if len(features) >= MAX_FEATURES:
+                warnings.append("文本线索预览达到 2,000 项上限。")
                 break
     return ParsedInput(public, {}, {}, features, warnings, chunks, private_tree=tree)
 

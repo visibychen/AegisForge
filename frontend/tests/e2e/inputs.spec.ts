@@ -27,6 +27,8 @@ test('uploads source and HTTP inputs, shows redacted evidence and rejects invali
   await expect(preview).toContainText('第 3 行');
   await expect(preview).not.toContainText('SYNTHETIC_PRIVATE_VALUE');
   await expect(preview).toContainText('[REDACTED]');
+  await preview.getByText(/查看输入特征/).click();
+  await expect(preview.getByText('输入来源', { exact: true })).toBeVisible();
 
   await panel.getByRole('button', { name: '载入开发示例' }).click();
   expect(await panel.locator('input[type=file]').evaluate((node: HTMLInputElement) => node.files?.length)).toBe(0);

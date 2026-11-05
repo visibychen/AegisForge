@@ -272,3 +272,4 @@ footer { display: flex; justify-content: space-between; gap: 12px; font-size: 12
 .artifact-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; background: #050a14; border-radius: 8px; max-height: 360px; overflow: auto; }
 .artifact-preview .ant-alert { margin-bottom: 8px; }
 @media (max-width: 590px) { .ingest-panel { padding: 18px; } }
+.input-features { margin: 12px 0; overflow-wrap: anywhere; } .input-features summary { cursor: pointer; color: #69e8f9; } .input-features li { margin: 8px 0; }

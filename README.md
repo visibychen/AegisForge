@@ -10,7 +10,7 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 **M2 输入与特征提取已实现并通过本地验证。** 当前可连接服务、上传/粘贴 Python 源码或离线 HTTP 请求、载入示例、查看脱敏预览及三类启发式规则线索。规则线索不等于已确认漏洞；真实 LLM、检测任务、修复和动态验证尚未开放，M3 按用户要求暂缓。
 
-M1 的深色科技风、流动盾牌与能量轨道、动效开关和减少动画设置继续保留。2026-11-05 完成 M2 的三轮 Claude/Codex 协作：[M2 设计](docs/m2-design.md)、[验证记录](docs/m2-verification.md)与 [协作记录](docs/collaboration-2026-11-05.md)。本地 141 后端通过、1 平台跳过，14 前端与 2 浏览器场景通过；120 源码/60 HTTP 样例已冻结，人工标注复核仍 pending。
+M1 的深色科技风、流动盾牌与能量轨道、动效开关和减少动画设置继续保留。2026-11-05 完成 M2 的三轮 Claude/Codex 协作：[M2 设计](docs/m2-design.md)、[验证记录](docs/m2-verification.md)与 [协作记录](docs/collaboration-2026-11-05.md)。本地 143 后端通过、1 平台跳过，14 前端与 2 浏览器场景通过；120 源码/60 HTTP 样例已冻结，人工标注复核仍 pending。
 
 - [实施与验收计划](PLAN.md)：系统框架、必做加分项、阶段交付、测试数据及验收门槛。
 - [课程要求与评分映射](docs/requirements.md)：原始要求的项目化追踪。

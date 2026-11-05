@@ -15,7 +15,7 @@
 
 | 命令 / 检查 | 本地结果 |
 | --- | --- |
-| `conda run --no-capture-output -n AegisForge python scripts/check.py` | pip check、Ruff、格式、141 后端测试通过 / 1 跳过、冻结检查、前端类型、14 前端测试及生产构建通过 |
+| `conda run --no-capture-output -n AegisForge python scripts/check.py` | pip check、Ruff、格式、143 后端测试通过 / 1 跳过、冻结检查、前端类型、14 前端测试及生产构建通过 |
 | `conda run -n AegisForge python evaluation/datasets.py freeze` | 从真实输入生成 180 样例及元数据哈希 |
 | `conda run -n AegisForge python evaluation/datasets.py check` | 完整冻结一致性通过；未运行保留集检测 |
 | `PLAYWRIGHT_CHANNEL=chrome` 后运行 `npm --prefix frontend run test:e2e` | 2 场景通过：服务连接/动效，上传/三类源码线索/HTTP 风险/脱敏/非法输入/手机布局 |
@@ -36,4 +36,4 @@ Python 使用 Anaconda `AegisForge` 环境（3.13.18），浏览器为实际安�
 
 脱敏为尽力而为，未知命名、非常规编码、拼接秘密仍可能漏出；同权限恶意进程的文件竞态不在本地单用户威胁范围。崩溃留下的孤儿快照尚无回收器。JSON 字段暂无线列原始映射，其他 HTTP 字段保留脱敏名称与数值位置。规则没有完整的跨函数污点追踪，可能误报/漏报。
 
-非阻断提示仍存在：Starlette TestClient 的 httpx 迁移警告、前端构建单块约 605 kB 的体积提示。没有调整警告阈值或把它们记作测试失败。M3 及真实模型接入按用户要求暂缓、未实现；M4 修复加分项仍保留在 PLAN。
+非阻断提示仍存在：Starlette TestClient 的 httpx 迁移警告、前端构建单块约 606 kB 的体积提示。没有调整警告阈值或把它们记作测试失败。M3 及真实模型接入按用户要求暂缓、未实现；M4 修复加分项仍保留在 PLAN。

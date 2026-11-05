@@ -8,6 +8,8 @@ const SAMPLES = {
   http: 'GET /?q=%3Cscript%3E HTTP/1.1\nHost: example.invalid\n\n',
 };
 
+const FEATURE_LABELS = { call: '函数调用', string_expression: '字符串表达式', input_source: '输入来源', text_call_hint: '文本调用线索' };
+
 function locate(finding: Finding, preview: ArtifactPreview): string {
   if (finding.location.kind === 'source') {
     const { start_line: start, end_line: end } = finding.location;
@@ -94,6 +96,15 @@ export default function IngestPanel({ token }: { token: string }) {
       <p>{artifact.size_bytes} 字节 · {artifact.chunk_count} 个分析分块 · {artifact.parser_version} · {artifact.rule_version}</p>
       {artifact.warnings.map((warning, index) => <Alert key={index} type="warning" title={warning} />)}
       <pre>{artifact.content}</pre>
+      {artifact.features.length > 0 && <details className="input-features">
+        <summary>查看输入特征（{artifact.features.length} 项）</summary>
+        <ul>{artifact.features.slice(0, 30).map((feature, index) => <li key={index}>
+          <Tag>{FEATURE_LABELS[feature.kind]}</Tag>第 {feature.line} 行 {feature.name ?? ''}
+          {feature.sink_candidate && <Tag>关注调用 · {feature.sink_candidate.toUpperCase()}</Tag>}
+        </li>)}</ul>
+        {artifact.features.length > 30 && <p>当前展示前 30 项。</p>}
+        <p>输入特征是分析线索，不是漏洞结论。</p>
+      </details>}
       <p>规则线索 {artifact.rule_findings.length} 项{artifact.rule_findings_truncated ? '（已达上限，未全部展示）' : ''}；规则无命中不代表安全。</p>
       {artifact.rule_findings.map((finding, index) => <div key={index}>
         <Tag>{finding.cwe}</Tag>{finding.evidence_truncated && <Tag color="warning">证据已截断</Tag>}

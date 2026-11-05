@@ -31,10 +31,15 @@ export interface FieldMeta {
   line?: number; raw_start?: number; raw_end?: number; decode_limited?: boolean;
 }
 
+export interface InputFeature {
+  kind: 'call' | 'string_expression' | 'input_source' | 'text_call_hint';
+  line: number; name?: string; sink_candidate?: 'xss' | 'sqli' | 'cmdi';
+}
+
 export interface ArtifactPreview {
   id: string; input_type: 'source' | 'http'; display_name: string; sha256: string;
   size_bytes: number; parser_version: string; rule_version: string;
   content: string; fields: Record<string, string>; field_meta: Record<string, FieldMeta>;
-  features: unknown[]; warnings: string[]; chunk_count: number;
+  features: InputFeature[]; warnings: string[]; chunk_count: number;
   rule_findings: Finding[]; rule_findings_truncated: boolean;
 }
