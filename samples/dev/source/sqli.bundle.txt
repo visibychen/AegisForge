@@ -1,0 +1,257 @@
+#@@ bundle aegisforge-dev source CWE-89 (AI-authored, human_review pending; see ../manifest.json)
+#@@ Each sample starts at the first non-blank line after its delimiter (line 1).
+
+#@@ sample SRC-SQLI-01-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/user")
+def user():
+    name = request.args.get("name", "")
+    db = sqlite3.connect("app.db")
+    row = db.execute(f"SELECT id, email FROM users WHERE name = '{name}'").fetchone()
+    return {"user": row}
+
+#@@ sample SRC-SQLI-01-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/user")
+def user():
+    name = request.args.get("name", "")
+    db = sqlite3.connect("app.db")
+    row = db.execute("SELECT id, email FROM users WHERE name = ?", (name,)).fetchone()
+    return {"user": row}
+
+#@@ sample SRC-SQLI-02-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/login")
+def login():
+    username = request.form["username"]
+    password = request.form["password"]
+    conn = sqlite3.connect("app.db")
+    cur = conn.cursor()
+    sql = "SELECT id FROM users WHERE username = '" + username + "' AND pw_hash = '" + password + "'"
+    cur.execute(sql)
+    return {"ok": cur.fetchone() is not None}
+
+#@@ sample SRC-SQLI-02-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/login")
+def login():
+    username = request.form["username"]
+    password = request.form["password"]
+    conn = sqlite3.connect("app.db")
+    cur = conn.cursor()
+    sql = "SELECT id FROM users WHERE username = ? AND pw_hash = ?"
+    cur.execute(sql, (username, password))
+    return {"ok": cur.fetchone() is not None}
+
+#@@ sample SRC-SQLI-03-V
+from flask import Flask, request
+
+from .db import get_connection
+
+app = Flask(__name__)
+
+
+@app.route("/orders")
+def orders():
+    customer = request.args["customer"]
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, total FROM orders WHERE customer = '%s'" % customer)
+        return {"orders": cur.fetchall()}
+
+#@@ sample SRC-SQLI-03-S
+from flask import Flask, request
+
+from .db import get_connection
+
+app = Flask(__name__)
+
+
+@app.route("/orders")
+def orders():
+    customer = request.args["customer"]
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, total FROM orders WHERE customer = %s", (customer,))
+        return {"orders": cur.fetchall()}
+
+#@@ sample SRC-SQLI-04-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/products")
+def products():
+    sort = request.args.get("sort", "name")
+    db = sqlite3.connect("shop.db")
+    query = "SELECT id, name, price FROM products ORDER BY {}".format(sort)
+    return {"items": db.execute(query).fetchall()}
+
+#@@ sample SRC-SQLI-04-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+SORT_COLUMNS = {"name": "name", "price": "price", "newest": "created_at DESC"}
+
+
+@app.route("/products")
+def products():
+    sort = SORT_COLUMNS.get(request.args.get("sort", "name"), "name")
+    db = sqlite3.connect("shop.db")
+    query = "SELECT id, name, price FROM products ORDER BY {}".format(sort)
+    return {"items": db.execute(query).fetchall()}
+
+#@@ sample SRC-SQLI-05-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def find_by_email(conn, email):
+    return conn.execute("SELECT id, name FROM members WHERE email = '" + email + "'").fetchall()
+
+
+@app.route("/members")
+def members():
+    conn = sqlite3.connect("club.db")
+    return {"members": find_by_email(conn, request.args.get("email", ""))}
+
+#@@ sample SRC-SQLI-05-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def find_by_email(conn, email):
+    return conn.execute("SELECT id, name FROM members WHERE email = ?", (email,)).fetchall()
+
+
+@app.route("/members")
+def members():
+    conn = sqlite3.connect("club.db")
+    return {"members": find_by_email(conn, request.args.get("email", ""))}
+
+#@@ sample SRC-SQLI-06-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/tags")
+def add_tag():
+    tag = request.form["tag"]
+    db = sqlite3.connect("blog.db")
+    db.executescript(f"INSERT INTO tags(name) VALUES ('{tag}'); UPDATE stats SET tags = tags + 1;")
+    db.commit()
+    return {"created": tag}
+
+#@@ sample SRC-SQLI-06-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/tags")
+def add_tag():
+    tag = request.form["tag"]
+    db = sqlite3.connect("blog.db")
+    db.execute("INSERT INTO tags(name) VALUES (?)", (tag,))
+    db.execute("UPDATE stats SET tags = tags + 1")
+    db.commit()
+    return {"created": tag}
+
+#@@ sample SRC-SQLI-07-V
+from flask import Flask, request
+from sqlalchemy import create_engine, text
+
+app = Flask(__name__)
+engine = create_engine("sqlite:///inventory.db")
+
+
+@app.route("/stock")
+def stock():
+    sku = request.args.get("sku", "")
+    with engine.connect() as conn:
+        rows = conn.execute(text(f"SELECT qty FROM stock WHERE sku = '{sku}'")).all()
+    return {"rows": [list(r) for r in rows]}
+
+#@@ sample SRC-SQLI-07-S
+from flask import Flask, request
+from sqlalchemy import create_engine, text
+
+app = Flask(__name__)
+engine = create_engine("sqlite:///inventory.db")
+
+
+@app.route("/stock")
+def stock():
+    sku = request.args.get("sku", "")
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT qty FROM stock WHERE sku = :sku"), {"sku": sku}).all()
+    return {"rows": [list(r) for r in rows]}
+
+#@@ sample SRC-SQLI-08-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/books")
+def books():
+    term = request.args.get("term", "")
+    db = sqlite3.connect("library.db")
+    sql = "SELECT title FROM books WHERE title LIKE '%{}%'".format(term)
+    return {"titles": [r[0] for r in db.execute(sql)]}
+
+#@@ sample SRC-SQLI-08-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/books")
+def books():
+    term = request.args.get("term", "")
+    db = sqlite3.connect("library.db")
+    pattern = "%" + term.replace("%", r"\%").replace("_", r"\_") + "%"
+    sql = "SELECT title FROM books WHERE title LIKE ? ESCAPE '\\'"
+    return {"titles": [r[0] for r in db.execute(sql, (pattern,))]}

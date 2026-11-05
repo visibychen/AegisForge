@@ -14,7 +14,8 @@ describe('workspace foundation', () => {
   it('shows the current capability boundary without fabricated detection results', async () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: '代码安全工作台' })).toBeInTheDocument();
-    expect(screen.getByText(/漏洞检测与修复功能尚未开放/)).toBeInTheDocument();
+    expect(screen.getByText(/智能检测与修复验证尚未开放/)).toBeInTheDocument();
+    expect(screen.getByText(/规则线索不是检测结论/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /连接服务/ })).toBeDisabled();
     await screen.findByText('本地服务在线');
     expect(getCapabilities).not.toHaveBeenCalled();
@@ -45,6 +46,26 @@ describe('workspace foundation', () => {
     fireEvent.click(screen.getByRole('button', { name: /连接服务/ }));
     await screen.findByText('访问令牌无效或缺失。');
     await waitFor(() => expect(screen.queryByText('已连接本地服务')).not.toBeInTheDocument());
+  });
+
+  it('drops the session token when a reconnect fails', async () => {
+    vi.mocked(getCapabilities).mockResolvedValueOnce({
+      request_id: 'test', version: '0.1.0.dev1', stage: 'M2', model_mode: 'fake',
+      analysis_available: false, repair_available: false, dynamic_validation_available: false,
+      supported_input_types: ['source', 'http'], planned_input_types: ['source', 'http'],
+      max_file_bytes: 2097152, max_files: 10, max_total_bytes: 10485760,
+    });
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('访问令牌'), { target: { value: 'first-token' } });
+    fireEvent.click(screen.getByRole('button', { name: /连接服务/ }));
+    await screen.findByText('已连接本地服务');
+    expect(screen.queryByText('连接服务后即可提交输入。')).not.toBeInTheDocument();
+    vi.mocked(getCapabilities).mockRejectedValueOnce(new ApiError('访问令牌无效或缺失。'));
+    fireEvent.change(screen.getByLabelText('访问令牌'), { target: { value: 'revoked-token' } });
+    fireEvent.click(screen.getByRole('button', { name: /连接服务/ }));
+    await screen.findByText('访问令牌无效或缺失。');
+    expect(screen.getByText('连接服务后即可提交输入。')).toBeInTheDocument();
+    expect(screen.queryByText('已连接本地服务')).not.toBeInTheDocument();
   });
 
   it('lets the user pause decorative motion without persisting anything', async () => {

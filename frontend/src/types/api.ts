@@ -24,9 +24,17 @@ export interface Finding {
   sources: string[]; evidence_status: string;
   location: { kind: 'source'; artifact_id: string; start_line: number; end_line: number } | { kind: 'http'; artifact_id: string; field: string };
 }
+
+/** Public, redacted metadata for one HTTP field; raw positions refer to the submitted text. */
+export interface FieldMeta {
+  part: string; name: string; decode_passes: number; masked: boolean;
+  line?: number; raw_start?: number; raw_end?: number; decode_limited?: boolean;
+}
+
 export interface ArtifactPreview {
   id: string; input_type: 'source' | 'http'; display_name: string; sha256: string;
   size_bytes: number; parser_version: string; rule_version: string;
-  content: string; fields: Record<string, string>; features: unknown[];
-  warnings: string[]; chunk_count: number; rule_findings: Finding[];
+  content: string; fields: Record<string, string>; field_meta: Record<string, FieldMeta>;
+  features: unknown[]; warnings: string[]; chunk_count: number;
+  rule_findings: Finding[]; rule_findings_truncated: boolean;
 }
