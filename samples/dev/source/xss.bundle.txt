@@ -1,0 +1,215 @@
+#@@ bundle aegisforge-dev source CWE-79 (AI-authored, human_review pending; see ../manifest.json)
+#@@ Each sample starts at the first non-blank line after its delimiter (line 1).
+
+#@@ sample SRC-XSS-01-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/greet")
+def greet():
+    name = request.args.get("name", "guest")
+    return f"<h1>Hello, {name}!</h1>"
+
+#@@ sample SRC-XSS-01-S
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/greet")
+def greet():
+    name = request.args.get("name", "guest")
+    return f"<h1>Hello, {escape(name)}!</h1>"
+
+#@@ sample SRC-XSS-02-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/comment")
+def comment():
+    body = request.form["body"]
+    html = "<div class='comment'>" + body + "</div>"
+    return html
+
+#@@ sample SRC-XSS-02-S
+import html
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/comment")
+def comment():
+    body = html.escape(request.form["body"])
+    page = "<div class='comment'>" + body + "</div>"
+    return page
+
+#@@ sample SRC-XSS-03-V
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+
+@app.route("/preview")
+def preview():
+    title = request.args.get("title", "")
+    template = "<h2>" + title + "</h2><p>{{ note }}</p>"
+    return render_template_string(template, note="draft")
+
+#@@ sample SRC-XSS-03-S
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+PAGE = "<h2>{{ title }}</h2><p>{{ note }}</p>"
+
+
+@app.route("/preview")
+def preview():
+    title = request.args.get("title", "")
+    return render_template_string(PAGE, title=title, note="draft")
+
+#@@ sample SRC-XSS-04-V
+from flask import Flask, request
+from markupsafe import Markup
+
+app = Flask(__name__)
+
+
+@app.route("/badge")
+def badge():
+    label = request.args.get("label", "new")
+    return Markup("<span class='badge'>%s</span>" % label)
+
+#@@ sample SRC-XSS-04-S
+from flask import Flask, request
+from markupsafe import Markup
+
+app = Flask(__name__)
+
+
+@app.route("/badge")
+def badge():
+    label = request.args.get("label", "new")
+    return Markup("<span class='badge'>{}</span>").format(label)
+
+#@@ sample SRC-XSS-05-V
+from flask import Flask, make_response, request
+
+app = Flask(__name__)
+
+
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+    body = "<p>No results for %s</p>" % query
+    response = make_response(body)
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    return response
+
+#@@ sample SRC-XSS-05-S
+from flask import Flask, make_response, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+    body = "<p>No results for %s</p>" % escape(query)
+    response = make_response(body)
+    response.headers["Content-Type"] = "text/html; charset=utf-8"
+    return response
+
+#@@ sample SRC-XSS-06-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/profile")
+def profile():
+    site = request.args.get("site", "")
+    return '<a href="' + site + '">Website</a>'
+
+#@@ sample SRC-XSS-06-S
+from urllib.parse import urlparse
+
+from flask import Flask, abort, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+@app.route("/profile")
+def profile():
+    site = request.args.get("site", "")
+    if urlparse(site).scheme not in {"http", "https"}:
+        abort(400)
+    return '<a href="' + str(escape(site)) + '">Website</a>'
+
+#@@ sample SRC-XSS-07-V
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def render_row(cells):
+    return "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
+
+
+@app.route("/table")
+def table():
+    values = request.args.getlist("v")
+    return "<table>" + render_row(values) + "</table>"
+
+#@@ sample SRC-XSS-07-S
+from flask import Flask, request
+from markupsafe import escape
+
+app = Flask(__name__)
+
+
+def render_row(cells):
+    return "<tr>" + "".join(f"<td>{escape(cell)}</td>" for cell in cells) + "</tr>"
+
+
+@app.route("/table")
+def table():
+    values = request.args.getlist("v")
+    return "<table>" + render_row(values) + "</table>"
+
+#@@ sample SRC-XSS-08-V
+import sqlite3
+
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/notes/<int:note_id>")
+def show_note(note_id):
+    db = sqlite3.connect("notes.db")
+    row = db.execute("SELECT title, body FROM notes WHERE id = ?", (note_id,)).fetchone()
+    return "<article><h3>%s</h3>%s</article>" % (row[0], row[1])
+
+#@@ sample SRC-XSS-08-S
+import sqlite3
+
+from flask import Flask, render_template_string
+
+app = Flask(__name__)
+NOTE = "<article><h3>{{ title }}</h3>{{ body }}</article>"
+
+
+@app.route("/notes/<int:note_id>")
+def show_note(note_id):
+    db = sqlite3.connect("notes.db")
+    row = db.execute("SELECT title, body FROM notes WHERE id = ?", (note_id,)).fetchone()
+    return render_template_string(NOTE, title=row[0], body=row[1])

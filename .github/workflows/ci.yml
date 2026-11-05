@@ -1,10 +1,9 @@
-name: Foundation CI
+name: AegisForge CI
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -35,7 +34,7 @@ jobs:
           auto-update-conda: true
       - name: Install locked Python dependencies in AegisForge
         run: python -m pip install -r backend/requirements-dev.lock
-      - name: Check backend and migration contracts
+      - name: Check backend, migrations and frozen dataset
         run: python scripts/check.py --backend-only
 
   frontend:

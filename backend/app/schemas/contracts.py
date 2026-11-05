@@ -61,6 +61,8 @@ class Finding(Contract):
     severity: Literal["critical", "high", "medium", "low", "info"]
     location: Annotated[SourceLocation | HttpLocation, Field(discriminator="kind")]
     evidence: str = Field(min_length=1, max_length=4000)
+    # True only when a rule cut an original excerpt at 4,000 chars; never append filler text.
+    evidence_truncated: bool = False
     explanation: str = Field(min_length=1, max_length=8000)
     recommendation: str = Field(min_length=1, max_length=8000)
     sources: list[Literal["rule", "llm"]] = Field(min_length=1, max_length=2)
@@ -118,12 +120,12 @@ class HealthResponse(Contract):
 class CapabilitiesResponse(Contract):
     request_id: str
     version: str
-    stage: Literal["M1"] = "M1"
+    stage: Literal["M2"] = "M2"
     model_mode: Literal["fake"] = "fake"
     analysis_available: Literal[False] = False
     repair_available: Literal[False] = False
     dynamic_validation_available: Literal[False] = False
-    supported_input_types: list[str] = Field(default_factory=list)
+    supported_input_types: list[str] = ["source", "http"]
     planned_input_types: list[str] = ["source", "http"]
     max_file_bytes: int
     max_files: int

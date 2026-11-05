@@ -6,6 +6,7 @@ import {
 import { Alert, Button, Input, Tag } from 'antd';
 import { ApiError, getCapabilities, getHealth } from './api/client';
 import HeroVisual from './components/HeroVisual';
+import IngestPanel from './components/IngestPanel';
 import MotionToggle, { useSystemReducedMotion } from './components/MotionToggle';
 import type { Capabilities } from './types/api';
 
@@ -25,6 +26,7 @@ const risks = [
 export default function App() {
   const [health, setHealth] = useState<'loading' | 'ok' | 'offline'>('loading');
   const [token, setToken] = useState('');
+  const [sessionToken, setSessionToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
@@ -42,9 +44,11 @@ export default function App() {
     setLoading(true);
     setError('');
     setCapabilities(null);
+    setSessionToken(''); // A failed reconnect must not leave the previous token usable.
     try {
       const response = await getCapabilities(token.trim());
       setCapabilities(response);
+      setSessionToken(token.trim());
       setToken(''); // Keep the shared token out of persistent browser storage.
     } catch (exception) {
       setError(exception instanceof ApiError ? exception.message : '无法连接服务，请确认后端已启动。');
@@ -72,7 +76,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="sidebar-note"><span className="small-dot" />本地安全工作空间</div>
           <p>发现风险，修复缺陷。<br />让每一次改动更有依据。</p>
-          <span className="build-label">FOUNDATION PREVIEW</span>
+          <span className="build-label">INPUT PREVIEW</span>
         </div>
       </aside>
 
@@ -93,30 +97,30 @@ export default function App() {
         <main>
           <section className="page-heading">
             <div><div className="eyebrow">CODE SECURITY WORKSPACE</div><h1>代码安全工作台</h1><p>从风险发现到修复验证，让安全分析有迹可循。</p></div>
-            <Tag className="preview-tag">基础预览</Tag>
+            <Tag className="preview-tag">输入与特征</Tag>
           </section>
 
           <Alert type="info" showIcon className="preview-alert"
-            title="当前可查看工作台并连接本地服务，漏洞检测与修复功能尚未开放。" />
+            title="已开放输入上传、脱敏预览与启发式规则线索；智能检测与修复验证尚未开放，规则线索不是检测结论。" />
 
           <section className="hero-panel" aria-labelledby="hero-title">
             <div className="hero-streams" aria-hidden="true"><span /><span /><span /></div>
             <div className="hero-copy">
               <span className="hero-kicker"><span className="kicker-dot" />智能分析 · 证据驱动</span>
               <h2 id="hero-title">洞察代码风险，<br /><span>构筑安全防线。</span></h2>
-              <p>计划支持 Python Web 源码与 HTTP 请求文本，<br className="desktop-break" />围绕 XSS、SQL 注入和命令执行风险提供分析与修复。</p>
+              <p>提交 Python Web 源码与离线 HTTP 请求，<br className="desktop-break" />查看脱敏预览与风险线索，为后续分析和修复建立依据。</p>
               <div className="hero-flow"><span>漏洞检测</span><i className="flow-link" /><span>补丁生成</span><i className="flow-link" /><span>修复验证</span></div>
             </div>
             <HeroVisual />
           </section>
 
-          <section className="risk-grid" aria-label="计划覆盖的风险类型">
+          <section className="risk-grid" aria-label="规则覆盖的风险类型">
             {risks.map(risk => (
               <article className={`risk-card tone-${risk.tone}`} key={risk.cwe}>
                 <div className="risk-head"><span className="risk-icon" aria-hidden="true">{risk.icon}</span><span className="cwe">CWE-{risk.cwe}</span></div>
                 <h3>{risk.label}<small>{risk.name}</small></h3>
                 <p>{risk.description}</p>
-                <span className="planned-badge">计划支持</span>
+                <span className="planned-badge">规则线索</span>
               </article>
             ))}
           </section>
@@ -132,17 +136,18 @@ export default function App() {
 
             <section className="surface connection-panel" aria-labelledby="connection-title">
               <div className="section-heading"><h2 id="connection-title"><ApiOutlined aria-hidden="true" /> 服务连接</h2><span className="session-chip"><LockOutlined aria-hidden="true" />仅限当前会话</span></div>
-              <p className="connection-intro">使用本地配置中的访问令牌，查看当前服务能力。</p>
+              <p className="connection-intro">使用本地访问令牌连接服务，即可上传输入并查看脱敏特征。</p>
               <form onSubmit={event => { event.preventDefault(); void connect(); }}>
                 <label htmlFor="api-token">访问令牌</label>
                 <Input.Password id="api-token" value={token} onChange={event => setToken(event.target.value)} placeholder="输入本地访问令牌" autoComplete="off" />
                 <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined aria-hidden="true" />}>连接服务</Button>
               </form>
               {error && <Alert type="error" showIcon title={error} role="alert" />}
-              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>模拟模式 · 真实模型尚未接入</p><p>漏洞检测与修复尚未开放。</p></div></div>}
+              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>模拟模式 · 真实模型尚未接入</p><p>可提交输入并查看脱敏预览；智能检测与修复尚未开放。</p></div></div>}
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>
+          <IngestPanel token={sessionToken} />
           <footer>AegisForge 铸盾<span>面向代码安全的分析与修复工作空间</span></footer>
         </main>
       </div>
