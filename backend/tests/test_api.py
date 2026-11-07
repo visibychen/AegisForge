@@ -29,7 +29,7 @@ def test_capabilities_requires_token_and_does_not_expose_configuration():
     assert response.status_code == 200
     payload = response.json()
     assert payload["model_mode"] == "fake"
-    assert payload["analysis_available"] is False
+    assert payload["analysis_available"] is True
     assert payload["repair_available"] is False
     assert payload["supported_input_types"] == ["source", "http"]
     assert not {"api_token", "database_url", "data_dir"} & payload.keys()
@@ -42,7 +42,7 @@ def test_unconfigured_token_fails_closed():
 
 
 def test_not_found_is_a_structured_error():
-    response = client().post("/api/v1/scans", json={"secret": "do-not-echo"})
+    response = client().post("/api/v1/unknown", json={"secret": "do-not-echo"})
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "HTTP_ERROR"
     assert "do-not-echo" not in response.text

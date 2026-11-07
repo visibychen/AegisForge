@@ -7,8 +7,9 @@ export interface Capabilities {
   request_id: string;
   version: string;
   stage: 'M1' | 'M2' | 'M3';
-  model_mode: 'fake';
-  analysis_available: false;
+  model_mode: 'fake' | 'real';
+  model_aliases?: string[];
+  analysis_available: boolean;
   repair_available: false;
   dynamic_validation_available: false;
   supported_input_types: string[];
@@ -42,4 +43,17 @@ export interface ArtifactPreview {
   content: string; fields: Record<string, string>; field_meta: Record<string, FieldMeta>;
   features: InputFeature[]; warnings: string[]; chunk_count: number;
   rule_findings: Finding[]; rule_findings_truncated: boolean;
+}
+
+export type Strategy = 'rules' | 'llm' | 'hybrid';
+export interface Scan {
+  id: string; status: 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled';
+  strategy: Strategy; model_alias: string; error_code: string | null;
+  cancel_requested: boolean; retries: number; created_at: string; finished_at: string | null;
+  call_count: number; artifacts: {id: string; display_name: string; input_type: string; sha256: string}[];
+  result: { warnings?: string[]; analysis_complete?: boolean; finding_count?: number;
+    expected_chunks?: number; processed_chunks?: number; completed_chunks?: number; model_mode?: string };
+}
+export interface StoredFinding extends Finding {
+  id: string; contributors: Finding[]; severity_disagreement: boolean;
 }

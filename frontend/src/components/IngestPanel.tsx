@@ -19,7 +19,7 @@ function locate(finding: Finding, preview: ArtifactPreview): string {
   return meta ? `${finding.location.field} · ${meta.name}` : finding.location.field;
 }
 
-export default function IngestPanel({ token }: { token: string }) {
+export default function IngestPanel({ token, onArtifact }: { token: string; onArtifact?: (artifact: ArtifactPreview) => void }) {
   const [kind, setKind] = useState<'source' | 'http'>('source');
   const [content, setContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -56,7 +56,7 @@ export default function IngestPanel({ token }: { token: string }) {
     try {
       const name = file?.name ?? (kind === 'source' ? 'pasted.py' : 'pasted.http');
       const result = await uploadArtifact(token, kind, name, file ?? new Blob([content]), controller.signal);
-      if (request.current.generation === generation) setArtifact(result.artifact);
+      if (request.current.generation === generation) { setArtifact(result.artifact); onArtifact?.(result.artifact); }
     } catch (exception) {
       if (request.current.generation === generation) {
         setError(exception instanceof ApiError ? exception.message : '输入提交失败，请稍后重试。');

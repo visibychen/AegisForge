@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
 
@@ -65,6 +65,9 @@ class ScanTask(Base):
     error_code: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    retries: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    result_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
 
 
 class TaskArtifact(Base):
@@ -96,6 +99,35 @@ class Job(Base):
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True)
     lease_until: Mapped[datetime | None] = mapped_column(UTCDateTime())
     heartbeat_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    lease_token: Mapped[str | None] = mapped_column(String(36))
     error_code: Mapped[str | None] = mapped_column(String(64))
     error_detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))
+
+
+class FindingRecord(Base):
+    __tablename__ = "findings"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    scan_id: Mapped[str] = mapped_column(
+        ForeignKey("scan_tasks.id", ondelete="CASCADE"), index=True
+    )
+    artifact_id: Mapped[str] = mapped_column(ForeignKey("artifacts.id", ondelete="RESTRICT"))
+    payload: Mapped[str] = mapped_column(Text)
+
+
+class ModelCall(Base):
+    __tablename__ = "model_calls"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    scan_id: Mapped[str] = mapped_column(
+        ForeignKey("scan_tasks.id", ondelete="CASCADE"), index=True
+    )
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"))
+    model: Mapped[str] = mapped_column(String(128))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(64), default="started")
+    input_chars: Mapped[int] = mapped_column(Integer)
+    output_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))

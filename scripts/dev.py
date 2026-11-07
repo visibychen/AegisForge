@@ -4,13 +4,13 @@ import shutil
 import subprocess
 import sys
 
-from _environment import ROOT, require_conda
+from _environment import ROOT, model_environment, require_conda
 
 
 def main() -> None:
     require_conda()
     parser = argparse.ArgumentParser(description="AegisForge local development commands")
-    parser.add_argument("command", choices=["init", "migrate", "api", "web"])
+    parser.add_argument("command", choices=["init", "migrate", "api", "web", "worker"])
     args = parser.parse_args()
     if args.command == "init":
         target = ROOT / ".env"
@@ -43,12 +43,19 @@ def main() -> None:
             "--port",
             "8000",
         ]
+    elif args.command == "worker":
+        command = [sys.executable, "-m", "app.worker"]
     else:
         npm = shutil.which("npm.cmd") or shutil.which("npm")
         if not npm:
             raise SystemExit("Node.js / npm is required.")
         command = [npm, "--prefix", "frontend", "run", "dev"]
-    subprocess.run(command, cwd=ROOT, check=True)
+    subprocess.run(
+        command,
+        cwd=ROOT / "backend" if args.command == "worker" else ROOT,
+        env=model_environment() if args.command in {"api", "worker"} else None,
+        check=True,
+    )
 
 
 if __name__ == "__main__":

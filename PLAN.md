@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.3 · 基线日期：2026-11-03 · 更新日期：2026-11-05 · 项目：铸盾 AegisForge
+版本：1.4（实施中） · 基线日期：2026-11-03 · 更新日期：2026-11-07 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -13,6 +13,8 @@ M1 工程骨架已完成本地及 Windows/Linux GitHub CI 验收，证据见 [M1
 用户随后收窄为只完成 M2，M3 暂缓。M2 已完成三轮协作、上传/解析/脱敏/规则及最小输入页，冻结 120 源码/60 HTTP 的家族划分与哈希，预登记 18 个受控修复例。本地 143 后端通过、1 平台跳过、14 前端及 2 浏览器场景通过；见 [M2 验证记录](docs/m2-verification.md)。PR 集成与人工标注复核仍待完成，不以此代替 M6 准确率或 M4 动态验证。
 
 ## 1. 目标与范围
+
+2026-11-07 用户恢复 M3，指定 DeepSeek API，密钥只存环境变量。本轮分工为：第一轮 Codex 开发/Claude 审，第二轮 Claude 优化/Codex 审，第三阶段多次真实讨论后由 Codex 最终优化。现行设计见 [M3 设计](docs/m3-design.md)，真实检测演示尚待安全审查后执行，不以离线替身结果代替。
 
 ### 1.1 必须交付的功能
 
@@ -241,7 +243,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M0 计划与管理基线 | 已完成 | 无 | PLAN、需求评分映射、协作规范、任务拆分；首个 Git 提交与远端同步 | 本次 | [#1](https://github.com/visibychen/AegisForge/issues/1) |
 | M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
 | M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
-| M3 智能检测闭环 | 用户暂缓，未开始实现 | M2 | 真/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
+| M3 智能检测闭环 | 开发中 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 未开始 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 未开始 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |

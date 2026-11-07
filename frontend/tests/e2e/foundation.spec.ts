@@ -19,7 +19,7 @@ test('connects the real local frontend and backend without claiming analysis', a
   await page.getByRole('button', { name: '连接服务' }).click();
   await expect(page.getByText('已连接本地服务')).toBeVisible();
   await expect(page.getByLabel('访问令牌')).toHaveValue('');
-  await expect(page.getByText('模拟模式 · 真实模型尚未接入')).toBeVisible();
+  await expect(page.getByText(/DeepSeek 已配置|模拟模式 · 真实模型尚未配置/)).toBeVisible();
 
   // Decorative motion: user toggle pauses it, and the system reduce preference always wins.
   const motion = page.getByRole('button', { name: '动态效果' });
