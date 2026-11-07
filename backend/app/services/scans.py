@@ -9,6 +9,7 @@ from app.models import Artifact, Job, ScanTask, TaskArtifact
 from app.rules.detector import RULE_VERSION
 from app.services.artifacts import load_artifact
 from app.services.queue import capacity, model_usage, transaction, utcnow
+from app.services.receipts import build_receipt, canonical
 
 MAX_ATTEMPT_HISTORY = 3
 
@@ -85,6 +86,9 @@ def create_scan(engine, settings, request, key=None):
             model_alias=request.model_alias,
             rule_version=RULE_VERSION,
             prompt_version=PROMPT_VERSION,
+            plan_json=canonical(
+                build_receipt(settings, request.strategy, request.model_alias, parsed)
+            ),
         )
         session.add(scan)
         session.flush()
@@ -124,10 +128,14 @@ def change_scan(engine, settings, scan_id, action):
                 "error_code": scan.error_code,
                 "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
                 "summary": json.loads(scan.result_json or "{}"),
+                "receipt": json.loads(scan.plan_json),
             }
         )
         scan.attempts_json = json.dumps(history[-MAX_ATTEMPT_HISTORY:], ensure_ascii=False)
         scan.retries += 1
+        scan.plan_json = canonical(build_receipt(settings, scan.strategy, scan.model_alias, parsed))
+        scan.rule_version, scan.prompt_version = RULE_VERSION, PROMPT_VERSION
+        scan.attempt_started_at = None
         scan.status, scan.cancel_requested, scan.finished_at = "queued", False, None
         scan.error_code, scan.result_json = None, "{}"
         session.add(Job(scan_id=scan.id, idempotency_key=f"retry:{scan.id}:{scan.retries}"))
@@ -171,5 +179,6 @@ def scan_view(session, scan, settings=None):
         "budget": budget,
         "attempt": scan.retries,
         "attempts": json.loads(scan.attempts_json or "[]"),
+        "receipt": json.loads(scan.plan_json),
         "result": json.loads(scan.result_json),
     }

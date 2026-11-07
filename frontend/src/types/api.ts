@@ -50,7 +50,7 @@ export type Strategy = 'rules' | 'llm' | 'hybrid';
 export interface CoverageEntry {
   artifact_id: string; display_name: string; input_type: string; chunk: number;
   start_line: number; end_line: number;
-  rules: 'ran' | 'not_requested' | 'ast_unavailable';
+  rules: 'pending' | 'ran' | 'not_requested' | 'ast_unavailable';
   model: 'not_requested' | 'pending' | 'succeeded' | 'simulated' | 'failed';
   model_error: string | null; failure_category: string | null; llm_findings: number;
 }
@@ -67,7 +67,16 @@ export interface Scan {
   budget?: { scan_used: number; scan_limit: number; daily_used: number; daily_limit: number } | null;
   attempt?: number;
   attempts?: { attempt: number; status: string; error_code: string | null; finished_at: string | null; summary: ScanResult }[];
+  receipt?: AnalysisReceipt;
   result: ScanResult;
+}
+export interface AnalysisReceipt {
+  schema_version: string; input_digest: string; plan_digest: string;
+  configuration: { strategy: Strategy; model_alias: string; model: string | null;
+    versions: Record<string, string>; system_prompt_sha256: string | null; options: Record<string, unknown> };
+  artifacts: { artifact_id: string; input_type: string; sha256: string; normalized_sha256: string;
+    fields_sha256: string; chunks: { chunk: number; start_line: number; end_line: number; sha256: string }[] }[];
+  limits: Record<string, number>;
 }
 export interface StoredFinding extends Finding {
   id: string; contributors: Finding[]; severity_disagreement: boolean; severity_policy?: string | null;

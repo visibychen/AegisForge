@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.4（实施中） · 基线日期：2026-11-03 · 更新日期：2026-11-07 · 项目：铸盾 AegisForge
+版本：1.4 · 基线日期：2026-11-03 · 更新日期：2026-11-07 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -14,7 +14,7 @@ M1 工程骨架已完成本地及 Windows/Linux GitHub CI 验收，证据见 [M1
 
 ## 1. 目标与范围
 
-2026-11-07 用户恢复 M3，指定 DeepSeek API，密钥只存环境变量。本轮分工为：第一轮 Codex 开发/Claude 审，第二轮 Claude 优化/Codex 审，第三阶段多次真实讨论后由 Codex 最终优化。现行设计见 [M3 设计](docs/m3-design.md)，真实检测演示尚待安全审查后执行，不以离线替身结果代替。
+2026-11-07 用户恢复 M3，指定 DeepSeek API，密钥只存环境变量。本轮分工为：第一轮 Codex 开发/Claude 审，第二轮 Claude 优化/Codex 审，第三阶段多次真实讨论后由 Codex 最终优化。每轮审查从第二阶段起还需提出功能创新。当前 M3 已完成开发和本地验收，待 PR 集成；同会话四次真实调用，后两次为第三阶段讨论。覆盖账本、检测凭证及证据失败分类已落实；三类 DeepSeek 开发例均通过。见 [M3 设计](docs/m3-design.md)、[验证记录](docs/m3-verification.md)和[协作记录](docs/collaboration-2026-11-07.md)。
 
 ### 1.1 必须交付的功能
 
@@ -77,7 +77,7 @@ flowchart LR
 | API | Python 3.13 + FastAPI + Pydantic | 类型化请求、输出校验、OpenAPI 接口文档 |
 | 数据 | SQLAlchemy + Alembic + SQLite | 关系数据和迁移可追踪；首版单 worker，启用外键与合适的锁等待/WAL 配置 |
 | 任务 | 数据库作业表 + 独立 worker | 保存状态、重试次数、租约与心跳；API 进程重启不应使任务静默消失 |
-| 模型 | Provider 接口 + HTTP 客户端 + fake provider | 后端环境变量配置地址、模型和密钥；真实服务与测试替身可替换，不依赖前端密钥 |
+| 模型 | Provider 接口 + HTTP 客户端 + fake provider | 固定 DeepSeek HTTPS 地址，环境变量配置模型，OS 环境变量独占密钥；真实服务与测试替身可替换，不依赖前端密钥 |
 | 规则 | Python AST + 版本化规则集 | 形成可解释的来源、危险操作和行号线索，不宣称完整污点分析 |
 | 修复 | 结构化编辑操作 + 服务端生成 diff | 基于不可变源码快照验证编辑范围，再生成可下载补丁 |
 | 验证 | pytest + 固定受控样例 + Docker Linux 容器 | 将语法、复检、漏洞回归和业务回归分层记录 |
@@ -243,7 +243,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M0 计划与管理基线 | 已完成 | 无 | PLAN、需求评分映射、协作规范、任务拆分；首个 Git 提交与远端同步 | 本次 | [#1](https://github.com/visibychen/AegisForge/issues/1) |
 | M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
 | M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
-| M3 智能检测闭环 | 开发中 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页；三类真实模型演示 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
+| M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 未开始 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 未开始 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
@@ -384,13 +384,13 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 
 | 需求 | 负责阶段 | 主要测试 | 当前状态 |
 | --- | --- | --- | --- |
-| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；组合任务及完整页面待 M3/M5 |
+| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；M3 组合任务已实现，完整页面待 M5 |
 | R02 | M2 | AST/HTTP 正反例、行号与脱敏 | M2 AST/HTTP、规则、预算和脱敏已通过自动化验证；标注人工复核待补 |
-| R03 | M3、M6 | Provider 故障、三策略真实评测 | M1 Provider/schema 基础完成；真实分析待 M3 |
-| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M1 协议/界面壳完成；结果展示待 M3/M5 |
+| R03 | M3、M6 | Provider 故障、三策略真实评测 | M3 DeepSeek 真实三类演示、Provider 故障验证通过；正式对比评测待 M6 |
+| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M3 最小结果、来源分歧、覆盖与凭证已实现；完整筛选统计待 M5 |
 | R05 | M4、M5 | 编辑校验、diff、修复 E2E | 计划完成，待实现 |
 | R06 | M4、M6 | 静态复检、18 例动态实验、沙箱约束 | 计划完成，待实现 |
-| R07 | M3、M5 | 持久化、删除、导出、脱敏 | M1 基础迁移完成；历史/导出待实现 |
+| R07 | M3、M5 | 持久化、删除、导出、脱敏 | M3 持久任务、旧尝试结果与凭证下载已实现；完整历史/报告待 M5 |
 | R08 | M1、M6、M7 | CI、部署、报告及课程清单核对 | M1 环境、锁文件、CI、设计及验证记录完成；最终交付待 M6/M7 |
 
 | 日期 | 版本 | 变更 | 原因 |
@@ -399,6 +399,10 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 | 2026-11-03 | 1.1 | Python 统一由 Anaconda 的 AegisForge 环境管理，版本 3.13；版本锁改为 pip requirements；M1 实现及本地/远端 CI 验收完成 | 用户明确要求并推进 M1 |
 | 2026-11-04 | 1.2 | M1 科技流动视觉优化，Claude/Codex同会话三轮开发与交叉审查；M2暂缓未开始；提交优化PR待审 | 用户追加审美要求并收窄本轮范围 |
 | 2026-11-05 | 1.3 | M2 三轮协作实现、180 样例冻结与18受控例登记、本地/API/浏览器验证；M3 按最新指示暂缓未开始；保留人工复核与后续真实评测边界 | 用户恢复开发后再次收窄范围；超时后经用户指示恢复同会话 |
+
+| 2026-11-07 | 1.4 | M3 DeepSeek/独立队列与结果页，三阶段同会话协作；覆盖账本、检测凭证、180秒跨恢复截止和 OS 密钥防护；三类真实开发演示通过，待 PR 集成 | 用户恢复 M3 并追加每轮审查提出创新 |
+
+M3 实施补充：密钥只从 OS 环境变量读取，不支持 dotenv 注入；模型线协议 `analysis-1.1` 与服务端来源分离。默认单任务跨重试最多 32 次、每数据库部署每 UTC 日 64 次模型调用；只记次数/token 不虚构金额。检测凭证白名单绑定输入和方案，发现配置漂移就停止；限额不参与方案摘要。手动重试仍计入两次上限，按当前方案重跑并保留旧结果。配置漂移免费刷新、供应商返回模型标识指纹和 M4 发现锚点是后续提案，未纳入已完成能力。最终性能/准确率和修复验收门槛保持不变。
 
 ## 13. 选型与安全参考
 

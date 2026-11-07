@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     model_mode: Literal["fake", "real"] = "fake"
     deepseek_model: Literal["deepseek-flash", "deepseek-v4-pro"] = "deepseek-flash"
     model_timeout_seconds: float = Field(default=60, gt=0, le=120)
+    task_timeout_seconds: float = Field(default=180, gt=0, le=600)
     model_response_bytes: int = Field(default=131072, ge=4096, le=262144)
     model_output_tokens: int = Field(default=4096, ge=256, le=4096)
     max_model_calls: int = Field(default=32, ge=1, le=32)
@@ -39,9 +41,15 @@ class Settings(BaseSettings):
     @property
     def model_aliases(self) -> list[str]:
         aliases = ["fake"]
-        if self.model_mode == "real" and self.deepseek_api_key.get_secret_value():
+        if self.model_mode == "real" and self.valid_model_key:
             aliases.append("deepseek")
         return aliases
+
+    @property
+    def valid_model_key(self) -> bool:
+        return bool(
+            re.fullmatch(r"[A-Za-z0-9._-]{16,256}", self.deepseek_api_key.get_secret_value())
+        )
 
     @property
     def resolved_database_url(self) -> str:

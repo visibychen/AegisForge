@@ -20,8 +20,10 @@ from app.services.queue import (
     heartbeat,
     publish,
     transaction,
+    utcnow,
     with_db_retry,
 )
+from app.services.receipts import verify_receipt
 from app.services.scans import check_inputs, scan_artifacts
 
 INTERNAL = "MODEL_PROVIDER_INTERNAL"
@@ -72,12 +74,7 @@ def coverage_plan(pairs, strategy, alias):
     """Per-chunk ledger: what rules and the model actually did for every analysed region."""
     entries = []
     for artifact, parsed in pairs:
-        if strategy == "llm":
-            rules = "not_requested"
-        elif artifact.input_type == "source" and parsed.private_tree is None:
-            rules = "ast_unavailable"
-        else:
-            rules = "ran"
+        rules = "not_requested" if strategy == "llm" else "pending"
         model = "not_requested" if strategy == "rules" else "pending"
         for index, chunk in enumerate(parsed.chunks):
             entries.append(
@@ -101,9 +98,12 @@ def coverage_plan(pairs, strategy, alias):
 async def execute(engine, settings, lease, provider_factory=None):
     summary = {"warnings": [], "processed_chunks": 0, "completed_chunks": 0, "coverage": []}
     findings, warnings, parsed_by_id = [], [], {}
+    current_entry = None
+    started = time.monotonic()
 
     def wrap_up(status, error_code):
         summary["warnings"] = list(dict.fromkeys(warnings))[:100]
+        summary["service_ms"] = int((time.monotonic() - started) * 1000)
         entries = merge_findings(findings, parsed_by_id) if parsed_by_id else []
         summary["finding_count"] = len(entries)
         with_db_retry(publish, engine, lease, status, summary, entries, error_code)
@@ -113,6 +113,13 @@ async def execute(engine, settings, lease, provider_factory=None):
             scan = session.get(ScanTask, lease.scan_id)
             strategy, alias = scan.strategy, scan.model_alias
             pairs = check_inputs(settings, scan_artifacts(session, scan.id))
+            verify_receipt(settings, scan, pairs)
+            plan = json.loads(scan.plan_json)
+            began = scan.attempt_started_at
+            remaining = plan["limits"]["task_timeout_seconds"] - (utcnow() - began).total_seconds()
+            deadline = asyncio.get_running_loop().time() + remaining
+        if remaining <= 0:
+            raise TimeoutError
         parsed_by_id = {a.id: p for a, p in pairs}
         complete, first_error = True, None
         expected = sum(len(p.chunks) for _, p in pairs) if strategy != "rules" else 0
@@ -136,80 +143,106 @@ async def execute(engine, settings, lease, provider_factory=None):
             else DeepSeekProvider(settings, ledger.reserve, ledger.finish)
         )
         cursor = 0
-        for artifact, parsed in pairs:
-            warnings.extend(parsed.warnings)
-            rules = (
-                detect(UUID(artifact.id), artifact.input_type, parsed)
-                if strategy != "llm"
-                else None
-            )
-            if rules:
-                findings.extend(rules.findings)
-                warnings.extend(rules.warnings)
-                if rules.truncated or (
-                    artifact.input_type == "source" and parsed.private_tree is None
-                ):
-                    complete = False
-            if strategy == "rules":
-                cursor += len(parsed.chunks)
-                continue
-            for chunk in parsed.chunks:
-                entry = coverage[cursor]
-                cursor += 1
-                with Session(engine) as session:
-                    active(session, lease)
-                fields = {
-                    name: parsed.fields[name]
-                    for name in chunk_fields(chunk)
-                    if name in parsed.fields
-                }
-                request = AnalysisRequest(
-                    artifact_id=artifact.id,
-                    input_type=artifact.input_type,
-                    content=chunk.content,
-                    start_line=chunk.start_line,
-                    end_line=chunk.end_line,
-                    fields=fields if artifact.input_type == "http" else {},
-                    rule_hints=hints_for(rules.findings, chunk) if rules else [],
+        async with asyncio.timeout_at(deadline):
+            for artifact, parsed in pairs:
+                await asyncio.sleep(0)
+                warnings.extend(parsed.warnings)
+                rules = (
+                    detect(UUID(artifact.id), artifact.input_type, parsed)
+                    if strategy != "llm"
+                    else None
                 )
-                try:
-                    result = await provider.analyze(request)
-                    if alias == "fake":
+                if rules is not None:
+                    for entry in coverage[cursor : cursor + len(parsed.chunks)]:
+                        entry["rules"] = (
+                            "ast_unavailable"
+                            if artifact.input_type == "source" and parsed.private_tree is None
+                            else "ran"
+                        )
+                    findings.extend(rules.findings)
+                    warnings.extend(rules.warnings)
+                    if rules.truncated or (
+                        artifact.input_type == "source" and parsed.private_tree is None
+                    ):
                         complete = False
-                        entry["model"] = "simulated"
-                    else:
-                        result = validate_result(result, request)
-                        findings.extend(result.findings)
-                        summary["completed_chunks"] += 1
-                        entry["model"], entry["llm_findings"] = "succeeded", len(result.findings)
-                    warnings.extend(result.warnings)
-                except DomainError as error:
-                    if error.code in {"LEASE_LOST", "TASK_CANCELLED"}:
-                        raise
-                    complete, first_error = False, first_error or error.code
-                    entry["model"], entry["model_error"] = "failed", error.code
-                    entry["failure_category"] = getattr(error, "category", None)
-                    warnings.append(f"部分模型分析未完成（{error.code}）；空发现不代表安全。")
-                except ValueError as error:
-                    complete, first_error = False, first_error or "MODEL_INVALID_OUTPUT"
-                    entry["model"], entry["model_error"] = "failed", "MODEL_INVALID_OUTPUT"
-                    entry["failure_category"] = getattr(error, "category", None)
-                    warnings.append("部分模型输出证据未通过校验。")
-                except Exception:
-                    # Unknown provider/storage failure: keep everything already verified and
-                    # never echo the exception text (it may contain paths or credentials).
-                    complete, first_error = False, first_error or INTERNAL
-                    entry["model"], entry["model_error"] = "failed", INTERNAL
-                    warnings.append("部分模型分析因内部错误未完成；已保留规则与已验证结果。")
-                summary["processed_chunks"] += 1
-                summary["warnings"] = list(dict.fromkeys(warnings))[:100]
-                progress(engine, lease, summary)
+                if asyncio.get_running_loop().time() >= deadline:
+                    raise TimeoutError
+                if strategy == "rules":
+                    cursor += len(parsed.chunks)
+                    continue
+                for chunk in parsed.chunks:
+                    if asyncio.get_running_loop().time() >= deadline:
+                        raise TimeoutError
+                    entry = coverage[cursor]
+                    current_entry = entry
+                    cursor += 1
+                    with Session(engine) as session:
+                        active(session, lease)
+                    fields = {
+                        name: parsed.fields[name]
+                        for name in chunk_fields(chunk)
+                        if name in parsed.fields
+                    }
+                    request = AnalysisRequest(
+                        artifact_id=artifact.id,
+                        input_type=artifact.input_type,
+                        content=chunk.content,
+                        start_line=chunk.start_line,
+                        end_line=chunk.end_line,
+                        fields=fields if artifact.input_type == "http" else {},
+                        rule_hints=hints_for(rules.findings, chunk) if rules else [],
+                    )
+                    try:
+                        result = await provider.analyze(request)
+                        if alias == "fake":
+                            complete = False
+                            entry["model"] = "simulated"
+                        else:
+                            result = validate_result(result, request)
+                            findings.extend(result.findings)
+                            summary["completed_chunks"] += 1
+                            entry["model"], entry["llm_findings"] = (
+                                "succeeded",
+                                len(result.findings),
+                            )
+                        warnings.extend(result.warnings)
+                    except DomainError as error:
+                        if error.code in {"LEASE_LOST", "TASK_CANCELLED"}:
+                            raise
+                        complete, first_error = False, first_error or error.code
+                        entry["model"], entry["model_error"] = "failed", error.code
+                        entry["failure_category"] = getattr(error, "category", None)
+                        warnings.append(f"部分模型分析未完成（{error.code}）；空发现不代表安全。")
+                    except ValueError as error:
+                        complete, first_error = False, first_error or "MODEL_INVALID_OUTPUT"
+                        entry["model"], entry["model_error"] = "failed", "MODEL_INVALID_OUTPUT"
+                        entry["failure_category"] = getattr(error, "category", None)
+                        warnings.append("部分模型输出证据未通过校验。")
+                    except Exception:
+                        # Unknown provider/storage failure: keep everything already verified and
+                        # never echo the exception text (it may contain paths or credentials).
+                        complete, first_error = False, first_error or INTERNAL
+                        entry["model"], entry["model_error"] = "failed", INTERNAL
+                        warnings.append("部分模型分析因内部错误未完成；已保留规则与已验证结果。")
+                    summary["processed_chunks"] += 1
+                    summary["warnings"] = list(dict.fromkeys(warnings))[:100]
+                    progress(engine, lease, summary)
+                    current_entry = None
+            if asyncio.get_running_loop().time() >= deadline:
+                raise TimeoutError
         complete = complete and (strategy == "rules" or summary["completed_chunks"] == expected)
         status = "completed" if complete else "partial"
         if strategy == "llm" and alias != "fake" and summary["completed_chunks"] == 0:
             status = "failed"
         summary["analysis_complete"] = complete
         wrap_up(status, first_error)
+    except TimeoutError:
+        summary["analysis_complete"] = False
+        if current_entry is not None:
+            current_entry["model"], current_entry["model_error"] = "failed", "TASK_TIMEOUT"
+        warnings.append("任务达到总时限，已停止分析并保留已核对结果。")
+        with contextlib.suppress(Exception):
+            wrap_up("partial" if findings else "failed", "TASK_TIMEOUT")
     except asyncio.CancelledError:
         # A user cancel may publish; shutdown/lease loss leaves the lease for bounded recovery.
         with contextlib.suppress(Exception), Session(engine) as session:

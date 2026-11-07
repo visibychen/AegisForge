@@ -110,6 +110,12 @@ def main():
                     "calls": calls,
                     "prompt_version": scan["prompt_version"],
                     "rule_version": scan["rule_version"],
+                    "analysis_complete": scan["result"].get("analysis_complete", False),
+                    "receipt": scan["receipt"],
+                    "coverage": [
+                        {k: v for k, v in entry.items() if k != "display_name"}
+                        for entry in scan["result"].get("coverage", [])
+                    ],
                 }
                 result["passed"] = scan["status"] == "completed" and case["cwe"] in llm_cwes
                 report["cases"].append(result)

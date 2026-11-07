@@ -31,6 +31,7 @@ FAILURE_CATEGORIES = (
     "incomplete",  # server-side result not marked complete
     "provenance",  # server-side finding not attributed to the model alone
     "location",  # wrong artifact/kind or line range outside the chunk
+    "location_mismatch",  # verbatim evidence exists, but outside the declared range
     "field",  # unknown HTTP field
     "evidence",  # evidence absent from the claimed place
     "evidence_weak",  # punctuation-only or uninformative evidence
@@ -88,7 +89,7 @@ def _ground_source(item: Finding, request: AnalysisRequest) -> Finding:
             spans.add((first, last))
         position = content.find(evidence, position + 1)
     if not spans:
-        raise OutputRejected("evidence")
+        raise OutputRejected("location_mismatch" if evidence in content else "evidence")
     if len(spans) > 1:
         raise OutputRejected("ambiguous_evidence")
     first, last = spans.pop()
@@ -223,7 +224,7 @@ class DeepSeekProvider:
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
         settings = self.settings
         key = settings.deepseek_api_key.get_secret_value()
-        if not key:
+        if not settings.valid_model_key:
             raise ProviderError("MODEL_NOT_CONFIGURED")
         network_retries, corrections, previous = 0, 0, None
         async with httpx.AsyncClient(
@@ -233,25 +234,33 @@ class DeepSeekProvider:
             follow_redirects=False,
         ) as client:
             while True:
+                payload = {
+                    "model": settings.deepseek_model,
+                    "messages": messages(request, previous),
+                    "thinking": {"type": "disabled"},
+                    "temperature": 0,
+                    "max_tokens": settings.model_output_tokens,
+                    "response_format": {"type": "json_object"},
+                    "stream": False,
+                }
+                # The key alphabet needs no JSON escaping. Check precisely the bytes sent,
+                # including system prompts, fields, hints and subsequent corrections.
+                body = json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8")
+                if key.encode("ascii") in body:
+                    raise ProviderError("MODEL_INPUT_CREDENTIAL", "credential")
                 call_id = self.reserve(len(request.content))
                 started, usage, size = time.monotonic(), {}, 0
                 code, result, category = "MODEL_TRANSPORT", None, None
                 try:
-                    payload = {
-                        "model": settings.deepseek_model,
-                        "messages": messages(request, previous),
-                        "thinking": {"type": "disabled"},
-                        "temperature": 0,
-                        "max_tokens": settings.model_output_tokens,
-                        "response_format": {"type": "json_object"},
-                        "stream": False,
-                    }
                     async with asyncio.timeout(settings.model_timeout_seconds):
                         async with client.stream(
                             "POST",
                             DEEPSEEK_URL,
-                            headers={"Authorization": "Bearer " + key},
-                            json=payload,
+                            headers={
+                                "Authorization": "Bearer " + key,
+                                "Content-Type": "application/json",
+                            },
+                            content=body,
                         ) as response:
                             code = {
                                 401: "MODEL_AUTH_FAILED",

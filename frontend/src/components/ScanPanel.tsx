@@ -3,6 +3,7 @@ import { Alert, Button, ConfigProvider, Select, Tag } from 'antd';
 import { changeScan, createScan, getFindings, getScan, isAuthFailure, listScans } from '../api/client';
 import type { ArtifactPreview, Scan, StoredFinding, Strategy } from '../types/api';
 import CoverageLedger from './CoverageLedger';
+import AnalysisReceipt from './AnalysisReceipt';
 
 const RECONNECT = '会话已失效，请重新连接服务后再查看任务。';
 
@@ -106,15 +107,16 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
       <p>{scan.strategy} · {scan.model_alias} · 外部调用 {scan.call_count} 次 · 模型分块 {scan.result.completed_chunks ?? 0}/{scan.result.expected_chunks ?? 0}</p>
       {scan.budget && <p>调用预算：本任务 {scan.budget.scan_used}/{scan.budget.scan_limit} · 今日服务器 {scan.budget.daily_used}/{scan.budget.daily_limit}（次数，不是费用）</p>}
       {scan.result.coverage && scan.result.coverage.length > 0 && <CoverageLedger entries={scan.result.coverage} />}
+      <AnalysisReceipt scan={scan} />
       {scan.attempts && scan.attempts.length > 0 && <details><summary>此前尝试（{scan.attempts.length}）</summary><ul>{scan.attempts.map(item => <li key={item.attempt}>第 {item.attempt + 1} 次：{STATUS[item.status as keyof typeof STATUS] ?? item.status}{item.error_code ? ` · ${item.error_code}` : ''} · 发现 {item.summary.finding_count ?? 0} 项</li>)}</ul></details>}
       {scan.error_code && <Alert type="warning" title={`任务错误：${scan.error_code}`} />}
       {scan.result.warnings?.map((warning, index) => <Alert key={index} type="warning" title={warning} />)}
       {['queued','running'].includes(scan.status) && <Button disabled={busy || scan.cancel_requested} onClick={() => void action('cancel')}>{scan.cancel_requested ? '正在取消' : '取消任务'}</Button>}
-      {['partial','failed','cancelled'].includes(scan.status) && <Button disabled={busy || scan.retries >= 2} onClick={() => void action('retry')}>重试任务</Button>}
+      {['partial','failed','cancelled'].includes(scan.status) && <Button disabled={busy || scan.retries >= 2} onClick={() => void action('retry')}>按当前配置重试</Button>}
       <p>发现 {findingTotal} 项；结果为静态风险判断，运行时效果尚未验证。</p>
       {findings.map(f => <div className="finding-card" key={f.id}>
         <h4><Tag>{f.cwe}</Tag><Tag>{f.severity}</Tag>{f.sources.join(' + ')} {f.severity_disagreement && <Tag color="warning">严重性判断有差异</Tag>}</h4>
-        <p>{f.location.kind === 'source' ? `第 ${f.location.start_line}–${f.location.end_line} 行` : f.location.field} · {f.evidence_status}</p>
+        <p>{scan.artifacts.find(a => a.id === f.location.artifact_id)?.display_name ?? f.location.artifact_id} · {f.location.kind === 'source' ? `第 ${f.location.start_line}–${f.location.end_line} 行` : f.location.field} · {f.evidence_status}</p>
         <pre>{f.evidence}</pre><p>{f.explanation}</p><p>建议：{f.recommendation}</p>
         <details><summary>查看各来源判断</summary>{f.contributors.map((item,index) => <div key={index}><Tag>{item.sources.join(' + ')}</Tag><Tag>{item.severity}</Tag><p>{item.explanation}</p><p>{item.recommendation}</p></div>)}</details>
       </div>)}

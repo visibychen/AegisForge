@@ -9,14 +9,17 @@ const MODEL: Record<CoverageEntry['model'], { text: string; color?: string }> = 
   not_requested: { text: '未请求模型' },
 };
 const RULES: Record<CoverageEntry['rules'], string> = {
+  pending: '规则待处理',
   ran: '规则已运行', ast_unavailable: '规则未运行（语法不可解析）', not_requested: '未运行规则',
 };
 
 /** Per-chunk coverage ledger: shows exactly which regions were analysed by what. */
 export default function CoverageLedger({ entries }: { entries: CoverageEntry[] }) {
-  const gaps = entries.filter(entry => entry.model === 'failed' || entry.model === 'simulated' || entry.rules === 'ast_unavailable');
+  const gaps = entries.filter(entry => ['failed', 'simulated', 'pending'].includes(entry.model) || ['ast_unavailable', 'pending'].includes(entry.rules));
+  const rulesOnly = entries.every(entry => entry.model === 'not_requested');
   return <section className="coverage-ledger" aria-label="分析覆盖台账">
-    <h4>分析覆盖台账 <small>{entries.length} 个分块{gaps.length ? `，${gaps.length} 个存在缺口` : '，无缺口'}</small></h4>
+    <h4>分析覆盖台账 <small>{entries.length} 个分块{gaps.length ? `，${gaps.length} 个存在缺口` : '，所请求分析已完成'}</small></h4>
+    {rulesOnly && <p>仅规则模式，未做模型分析。</p>}
     <p>未被模型成功分析的区域没有智能检测结论；“无发现”只对已覆盖区域有意义。</p>
     <ol>{entries.map(entry => <li key={`${entry.artifact_id}-${entry.chunk}`}>
       <span>{entry.display_name} · {entry.input_type === 'source' ? `第 ${entry.start_line}–${entry.end_line} 行` : `第 ${entry.chunk + 1} 段字段`}</span>

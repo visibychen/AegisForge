@@ -109,6 +109,8 @@ def claim(engine, settings, at=None) -> Lease | None:
         job.status, job.attempts, job.lease_token = "running", job.attempts + 1, token
         job.heartbeat_at, job.lease_until = at, at + timedelta(seconds=settings.lease_seconds)
         scan.status = "running"
+        if scan.attempt_started_at is None:
+            scan.attempt_started_at = at
         return Lease(job.id, scan.id, token)
 
 
