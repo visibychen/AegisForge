@@ -10,6 +10,17 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
 
+@pytest.fixture(autouse=True)
+def isolated_model_environment(monkeypatch):
+    # Ordinary tests must never inherit a user's live model configuration or spend tokens.
+    for name in (
+        "AEGISFORGE_MODEL_MODE",
+        "AEGISFORGE_DEEPSEEK_API_KEY",
+        "AEGISFORGE_DEEPSEEK_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture
 def api(tmp_path, monkeypatch):
     monkeypatch.setenv("AEGISFORGE_DATA_DIR", str(tmp_path))

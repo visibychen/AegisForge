@@ -15,6 +15,7 @@ import tokenize
 from urllib.parse import unquote_plus
 
 MASK = "[REDACTED]"
+REDACTION_VERSION = "redaction-1.2"
 _SENSITIVE_PARTS = frozenset(
     {
         "auth", "authorization", "authtoken", "apikey", "bearer", "cookie", "credential",

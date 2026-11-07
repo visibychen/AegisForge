@@ -14,8 +14,7 @@ describe('workspace foundation', () => {
   it('shows the current capability boundary without fabricated detection results', async () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: '代码安全工作台' })).toBeInTheDocument();
-    expect(screen.getByText(/智能检测与修复验证尚未开放/)).toBeInTheDocument();
-    expect(screen.getByText(/规则线索不是检测结论/)).toBeInTheDocument();
+    expect(screen.getByText(/模型失败会明确标记部分完成/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /连接服务/ })).toBeDisabled();
     await screen.findByText('本地服务在线');
     expect(getCapabilities).not.toHaveBeenCalled();
@@ -36,7 +35,7 @@ describe('workspace foundation', () => {
     expect(screen.getByLabelText('访问令牌')).toHaveValue('');
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
-    expect(screen.getByText(/真实模型尚未接入/)).toBeInTheDocument();
+    expect(screen.getByText(/真实模型尚未配置/)).toBeInTheDocument();
   });
 
   it('reports a rejected token and never shows a successful connection', async () => {

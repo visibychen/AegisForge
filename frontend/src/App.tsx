@@ -7,8 +7,9 @@ import { Alert, Button, Input, Tag } from 'antd';
 import { ApiError, getCapabilities, getHealth } from './api/client';
 import HeroVisual from './components/HeroVisual';
 import IngestPanel from './components/IngestPanel';
+import ScanPanel from './components/ScanPanel';
 import MotionToggle, { useSystemReducedMotion } from './components/MotionToggle';
-import type { Capabilities } from './types/api';
+import type { ArtifactPreview, Capabilities } from './types/api';
 
 const workflow = [
   { step: '01', title: '提交待检内容', detail: '源码文件 · HTTP 请求文本', icon: <CodeOutlined /> },
@@ -27,6 +28,7 @@ export default function App() {
   const [health, setHealth] = useState<'loading' | 'ok' | 'offline'>('loading');
   const [token, setToken] = useState('');
   const [sessionToken, setSessionToken] = useState('');
+  const [artifacts, setArtifacts] = useState<ArtifactPreview[]>([]);
   const [loading, setLoading] = useState(false);
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
@@ -45,6 +47,7 @@ export default function App() {
     setError('');
     setCapabilities(null);
     setSessionToken(''); // A failed reconnect must not leave the previous token usable.
+    setArtifacts([]);
     try {
       const response = await getCapabilities(token.trim());
       setCapabilities(response);
@@ -69,7 +72,7 @@ export default function App() {
         <div className="nav-label">WORKSPACE</div>
         <nav>
           <a href="#workspace" className="nav-item active" aria-current="page" title="工作台"><DashboardOutlined aria-hidden="true" /><span className="nav-text">工作台</span></a>
-          <span className="nav-item unavailable" aria-disabled="true" title="检测任务（即将开放）"><FileSearchOutlined aria-hidden="true" /><span className="nav-text">检测任务</span><span className="nav-soon">即将开放</span></span>
+          <a href="#scans" className="nav-item" title="检测任务"><FileSearchOutlined aria-hidden="true" /><span className="nav-text">检测任务</span></a>
           <span className="nav-item unavailable" aria-disabled="true" title="修复工作台（未开放）"><ToolOutlined aria-hidden="true" /><span className="nav-text">修复工作台</span></span>
           <span className="nav-item unavailable" aria-disabled="true" title="历史记录（未开放）"><HistoryOutlined aria-hidden="true" /><span className="nav-text">历史记录</span></span>
         </nav>
@@ -101,7 +104,7 @@ export default function App() {
           </section>
 
           <Alert type="info" showIcon className="preview-alert"
-            title="已开放输入上传、脱敏预览与启发式规则线索；智能检测与修复验证尚未开放，规则线索不是检测结论。" />
+            title="已开放规则、模型与联合检测；模型失败会明确标记部分完成，修复验证尚未开放。" />
 
           <section className="hero-panel" aria-labelledby="hero-title">
             <div className="hero-streams" aria-hidden="true"><span /><span /><span /></div>
@@ -143,11 +146,12 @@ export default function App() {
                 <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined aria-hidden="true" />}>连接服务</Button>
               </form>
               {error && <Alert type="error" showIcon title={error} role="alert" />}
-              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>模拟模式 · 真实模型尚未接入</p><p>可提交输入并查看脱敏预览；智能检测与修复尚未开放。</p></div></div>}
+              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>{capabilities.model_aliases?.includes('deepseek') ? 'DeepSeek 已配置 · 密钥仅由后端使用' : '模拟模式 · 真实模型尚未配置'}</p><p>可创建持久检测任务；修复验证尚未开放。</p></div></div>}
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>
-          <IngestPanel token={sessionToken} />
+          <IngestPanel token={sessionToken} onArtifact={artifact => setArtifacts(items => items.some(item => item.id === artifact.id) ? items : [...items, artifact])} />
+          <ScanPanel token={sessionToken} aliases={capabilities?.model_aliases ?? ['fake']} artifacts={artifacts} onRemove={id => setArtifacts(items => items.filter(item => item.id !== id))} />
           <footer>AegisForge 铸盾<span>面向代码安全的分析与修复工作空间</span></footer>
         </main>
       </div>

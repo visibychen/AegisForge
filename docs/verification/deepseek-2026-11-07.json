@@ -1,0 +1,297 @@
+{
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "scope": "development integration demo, not holdout evaluation",
+  "worker_mode": "in_process",
+  "cases": [
+    {
+      "sample_id": "SRC-XSS-01-V",
+      "expected_cwe": "CWE-79",
+      "sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+      "status": "completed",
+      "error_code": null,
+      "llm_cwes": [
+        "CWE-79"
+      ],
+      "elapsed_ms": 4461,
+      "calls": [
+        {
+          "id": "1ae40d8c-cc60-44c7-beff-6b9a3627c473",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 4350,
+          "input_chars": 174,
+          "output_bytes": 1214,
+          "input_tokens": 1364,
+          "output_tokens": 207,
+          "failure_category": null
+        }
+      ],
+      "prompt_version": "analysis-1.1",
+      "rule_version": "rules-1.1",
+      "analysis_complete": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "artifact_id": "bc0072ce-3f1a-41fc-a80c-4bc3a4d587e9",
+            "chunks": [
+              {
+                "chunk": 0,
+                "end_line": 9,
+                "sha256": "de015d36d63d37011e703017965494ceab5da965c27182fbd4b6c8a6442d3062",
+                "start_line": 1
+              }
+            ],
+            "fields_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "input_type": "source",
+            "normalized_sha256": "b5278eb4b01ebdc83243a3b2d3b31d9d1d0a5b0accf7f1cc225620dd18a9e4a5",
+            "sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e"
+          }
+        ],
+        "configuration": {
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "options": {
+            "max_tokens": 2048,
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "strategy": "hybrid",
+          "system_prompt_sha256": "258c2fa99d8f69b99753273f94d60d5fa6d70faa8514a4c95055a02a525ab806",
+          "versions": {
+            "parser": "inputs-1.2",
+            "prompt": "analysis-1.1",
+            "redaction": "redaction-1.2",
+            "rules": "rules-1.1",
+            "severity": "severity-1.0",
+            "wire": "1.1"
+          }
+        },
+        "input_digest": "c401946c32c0cd06883e07e83783af722bbab51a21418778d496d34c8e4ffe77",
+        "limits": {
+          "daily_call_limit": 64,
+          "model_timeout_seconds": 60.0,
+          "response_bytes": 131072,
+          "scan_call_limit": 4,
+          "task_timeout_seconds": 180.0
+        },
+        "plan_digest": "f923789552f42452927c219d4f00f3fdc7960aa22da335f10330f129603f1d09",
+        "schema_version": "receipt-1.0"
+      },
+      "coverage": [
+        {
+          "artifact_id": "bc0072ce-3f1a-41fc-a80c-4bc3a4d587e9",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 9,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "passed": true
+    },
+    {
+      "sample_id": "SRC-SQLI-01-V",
+      "expected_cwe": "CWE-89",
+      "sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e",
+      "status": "completed",
+      "error_code": null,
+      "llm_cwes": [
+        "CWE-89"
+      ],
+      "elapsed_ms": 2957,
+      "calls": [
+        {
+          "id": "850d5d9c-96c9-4e40-bc8a-78561cdcb8a5",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2913,
+          "input_chars": 291,
+          "output_bytes": 1140,
+          "input_tokens": 1404,
+          "output_tokens": 188,
+          "failure_category": null
+        }
+      ],
+      "prompt_version": "analysis-1.1",
+      "rule_version": "rules-1.1",
+      "analysis_complete": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "artifact_id": "463d50b4-99ab-46d4-9841-a9107f00cfeb",
+            "chunks": [
+              {
+                "chunk": 0,
+                "end_line": 13,
+                "sha256": "6b0dedca9cc23663c724fc5dfcf1357662a3e39c329025aad1d54eb155ae3b20",
+                "start_line": 1
+              }
+            ],
+            "fields_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "input_type": "source",
+            "normalized_sha256": "1d60cdebe86efc30f42881d41ebe7bc00882f13a563e8654478ed161f3b869cc",
+            "sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e"
+          }
+        ],
+        "configuration": {
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "options": {
+            "max_tokens": 2048,
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "strategy": "hybrid",
+          "system_prompt_sha256": "258c2fa99d8f69b99753273f94d60d5fa6d70faa8514a4c95055a02a525ab806",
+          "versions": {
+            "parser": "inputs-1.2",
+            "prompt": "analysis-1.1",
+            "redaction": "redaction-1.2",
+            "rules": "rules-1.1",
+            "severity": "severity-1.0",
+            "wire": "1.1"
+          }
+        },
+        "input_digest": "0439ef3f8dcd45036d6ca9bd8cd3143763413b91a7d59e59740f7d93ab6ce5ef",
+        "limits": {
+          "daily_call_limit": 64,
+          "model_timeout_seconds": 60.0,
+          "response_bytes": 131072,
+          "scan_call_limit": 4,
+          "task_timeout_seconds": 180.0
+        },
+        "plan_digest": "8c58fcbf123e043e71bbbc0927d4450bef9aa92dc7d528ecb7009983a80fb8b2",
+        "schema_version": "receipt-1.0"
+      },
+      "coverage": [
+        {
+          "artifact_id": "463d50b4-99ab-46d4-9841-a9107f00cfeb",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 13,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "passed": true
+    },
+    {
+      "sample_id": "SRC-CMDI-01-V",
+      "expected_cwe": "CWE-78",
+      "sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a",
+      "status": "completed",
+      "error_code": null,
+      "llm_cwes": [
+        "CWE-78"
+      ],
+      "elapsed_ms": 2436,
+      "calls": [
+        {
+          "id": "3801a598-3086-4b66-8b4b-6b0ffbf50018",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2398,
+          "input_chars": 231,
+          "output_bytes": 1183,
+          "input_tokens": 1383,
+          "output_tokens": 190,
+          "failure_category": null
+        }
+      ],
+      "prompt_version": "analysis-1.1",
+      "rule_version": "rules-1.1",
+      "analysis_complete": true,
+      "receipt": {
+        "artifacts": [
+          {
+            "artifact_id": "4b93d528-52d8-4ea4-8db3-b0f6e0012712",
+            "chunks": [
+              {
+                "chunk": 0,
+                "end_line": 12,
+                "sha256": "1800d98df6d50e422fb5f3ea06edbe654c22834fba6feb1a013ba09c5875ab38",
+                "start_line": 1
+              }
+            ],
+            "fields_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "input_type": "source",
+            "normalized_sha256": "db73a8e2c23d160970740a68373f1f2f3dd42b93a80e181c15d222b8f409b5aa",
+            "sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a"
+          }
+        ],
+        "configuration": {
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "options": {
+            "max_tokens": 2048,
+            "response_format": {
+              "type": "json_object"
+            },
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "strategy": "hybrid",
+          "system_prompt_sha256": "258c2fa99d8f69b99753273f94d60d5fa6d70faa8514a4c95055a02a525ab806",
+          "versions": {
+            "parser": "inputs-1.2",
+            "prompt": "analysis-1.1",
+            "redaction": "redaction-1.2",
+            "rules": "rules-1.1",
+            "severity": "severity-1.0",
+            "wire": "1.1"
+          }
+        },
+        "input_digest": "e3218b41e1eace7a70aaa4a0113122bb587702eda1abed281aaf8df80fc0df28",
+        "limits": {
+          "daily_call_limit": 64,
+          "model_timeout_seconds": 60.0,
+          "response_bytes": 131072,
+          "scan_call_limit": 4,
+          "task_timeout_seconds": 180.0
+        },
+        "plan_digest": "df0de59efcc94982d1358ed665affc265f14713819b62a14a809c9b682fa2b7a",
+        "schema_version": "receipt-1.0"
+      },
+      "coverage": [
+        {
+          "artifact_id": "4b93d528-52d8-4ea4-8db3-b0f6e0012712",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true
+}
