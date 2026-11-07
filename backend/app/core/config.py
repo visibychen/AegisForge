@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     model_response_bytes: int = Field(default=131072, ge=4096, le=262144)
     model_output_tokens: int = Field(default=4096, ge=256, le=4096)
     max_model_calls: int = Field(default=32, ge=1, le=32)
+    # Server-wide external call COUNT per UTC day (not a currency limit).
+    daily_model_calls: int = Field(default=64, ge=1, le=10_000)
     queue_limit: int = Field(default=10, ge=1, le=10)
     lease_seconds: int = Field(default=60, ge=10, le=300)
     max_file_bytes: int = Field(default=2 * 1024 * 1024, gt=0)

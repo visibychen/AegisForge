@@ -60,7 +60,8 @@ def install_scan_routes(application, require_token):
             create_scan, request.app.state.engine, request.app.state.settings, data, key
         )
         scan = require_scan(session, scan_id)
-        return {"request_id": request.state.request_id, "scan": scan_view(session, scan)}
+        settings = request.app.state.settings
+        return {"request_id": request.state.request_id, "scan": scan_view(session, scan, settings)}
 
     @application.get("/api/v1/scans", dependencies=auth)
     def history(
@@ -79,14 +80,16 @@ def install_scan_routes(application, require_token):
         return {
             "request_id": request.state.request_id,
             "total": total,
-            "scans": [scan_view(session, scan) for scan in scans],
+            "scans": [scan_view(session, scan, request.app.state.settings) for scan in scans],
         }
 
     @application.get("/api/v1/scans/{scan_id}", dependencies=auth)
     def detail(scan_id: UUID, request: Request, session: Annotated[Session, Depends(database)]):
         return {
             "request_id": request.state.request_id,
-            "scan": scan_view(session, require_scan(session, str(scan_id))),
+            "scan": scan_view(
+                session, require_scan(session, str(scan_id)), request.app.state.settings
+            ),
         }
 
     @application.get("/api/v1/scans/{scan_id}/findings", dependencies=auth)
@@ -96,20 +99,19 @@ def install_scan_routes(application, require_token):
         session: Annotated[Session, Depends(database)],
         limit: Annotated[int, Query(ge=1, le=100)] = 100,
         offset: Annotated[int, Query(ge=0)] = 0,
+        attempt: Annotated[int | None, Query(ge=0, le=2)] = None,
     ):
-        require_scan(session, str(scan_id))
+        scan = require_scan(session, str(scan_id))
+        chosen = scan.retries if attempt is None else attempt
+        scope = (FindingRecord.scan_id == str(scan_id), FindingRecord.attempt == chosen)
         rows = session.scalars(
             select(FindingRecord)
-            .where(FindingRecord.scan_id == str(scan_id))
-            .order_by(FindingRecord.id)
+            .where(*scope)
+            .order_by(FindingRecord.position, FindingRecord.id)
             .offset(offset)
             .limit(limit)
         ).all()
-        total = session.scalar(
-            select(func.count())
-            .select_from(FindingRecord)
-            .where(FindingRecord.scan_id == str(scan_id))
-        )
+        total = session.scalar(select(func.count()).select_from(FindingRecord).where(*scope))
         items = []
         for row in rows:
             payload = json.loads(row.payload)
@@ -119,24 +121,32 @@ def install_scan_routes(application, require_token):
                     **payload["finding"],
                     "contributors": payload["contributors"],
                     "severity_disagreement": payload["severity_disagreement"],
+                    "severity_policy": payload.get("severity_policy"),
                 }
             )
-        return {"request_id": request.state.request_id, "total": total, "findings": items}
+        return {
+            "request_id": request.state.request_id,
+            "attempt": chosen,
+            "total": total,
+            "findings": items,
+        }
 
     @application.post("/api/v1/scans/{scan_id}/cancel", dependencies=auth)
     def cancel(scan_id: UUID, request: Request, session: Annotated[Session, Depends(database)]):
-        change_scan(request.app.state.engine, request.app.state.settings, str(scan_id), "cancel")
+        settings = request.app.state.settings
+        change_scan(request.app.state.engine, settings, str(scan_id), "cancel")
         return {
             "request_id": request.state.request_id,
-            "scan": scan_view(session, require_scan(session, str(scan_id))),
+            "scan": scan_view(session, require_scan(session, str(scan_id)), settings),
         }
 
     @application.post("/api/v1/scans/{scan_id}/retry", status_code=202, dependencies=auth)
     def retry(scan_id: UUID, request: Request, session: Annotated[Session, Depends(database)]):
-        change_scan(request.app.state.engine, request.app.state.settings, str(scan_id), "retry")
+        settings = request.app.state.settings
+        change_scan(request.app.state.engine, settings, str(scan_id), "retry")
         return {
             "request_id": request.state.request_id,
-            "scan": scan_view(session, require_scan(session, str(scan_id))),
+            "scan": scan_view(session, require_scan(session, str(scan_id)), settings),
         }
 
     @application.get("/api/v1/scans/{scan_id}/calls", dependencies=auth)
@@ -159,6 +169,7 @@ def install_scan_routes(application, require_token):
                     "output_bytes": row.output_bytes,
                     "input_tokens": row.input_tokens,
                     "output_tokens": row.output_tokens,
+                    "failure_category": row.failure_category,
                 }
                 for row in rows
             ],

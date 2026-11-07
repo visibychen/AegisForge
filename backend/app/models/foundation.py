@@ -68,6 +68,8 @@ class ScanTask(Base):
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     retries: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     result_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    # Summaries of earlier attempts (bounded); findings of each attempt stay in `findings`.
+    attempts_json: Mapped[str] = mapped_column(Text, default="[]", server_default="[]")
 
 
 class TaskArtifact(Base):
@@ -113,6 +115,8 @@ class FindingRecord(Base):
     )
     artifact_id: Mapped[str] = mapped_column(ForeignKey("artifacts.id", ondelete="RESTRICT"))
     payload: Mapped[str] = mapped_column(Text)
+    attempt: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class ModelCall(Base):
@@ -130,4 +134,5 @@ class ModelCall(Base):
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
+    failure_category: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))

@@ -1,8 +1,21 @@
-import json
+"""Merge rule and model findings without swallowing distinct sinks.
+
+Grouping is complete-linkage: a finding joins a group only if it overlaps EVERY member
+(same artifact, CWE and overlapping lines / same HTTP field), so one wide interval can no
+longer chain two separate sinks together. Each contributor keeps its own judgement; the
+primary severity follows a versioned standard instead of whichever source shouts loudest.
+"""
 
 from app.schemas.contracts import Finding
 
-RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+SEVERITY_POLICY = "severity-1.0"
+
+
+def standard_severity(finding: Finding) -> str:
+    """severity-1.0: static source potential=high; HTTP attack indicator=medium, else low."""
+    if finding.location.kind == "source":
+        return "high"
+    return "medium" if finding.evidence_status == "attack_indicator" else "low"
 
 
 def overlaps(left, right):
@@ -16,36 +29,44 @@ def overlaps(left, right):
     )
 
 
+def _order(finding: Finding):
+    location = finding.location
+    is_source = location.kind == "source"
+    return (
+        str(location.artifact_id),
+        0 if is_source else 1,
+        location.start_line if is_source else 0,
+        location.end_line if is_source else 0,
+        "" if is_source else location.field,
+        finding.cwe,
+        0 if "rule" in finding.sources else 1,
+    )
+
+
 def merge_findings(findings: list[Finding], parsed_by_id) -> list[dict]:
-    groups = []
-    for finding in findings:
-        members = [finding]
-        remaining = []
-        # Repeat so a bridging interval joins transitively overlapping groups.
+    groups: list[list[Finding]] = []
+    for finding in sorted(findings, key=_order):
         for group in groups:
-            if any(overlaps(a, b) for a in members for b in group):
-                members.extend(group)
-            else:
-                remaining.append(group)
-        changed = True
-        while changed:
-            changed = False
-            for group in remaining[:]:
-                if any(overlaps(a, b) for a in members for b in group):
-                    members.extend(group)
-                    remaining.remove(group)
-                    changed = True
-        groups = remaining + [members]
+            if all(overlaps(finding, member) for member in group):
+                group.append(finding)
+                break
+        else:
+            groups.append([finding])
     result = []
     for members in groups:
-        unique = {item.model_dump_json(): item for item in members}
-        members = list(unique.values())
-        primary = min(members, key=lambda item: RANK[item.severity]).model_copy(deep=True)
-        primary.sources = [s for s in ("rule", "llm") if any(s in item.sources for item in members)]
+        unique = list({item.model_dump_json(): item for item in members}.values())
+        # Explanation of the primary comes from the deterministic rule when one exists.
+        base = next((m for m in unique if "rule" in m.sources), unique[0])
+        primary = base.model_copy(deep=True)
+        primary.sources = [s for s in ("rule", "llm") if any(s in m.sources for m in unique)]
+        primary.severity = standard_severity(primary)
+        primary.confidence = None
         parsed = parsed_by_id[str(primary.location.artifact_id)]
         if primary.location.kind == "source":
-            primary.location.start_line = min(m.location.start_line for m in members)
-            primary.location.end_line = max(m.location.end_line for m in members)
+            # Members overlap pairwise, so their common intersection is non-empty; it is the
+            # most precise location every source agrees on (contributors keep their own).
+            primary.location.start_line = max(m.location.start_line for m in unique)
+            primary.location.end_line = min(m.location.end_line for m in unique)
             evidence = "\n".join(
                 parsed.content.split("\n")[
                     primary.location.start_line - 1 : primary.location.end_line
@@ -57,16 +78,10 @@ def merge_findings(findings: list[Finding], parsed_by_id) -> list[dict]:
         result.append(
             {
                 "finding": primary.model_dump(mode="json"),
-                "contributors": [m.model_dump(mode="json") for m in members],
-                "severity_disagreement": len({m.severity for m in members}) > 1,
+                "contributors": [m.model_dump(mode="json") for m in unique],
+                "severity_disagreement": any(m.severity != primary.severity for m in unique),
+                "severity_policy": SEVERITY_POLICY,
             }
         )
-    # Stable ordering makes retries and pagination reviewable.
-    return sorted(
-        result,
-        key=lambda item: (
-            item["finding"]["location"]["artifact_id"],
-            json.dumps(item["finding"]["location"], sort_keys=True),
-            item["finding"]["cwe"],
-        ),
-    )
+    # Groups were built in numeric location order; keep that order for stable pagination.
+    return result

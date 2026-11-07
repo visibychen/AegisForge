@@ -19,37 +19,26 @@ def request():
     )
 
 
-def finding(req):
+def finding(_req=None):
+    """Wire protocol 1.1: no artifact_id, sources, mode or completeness from the model."""
     return {
         "category": "cmdi",
         "cwe": "CWE-78",
         "severity": "high",
-        "location": {
-            "kind": "source",
-            "artifact_id": str(req.artifact_id),
-            "start_line": 10,
-            "end_line": 10,
-        },
+        "location": {"kind": "source", "start_line": 10, "end_line": 10},
         "evidence": "os.system(cmd)",
         "explanation": "Untrusted shell input",
         "recommendation": "Use an argument list",
-        "sources": ["llm"],
         "evidence_status": "potential",
     }
 
 
-def envelope(req, change=None):
-    data = {
-        "schema_version": "1.0",
-        "mode": "real",
-        "analysis_complete": True,
-        "findings": [finding(req)],
-        "warnings": [],
-    }
+def envelope(req, change=None, finish_reason="stop"):
+    data = {"schema_version": "1.1", "findings": [finding(req)], "warnings": []}
     if change:
         change(data)
     return {
-        "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(data)}}],
+        "choices": [{"finish_reason": finish_reason, "message": {"content": json.dumps(data)}}],
         "usage": {"prompt_tokens": 123, "completion_tokens": 55},
     }
 
@@ -85,30 +74,81 @@ def test_real_adapter_uses_json_mode_and_no_secret_in_prompt(monkeypatch):
         return httpx.Response(200, json=envelope(req))
 
     instance, calls, finishes = provider(monkeypatch, handler)
-    assert asyncio.run(instance.analyze(req)).analysis_complete
+    result = asyncio.run(instance.analyze(req))
+    assert result.analysis_complete and result.findings[0].sources == ["llm"]
+    assert result.findings[0].location.artifact_id == req.artifact_id
     assert len(calls) == 1 and finishes[0][1] == "succeeded"
-    assert finishes[0][-1] == {"prompt_tokens": 123, "completion_tokens": 55}
+    assert finishes[0][4] == {"prompt_tokens": 123, "completion_tokens": 55}
+    assert finishes[0][5] is None
 
 
 @pytest.mark.parametrize(
-    "mutation",
+    ("mutation", "category"),
     [
-        lambda d: d["findings"][0]["location"].update(start_line=9),
-        lambda d: d["findings"][0]["location"].update(artifact_id=str(uuid4())),
-        lambda d: d["findings"][0].update(evidence="invented evidence"),
-        lambda d: d["findings"][0].update(sources=["rule"]),
-        lambda d: d["findings"][0].update(evidence_truncated=True),
-        lambda d: d["findings"][0].update(evidence_status="verified"),
+        (lambda d: d["findings"][0]["location"].update(start_line=9), "location"),
+        (lambda d: d["findings"][0]["location"].update(artifact_id=str(uuid4())), "schema"),
+        (lambda d: d["findings"][0].update(evidence="invented_evidence()"), "evidence"),
+        (lambda d: d["findings"][0].update(sources=["rule"]), "schema"),
+        (lambda d: d["findings"][0].update(sources=["llm"]), "schema"),
+        (lambda d: d["findings"][0].update(evidence_truncated=True), "schema"),
+        (lambda d: d["findings"][0].update(evidence_status="verified"), "schema"),
+        (lambda d: d.update(mode="real", analysis_complete=True), "schema"),
+        (lambda d: d.update(schema_version="1.0"), "schema"),
+        (lambda d: d["findings"][0].update(evidence="(cmd)"), "evidence_weak"),
     ],
 )
-def test_forged_outputs_get_only_one_correction(monkeypatch, mutation):
+def test_forged_outputs_get_only_one_correction(monkeypatch, mutation, category):
     req = request()
-    instance, calls, finishes = provider(
-        monkeypatch, lambda _: httpx.Response(200, json=envelope(req, mutation))
-    )
-    with pytest.raises(ProviderError, match="MODEL_INVALID_OUTPUT"):
+    seen = []
+
+    def handler(http_request):
+        seen.append(json.loads(http_request.content)["messages"][0]["content"])
+        return httpx.Response(200, json=envelope(req, mutation))
+
+    instance, calls, finishes = provider(monkeypatch, handler)
+    with pytest.raises(ProviderError, match="MODEL_INVALID_OUTPUT") as error:
         asyncio.run(instance.analyze(req))
     assert len(calls) == len(finishes) == 2
+    assert [item[5] for item in finishes] == [category, category]
+    assert error.value.category == category
+    assert "rejected" not in seen[0] and f"server check '{category}'" in seen[1]
+    assert finishes[0][4] == {"prompt_tokens": 123, "completion_tokens": 55}
+
+
+def test_truncated_output_is_not_retried_as_a_correction(monkeypatch):
+    req = request()
+    instance, calls, finishes = provider(
+        monkeypatch, lambda _: httpx.Response(200, json=envelope(req, finish_reason="length"))
+    )
+    with pytest.raises(ProviderError, match="MODEL_OUTPUT_TRUNCATED"):
+        asyncio.run(instance.analyze(req))
+    assert len(calls) == 1 and finishes[0][5] == "truncated"
+
+
+def test_wire_input_carries_no_internal_provenance(monkeypatch):
+    from app.llm.prompts import messages
+    from app.schemas.contracts import Finding, SourceLocation
+
+    req = request()
+    hint = Finding(
+        category="cmdi",
+        cwe="CWE-78",
+        severity="high",
+        sources=["rule"],
+        location=SourceLocation(artifact_id=req.artifact_id, start_line=10, end_line=10),
+        evidence="os.system(cmd)",
+        explanation="rule text",
+        recommendation="rule advice",
+    )
+    payload = json.loads(messages(req.model_copy(update={"rule_hints": [hint]}))[1]["content"])
+    assert set(payload) == {"input_type", "start_line", "end_line", "content", "rule_hints"}
+    assert payload["rule_hints"] == [
+        {
+            "cwe": "CWE-78",
+            "location": {"kind": "source", "start_line": 10, "end_line": 10},
+            "evidence": "os.system(cmd)",
+        }
+    ]
 
 
 @pytest.mark.parametrize(

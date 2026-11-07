@@ -1,6 +1,8 @@
 import argparse
 import asyncio
 
+from sqlalchemy.exc import OperationalError
+
 from app.core.config import Settings
 from app.core.database import build_engine
 from app.worker.runner import run_once
@@ -11,7 +13,12 @@ async def main(once=False):
     engine = build_engine(settings)
     try:
         while True:
-            worked = await run_once(engine, settings)
+            try:
+                worked = await run_once(engine, settings)
+            except OperationalError:
+                # Storage still unavailable after bounded retries: back off, do not exit.
+                worked = False
+                await asyncio.sleep(2)
             if once:
                 return
             if not worked:

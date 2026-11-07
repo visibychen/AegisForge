@@ -1,14 +1,31 @@
 import json
 from uuid import uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import select
 
 from app.core.errors import DomainError
 from app.llm.prompts import PROMPT_VERSION
-from app.models import Artifact, FindingRecord, Job, ModelCall, ScanTask, TaskArtifact
+from app.models import Artifact, Job, ScanTask, TaskArtifact
 from app.rules.detector import RULE_VERSION
 from app.services.artifacts import load_artifact
-from app.services.queue import capacity, transaction, utcnow
+from app.services.queue import capacity, model_usage, transaction, utcnow
+
+MAX_ATTEMPT_HISTORY = 3
+
+
+def uses_model(scan_or_request) -> bool:
+    return scan_or_request.strategy != "rules" and scan_or_request.model_alias != "fake"
+
+
+def check_model_budget(session, settings, scan_id, chunks):
+    """Refuse up front when the remaining call budget cannot even cover one call per chunk."""
+    scan_used, daily_used = model_usage(session, settings, scan_id)
+    if settings.daily_model_calls - daily_used < chunks:
+        raise DomainError("MODEL_DAILY_BUDGET", "今日服务器模型调用次数不足，请明天再试。", 429)
+    if settings.max_model_calls - scan_used < chunks:
+        raise DomainError(
+            "RETRY_BUDGET", "本任务剩余模型调用预算不足以覆盖全部分块，已保留原结果。", 409
+        )
 
 
 def scan_artifacts(session, scan_id):
@@ -60,7 +77,9 @@ def create_scan(engine, settings, request, key=None):
         artifacts = session.scalars(select(Artifact).where(Artifact.id.in_(ids))).all()
         if len(artifacts) != len(ids):
             raise DomainError("ARTIFACT_NOT_FOUND", "部分输入快照不存在。", 404)
-        check_inputs(settings, artifacts)
+        parsed = check_inputs(settings, artifacts)
+        if uses_model(request):
+            check_model_budget(session, settings, None, sum(len(p.chunks) for _, p in parsed))
         scan = ScanTask(
             strategy=request.strategy,
             model_alias=request.model_alias,
@@ -92,18 +111,40 @@ def change_scan(engine, settings, scan_id, action):
         if scan.retries >= 2:
             raise DomainError("RETRY_LIMIT", "任务最多手动重试两次。", 409)
         capacity(session, settings)
-        check_inputs(settings, scan_artifacts(session, scan.id))
+        parsed = check_inputs(settings, scan_artifacts(session, scan.id))
+        if uses_model(scan):
+            check_model_budget(session, settings, scan.id, sum(len(p.chunks) for _, p in parsed))
+        # Keep the previous attempt: its summary moves to history, its findings stay stored
+        # under their attempt number and remain readable through ?attempt=N.
+        history = json.loads(scan.attempts_json or "[]")
+        history.append(
+            {
+                "attempt": scan.retries,
+                "status": scan.status,
+                "error_code": scan.error_code,
+                "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
+                "summary": json.loads(scan.result_json or "{}"),
+            }
+        )
+        scan.attempts_json = json.dumps(history[-MAX_ATTEMPT_HISTORY:], ensure_ascii=False)
         scan.retries += 1
         scan.status, scan.cancel_requested, scan.finished_at = "queued", False, None
         scan.error_code, scan.result_json = None, "{}"
-        session.execute(delete(FindingRecord).where(FindingRecord.scan_id == scan.id))
         session.add(Job(scan_id=scan.id, idempotency_key=f"retry:{scan.id}:{scan.retries}"))
 
 
-def scan_view(session, scan):
+def scan_view(session, scan, settings=None):
     artifacts = scan_artifacts(session, scan.id)
-    call_count = session.scalar(
-        select(func.count()).select_from(ModelCall).where(ModelCall.scan_id == scan.id)
+    call_count, daily_used = model_usage(session, settings, scan.id)
+    budget = (
+        {
+            "scan_used": call_count,
+            "scan_limit": settings.max_model_calls,
+            "daily_used": daily_used,
+            "daily_limit": settings.daily_model_calls,
+        }
+        if settings is not None
+        else None
     )
     return {
         "id": scan.id,
@@ -127,5 +168,8 @@ def scan_view(session, scan):
             for a in artifacts
         ],
         "call_count": call_count,
+        "budget": budget,
+        "attempt": scan.retries,
+        "attempts": json.loads(scan.attempts_json or "[]"),
         "result": json.loads(scan.result_json),
     }

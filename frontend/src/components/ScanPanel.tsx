@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, ConfigProvider, Select, Tag } from 'antd';
-import { changeScan, createScan, getFindings, getScan, listScans } from '../api/client';
+import { changeScan, createScan, getFindings, getScan, isAuthFailure, listScans } from '../api/client';
 import type { ArtifactPreview, Scan, StoredFinding, Strategy } from '../types/api';
+import CoverageLedger from './CoverageLedger';
+
+const RECONNECT = '会话已失效，请重新连接服务后再查看任务。';
 
 const STATUS = { queued: '排队中', running: '分析中', completed: '完成', partial: '部分完成', failed: '失败', cancelled: '已取消' };
 const TERMINAL = new Set(['completed', 'partial', 'failed', 'cancelled']);
@@ -20,6 +23,9 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  // One idempotency key per submission intent: reused on resubmit until it succeeds or the
+  // inputs/strategy/model change, so a lost response cannot create a duplicate task.
+  const submission = useRef<{ signature: string; key: string } | null>(null);
   useEffect(() => { setAlias(aliases.includes('deepseek') ? 'deepseek' : 'fake'); }, [aliases.join(',')]);
 
   function selectScan(next: string) {
@@ -30,14 +36,15 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
 
   useEffect(() => {
     let live = true;
-    setScan(null); setFindings([]); setError('');
+    setScan(null); setFindings([]); setFindingTotal(0); setError('');
     if (!token) { setHistory([]); return; }
     listScans(token).then(data => { if (live) setHistory(data.scans); })
-      .catch(e => { if (live) setError(e instanceof Error ? e.message : '任务记录读取失败。'); });
+      .catch(e => { if (live) setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '任务记录读取失败。'); });
     if (!id) return () => { live = false; };
     let running = false;
+    let stopped = false;
     const poll = async () => {
-      if (running) return;
+      if (running || stopped) return;
       running = true;
       try {
         const data = await getScan(token, id);
@@ -50,7 +57,10 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
           const latest = await listScans(token);
           if (live) setHistory(latest.scans);
         }
-      } catch (e) { if (live) setError(e instanceof Error ? e.message : '任务查询失败。'); }
+      } catch (e) {
+        if (isAuthFailure(e)) { stopped = true; clearInterval(timer); }
+        if (live) setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '任务查询失败。');
+      }
       finally { running = false; }
     };
     const timer = setInterval(() => void poll(), 1500);
@@ -60,10 +70,15 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
 
   async function submit() {
     setBusy(true); setError('');
+    const ids = artifacts.map(a => a.id);
+    const signature = JSON.stringify([[...ids].sort(), strategy, alias]);
+    const current = submission.current?.signature === signature ? submission.current : { signature, key: crypto.randomUUID() };
+    submission.current = current;
     try {
-      const result = await createScan(token, artifacts.map(a => a.id), strategy, alias, crypto.randomUUID());
+      const result = await createScan(token, ids, strategy, alias, current.key);
+      submission.current = null;
       selectScan(result.scan.id); setRefresh(value => value + 1);
-    } catch (e) { setError(e instanceof Error ? e.message : '任务创建失败。'); }
+    } catch (e) { setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '任务创建失败。'); }
     finally { setBusy(false); }
   }
   async function action(kind: 'cancel' | 'retry') {
@@ -89,6 +104,9 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
     {scan && <article className="scan-detail" aria-label="任务详情">
       <h3><Tag color={scan.status === 'completed' ? 'success' : scan.status === 'failed' ? 'error' : 'processing'}>{STATUS[scan.status]}</Tag><code>{scan.id}</code></h3>
       <p>{scan.strategy} · {scan.model_alias} · 外部调用 {scan.call_count} 次 · 模型分块 {scan.result.completed_chunks ?? 0}/{scan.result.expected_chunks ?? 0}</p>
+      {scan.budget && <p>调用预算：本任务 {scan.budget.scan_used}/{scan.budget.scan_limit} · 今日服务器 {scan.budget.daily_used}/{scan.budget.daily_limit}（次数，不是费用）</p>}
+      {scan.result.coverage && scan.result.coverage.length > 0 && <CoverageLedger entries={scan.result.coverage} />}
+      {scan.attempts && scan.attempts.length > 0 && <details><summary>此前尝试（{scan.attempts.length}）</summary><ul>{scan.attempts.map(item => <li key={item.attempt}>第 {item.attempt + 1} 次：{STATUS[item.status as keyof typeof STATUS] ?? item.status}{item.error_code ? ` · ${item.error_code}` : ''} · 发现 {item.summary.finding_count ?? 0} 项</li>)}</ul></details>}
       {scan.error_code && <Alert type="warning" title={`任务错误：${scan.error_code}`} />}
       {scan.result.warnings?.map((warning, index) => <Alert key={index} type="warning" title={warning} />)}
       {['queued','running'].includes(scan.status) && <Button disabled={busy || scan.cancel_requested} onClick={() => void action('cancel')}>{scan.cancel_requested ? '正在取消' : '取消任务'}</Button>}
