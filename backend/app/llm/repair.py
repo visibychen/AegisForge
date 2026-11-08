@@ -6,7 +6,7 @@ from app.core.credentials import contains_credential
 from app.llm.deepseek import DeepSeekProvider, OutputRejected, clean_public, decode_wire
 from app.services.patches import RepairWire
 
-REPAIR_PROMPT_VERSION = "repair-1.0"
+REPAIR_PROMPT_VERSION = "repair-1.1"  # wire schema stays repair-1.0; the prompt text changed
 
 
 def repair_messages(request, target, correction=None):
@@ -19,7 +19,10 @@ def repair_messages(request, target, correction=None):
         "and use argument arrays with validation. Return JSON only, schema_version repair-1.0. "
         "Each edit replaces inclusive GLOBAL whole lines; old_text must match EXACTLY including "
         "trailing newline. Include needed imports by replacing their original lines. Edits must "
-        "not overlap; return at most eight edits. Do not include markdown, paths, commands or "
+        "not overlap; return at most eight edits. Make the smallest edit around the vulnerable "
+        "lines: never rename, remove or re-sign functions or classes, never change decorators "
+        "or routes, never add eval/exec/pickle. When old_text ends with a newline, new_text "
+        "must end with one too. Do not include markdown, paths, commands or "
         "test files. Schema: " + json.dumps(RepairWire.model_json_schema())
     )
     if correction:

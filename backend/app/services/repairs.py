@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import json
+import time
 from datetime import timedelta
 from uuid import UUID, uuid4
 
@@ -15,9 +16,32 @@ from app.parsers.inputs import parse_input
 from app.rules.detector import detect
 from app.schemas.contracts import AnalysisRequest
 from app.services.artifacts import load_artifact, store_artifact
+from app.services.patch_review import (
+    PatchScopeError,
+    build_gates,
+    build_line_map,
+    finding_delta,
+    locations,
+    review_structure,
+    summarize,
+    verdict_for,
+)
 from app.services.patches import Edit, RepairWire, apply_edits
-from app.services.queue import Lease, capacity, model_usage, transaction, utcnow, with_db_retry
+from app.services.queue import (
+    Lease,
+    capacity,
+    model_usage,
+    transaction,
+    utcnow,
+    with_db_retry,
+)
 from app.services.receipts import canonical, digest
+from app.validation.registry import dynamic_binding
+
+MAX_REPAIRS_PER_FINDING = 3
+MAX_CALLS_PER_REPAIR = 8
+MIN_CALLS_PER_REPAIR = 2  # one generation plus one model recheck
+PASS_THROUGH = {"LEASE_LOST", "TASK_CANCELLED"}
 
 
 def require_repair(session, repair_id):
@@ -38,6 +62,20 @@ def finding_anchor(scan, artifact, finding):
     )
 
 
+def ensure_fresh(item, scan, artifact, finding):
+    """The repair is only meaningful for the exact finding, snapshot and *current* analysis."""
+    if (
+        scan is None
+        or artifact is None
+        or finding is None
+        or scan.status not in {"completed", "partial"}
+        or finding.attempt != scan.retries
+        or artifact.sha256 != item.source_sha256
+        or item.anchor != finding_anchor(scan, artifact, finding)
+    ):
+        raise DomainError("REPAIR_STALE", "发现、源快照或父检测任务已变化，请重新检测。", 409)
+
+
 def repair_source(settings, artifact):
     if artifact.input_type != "source":
         raise DomainError("source_required", "HTTP 请求缺少源码，无法生成源码补丁。", 422)
@@ -47,6 +85,22 @@ def repair_source(settings, artifact):
     if "[REDACTED]" in parsed.content:
         raise DomainError("REPAIR_SENSITIVE_SOURCE", "请先移除源码凭据再申请自动修复。", 422)
     return parsed
+
+
+def baseline_for(session, scan, artifact) -> list[tuple]:
+    """Findings reported for this snapshot by the parent analysis (rules and model alike)."""
+    rows = session.scalars(
+        select(FindingRecord).where(
+            FindingRecord.scan_id == scan.id,
+            FindingRecord.attempt == scan.retries,
+            FindingRecord.artifact_id == artifact.id,
+        )
+    )
+    baseline = []
+    for row in rows:
+        finding = json.loads(row.payload)["finding"]
+        baseline.extend(locations([finding], "+".join(finding.get("sources", []))))
+    return baseline
 
 
 def create_repair(engine, settings, finding_id, sha256, alias, key):
@@ -77,6 +131,22 @@ def create_repair(engine, settings, finding_id, sha256, alias, key):
             or scan.status not in {"completed", "partial"}
         ):
             raise DomainError("REPAIR_STALE", "发现或源快照已变化，请重新检测。", 409)
+        existing = session.scalars(select(Repair).where(Repair.finding_id == finding.id)).all()
+        running = next((r for r in existing if r.status in {"queued", "running"}), None)
+        if running is not None:
+            if (running.source_sha256, running.model_alias) == (sha256, alias):
+                return running.id  # one live candidate per finding; do not pay twice
+            raise DomainError("REPAIR_IN_PROGRESS", "该发现已有进行中的修复。", 409)
+        if len(existing) >= MAX_REPAIRS_PER_FINDING:
+            raise DomainError("REPAIR_LIMIT", "同一发现最多生成 3 个候选修复。", 409)
+        if alias != "fake":
+            scan_used, daily_used = model_usage(session, settings, scan.id)
+            if settings.max_model_calls - scan_used < MIN_CALLS_PER_REPAIR:
+                raise DomainError(
+                    "REPAIR_BUDGET", "本任务剩余模型调用预算不足以完成修复与复检。", 409
+                )
+            if settings.daily_model_calls - daily_used < MIN_CALLS_PER_REPAIR:
+                raise DomainError("MODEL_DAILY_BUDGET", "今日服务器模型调用次数不足。", 429)
         capacity(session, settings)
         job = Job(id=str(uuid4()), scan_id=scan.id, kind="repair", idempotency_key="repair:" + key)
         item = Repair(
@@ -99,19 +169,9 @@ def create_repair(engine, settings, finding_id, sha256, alias, key):
 def repair_view(session, item):
     calls = session.scalars(select(ModelCall).where(ModelCall.job_id == item.job_id)).all()
     checks, dynamic = json.loads(item.checks_json), json.loads(item.dynamic_json)
-    verdict = "unverified"
-    if item.status == "failed" or checks.get("target_remaining") or checks.get("new_findings"):
-        verdict = "failed"
-    if dynamic.get("status") == "error":
-        verdict = "error"
-    elif dynamic.get("status") == "failed":
-        verdict = "failed"
-    elif (
-        dynamic.get("status") == "passed"
-        and checks.get("llm_complete")
-        and checks.get("static_passed")
-    ):
-        verdict = "passed"
+    candidate = session.get(Artifact, item.candidate_id) if item.candidate_id else None
+    binding = dynamic_binding(item.source_sha256, dynamic, candidate.sha256 if candidate else None)
+    gates = build_gates(checks, dynamic, binding)
     return {
         "id": item.id,
         "scan_id": item.scan_id,
@@ -126,9 +186,12 @@ def repair_view(session, item):
         "error_code": item.error_code,
         "diff": item.diff,
         "checks": checks,
+        "impact": checks.get("impact"),
+        "gates": gates,
+        "simulated": checks.get("mode") == "fake",
         "dynamic": dynamic,
         "dynamic_requested": item.dynamic_requested,
-        "validation_status": verdict,
+        "validation_status": verdict_for(item.status, item.error_code, checks, gates),
         "call_count": len(calls),
         "prompt_version": REPAIR_PROMPT_VERSION,
         "calls": [
@@ -151,16 +214,22 @@ def claim_repair(engine, settings):
             select(Job).where(Job.kind == "repair", Job.status == "running", Job.lease_until <= at)
         ):
             item = session.scalar(select(Repair).where(Repair.job_id == job.id))
-            job.lease_token = None
+            for call in session.scalars(
+                select(ModelCall).where(ModelCall.job_id == job.id, ModelCall.status == "started")
+            ):
+                call.status = "interrupted"
+            job.lease_token, job.lease_until = None, None
             if item.cancel_requested or job.attempts >= 3:
                 job.status = item.status = "cancelled" if item.cancel_requested else "failed"
                 item.error_code = None if item.cancel_requested else "LEASE_EXHAUSTED"
+                item.finished_at = at
             else:
                 job.status, item.status = "queued", "queued"
+        session.flush()
         job = session.scalar(
             select(Job)
             .where(Job.kind == "repair", Job.status == "queued")
-            .order_by(Job.created_at)
+            .order_by(Job.created_at, Job.id)
             .limit(1)
         )
         if job is None:
@@ -168,7 +237,10 @@ def claim_repair(engine, settings):
         item = session.scalar(select(Repair).where(Repair.job_id == job.id))
         job.status, item.status, job.lease_token = "running", "running", str(uuid4())
         job.attempts += 1
+        job.heartbeat_at = at
         job.lease_until = at + timedelta(seconds=settings.lease_seconds)
+        # Anchored at the first start, like scans: elapsed time includes recovery pauses so a
+        # crash loop cannot extend the total time limit.
         item.started_at = item.started_at or at
         return Lease(job.id, job.scan_id, job.lease_token)
 
@@ -176,11 +248,26 @@ def claim_repair(engine, settings):
 def active_repair(session, lease, allow_cancel=False):
     job = session.get(Job, lease.job_id)
     item = session.scalar(select(Repair).where(Repair.job_id == lease.job_id))
-    if job.status != "running" or job.lease_token != lease.token or job.lease_until <= utcnow():
+    if (
+        job is None
+        or item is None
+        or job.status != "running"
+        or job.lease_token != lease.token
+        or job.lease_until is None
+        or job.lease_until <= utcnow()
+    ):
         raise DomainError("LEASE_LOST", "修复租约失效。", 409)
     if item.cancel_requested and not allow_cancel:
         raise DomainError("TASK_CANCELLED", "修复已取消。", 409)
     return job, item
+
+
+def heartbeat_repair(engine, settings, lease) -> bool:
+    with transaction(engine) as session:
+        job, item = active_repair(session, lease, allow_cancel=True)
+        job.heartbeat_at = utcnow()
+        job.lease_until = job.heartbeat_at + timedelta(seconds=settings.lease_seconds)
+        return item.cancel_requested
 
 
 class RepairLedger:
@@ -188,6 +275,9 @@ class RepairLedger:
         self.engine, self.settings, self.lease, self.version = engine, settings, lease, version
 
     def reserve(self, chars):
+        return with_db_retry(self._reserve, chars)
+
+    def _reserve(self, chars):
         with transaction(self.engine) as session:
             active_repair(session, self.lease)
             scan_used, daily = model_usage(session, self.settings, self.lease.scan_id)
@@ -197,7 +287,7 @@ class RepairLedger:
                 .where(ModelCall.job_id == self.lease.job_id)
             )
             if (
-                used >= 8
+                used >= MAX_CALLS_PER_REPAIR
                 or scan_used >= self.settings.max_model_calls
                 or daily >= self.settings.daily_model_calls
             ):
@@ -214,21 +304,49 @@ class RepairLedger:
             return call.id
 
     def finish(self, call_id, status, duration, size, usage, category=None):
+        with_db_retry(self._finish, call_id, status, duration, size, usage, category)
+
+    def _finish(self, call_id, status, duration, size, usage, category):
         with transaction(self.engine) as session:
             call = session.get(ModelCall, call_id)
-            call.status, call.duration_ms, call.output_bytes, call.failure_category = (
-                status,
-                duration,
-                size,
-                category,
-            )
+            if call is None:
+                return
+            call.status, call.duration_ms, call.output_bytes = status, duration, size
+            call.failure_category = category
             call.input_tokens, call.output_tokens = (
                 usage.get("prompt_tokens"),
                 usage.get("completion_tokens"),
             )
 
 
+def store_candidate(engine, settings, lease, wire, candidate, diff, checks, *, final):
+    """Persist the candidate (phase 1, still running) or finalize it (phase 2 / fake)."""
+    with transaction(engine) as session:
+        job, item = active_repair(session, lease)
+        ensure_fresh(
+            item,
+            session.get(ScanTask, item.scan_id),
+            session.get(Artifact, item.source_id),
+            session.get(FindingRecord, item.finding_id),
+        )
+        preview = store_artifact(
+            session, settings, "candidate.py", "source", candidate.encode(), commit=False
+        )
+        item.candidate_id, item.diff = preview["id"], diff
+        item.edits_json = canonical(wire.model_dump(mode="json")["edits"])
+        item.checks_json = canonical(checks)
+        if final:
+            item.status, item.error_code, item.finished_at = "candidate", None, utcnow()
+            job.status, job.lease_token, job.lease_until = "completed", None, None
+
+
+def target_location(target) -> tuple:
+    location = target["location"]
+    return target["cwe"], location["start_line"], location["end_line"]
+
+
 async def execute_repair(engine, settings, lease, factory=None):
+    checks: dict = {}
     try:
         with Session(engine) as session:
             _, item = active_repair(session, lease)
@@ -237,33 +355,33 @@ async def execute_repair(engine, settings, lease, factory=None):
                 session.get(Artifact, item.source_id),
                 session.get(FindingRecord, item.finding_id),
             )
+            ensure_fresh(item, scan, source, finding)
             parsed = repair_source(settings, source)
-            if (
-                item.anchor != finding_anchor(scan, source, finding)
-                or finding.attempt != scan.retries
-            ):
-                raise DomainError("REPAIR_STALE", "发现锚点已变化，请重新检测。", 409)
             if item.model_name != settings.deepseek_model:
                 raise DomainError("ANALYSIS_CONFIG_CHANGED", "修复模型配置已变化。", 409)
             target = json.loads(finding.payload)["finding"]
+            baseline = baseline_for(session, scan, source)
             remaining = settings.task_timeout_seconds - (utcnow() - item.started_at).total_seconds()
             simulated = item.model_alias == "fake"
+            source_id = source.id
         if remaining <= 0:
             raise TimeoutError
-        async with asyncio.timeout(remaining):
-            req = AnalysisRequest(
-                artifact_id=source.id,
-                input_type="source",
-                content=parsed.content,
-                start_line=1,
-                end_line=len(parsed.content.splitlines()),
-            )
-            ledger = RepairLedger(engine, settings, lease, REPAIR_PROMPT_VERSION)
-            provider = (
-                factory(settings, ledger)
-                if factory
-                else RepairProvider(settings, ledger.reserve, ledger.finish)
-            )
+        deadline = asyncio.get_running_loop().time() + remaining
+        target_loc = target_location(target)
+        req = AnalysisRequest(
+            artifact_id=source_id,
+            input_type="source",
+            content=parsed.content,
+            start_line=1,
+            end_line=len(parsed.content.splitlines()),
+        )
+        ledger = RepairLedger(engine, settings, lease, REPAIR_PROMPT_VERSION)
+        provider = (
+            factory(settings, ledger)
+            if factory
+            else RepairProvider(settings, ledger.reserve, ledger.finish)
+        )
+        async with asyncio.timeout_at(deadline):
             if simulated:
                 wire = RepairWire(
                     schema_version="repair-1.0",
@@ -281,71 +399,69 @@ async def execute_repair(engine, settings, lease, factory=None):
                 wire = await provider.generate(
                     req, {k: target[k] for k in ("cwe", "location", "evidence")}
                 )
-            candidate, diff = apply_edits(parsed.content, wire.edits)
-            after = parse_input("source", candidate)
-            before_rules, after_rules = (
-                detect(UUID(source.id), "source", parsed),
-                detect(UUID(source.id), "source", after),
+        candidate, diff = apply_edits(parsed.content, wire.edits)
+        line_map = build_line_map(parsed.content, candidate)
+        checks = {
+            "mode": "fake" if simulated else "real",
+            "syntax": "passed",
+            "patch": "passed",
+            "roundtrip": "passed",
+            "explanation": wire.explanation,
+            "delta": {},
+        }
+        checks["impact"] = review_structure(
+            parsed.content, candidate, target_loc[1], target_loc[2], line_map
+        )
+        if checks["impact"]["violations"]:
+            raise PatchScopeError(checks["impact"])
+        checks["review"] = {"status": "not_applicable" if simulated else "pending", "error": None}
+        if not simulated:
+            before_rules = detect(UUID(source_id), "source", parsed)
+            after_rules = detect(UUID(source_id), "source", parse_input("source", candidate))
+            known = baseline + locations(before_rules.findings, "rule")
+            checks["delta"]["rules"] = finding_delta(
+                known, target_loc, locations(after_rules.findings, "rule"), line_map
             )
-            target_remaining = any(f.cwe == target["cwe"] for f in after_rules.findings)
-            before_cwes = {f.cwe for f in before_rules.findings}
-            checks = {
-                "syntax": "passed",
-                "patch": "passed",
-                "mode": "fake" if simulated else "real",
-                "target_remaining": target_remaining,
-                "llm_complete": False,
-                "before": [f.model_dump(mode="json") for f in before_rules.findings],
-                "after_rules": [f.model_dump(mode="json") for f in after_rules.findings],
-                "new_findings": [
-                    f.model_dump(mode="json")
-                    for f in after_rules.findings
-                    if f.cwe not in before_cwes
-                ],
-                "explanation": wire.explanation,
-            }
-            if not simulated:
-                ledger.version = "analysis-1.1"
-                reviewer = (
-                    factory(settings, ledger)
-                    if factory
-                    else DeepSeekProvider(settings, ledger.reserve, ledger.finish)
-                )
+        summarize(checks)
+        if simulated:
+            store_candidate(engine, settings, lease, wire, candidate, diff, checks, final=True)
+            return
+        store_candidate(engine, settings, lease, wire, candidate, diff, checks, final=False)
+
+        # Phase 2: model recheck. A failure here must not discard the paid-for candidate.
+        review_error, reviewed = None, None
+        try:
+            ledger.version = "analysis-1.1"
+            reviewer = (
+                factory(settings, ledger)
+                if factory
+                else DeepSeekProvider(settings, ledger.reserve, ledger.finish)
+            )
+            async with asyncio.timeout_at(deadline):
                 reviewed = await reviewer.analyze(
                     req.model_copy(
                         update={"content": candidate, "end_line": len(candidate.splitlines())}
                     )
                 )
-                checks["llm_complete"] = reviewed.analysis_complete and reviewed.mode == "real"
-                checks["after_llm"] = [f.model_dump(mode="json") for f in reviewed.findings]
-                checks["target_remaining"] |= any(f.cwe == target["cwe"] for f in reviewed.findings)
-                checks["new_findings"].extend(
-                    f.model_dump(mode="json") for f in reviewed.findings if f.cwe not in before_cwes
-                )
-            checks["static_passed"] = (
-                not checks["target_remaining"]
-                and not checks["new_findings"]
-                and checks["llm_complete"]
+        except TimeoutError:
+            review_error = "TASK_TIMEOUT"
+        except DomainError as error:
+            if error.code in PASS_THROUGH:
+                raise
+            review_error = error.code
+        except Exception:
+            review_error = "REPAIR_REVIEW_INTERNAL"
+        if reviewed is not None and not (reviewed.analysis_complete and reviewed.mode == "real"):
+            review_error = "MODEL_INCOMPLETE"
+        if review_error is None and reviewed is not None:
+            checks["review"] = {"status": "complete", "error": None}
+            checks["delta"]["model"] = finding_delta(
+                known, target_loc, locations(reviewed.findings, "llm"), line_map
             )
-        with transaction(engine) as session:
-            job, item = active_repair(session, lease)
-            # Recheck anchor immediately before publishing the immutable candidate.
-            if item.anchor != finding_anchor(
-                session.get(ScanTask, item.scan_id),
-                session.get(Artifact, item.source_id),
-                session.get(FindingRecord, item.finding_id),
-            ):
-                raise DomainError("REPAIR_STALE", "发现锚点已变化。", 409)
-            candidate_preview = store_artifact(
-                session, settings, "candidate.py", "source", candidate.encode(), commit=False
-            )
-            item.candidate_id, item.diff = candidate_preview["id"], diff
-            item.edits_json, item.checks_json = (
-                canonical(wire.model_dump(mode="json")["edits"]),
-                canonical(checks),
-            )
-            item.status, item.finished_at, job.status = "candidate", utcnow(), "completed"
-            job.lease_token, job.lease_until = None, None
+        else:
+            checks["review"] = {"status": "failed", "error": review_error}
+        summarize(checks)
+        store_candidate(engine, settings, lease, wire, candidate, diff, checks, final=True)
     except Exception as error:
         if isinstance(error, DomainError) and error.code == "LEASE_LOST":
             return
@@ -361,6 +477,14 @@ async def execute_repair(engine, settings, lease, factory=None):
                 if isinstance(error, TimeoutError)
                 else "REPAIR_INTERNAL"
             )
+            kept = checks or json.loads(item.checks_json or "{}")
+            impact = getattr(error, "impact", None)
+            if impact is not None:  # keep the reason a patch was refused visible to the user
+                kept["impact"] = impact
+            if (kept.get("review") or {}).get("status") == "pending":
+                kept["review"] = {"status": "failed", "error": item.error_code}
+            if kept:
+                item.checks_json = canonical(summarize(kept))
             item.finished_at, job.status, job.lease_token, job.lease_until = (
                 utcnow(),
                 item.status,
@@ -376,14 +500,26 @@ async def run_repair_once(engine, settings, factory=None):
     work = asyncio.create_task(execute_repair(engine, settings, lease, factory))
 
     async def pulse():
+        failing_since = None
         while not work.done():
             await asyncio.sleep(1)
-            with transaction(engine) as session:
-                job, item = active_repair(session, lease, allow_cancel=True)
-                if item.cancel_requested:
+            try:
+                cancel = heartbeat_repair(engine, settings, lease)
+            except DomainError:
+                work.cancel()  # lease lost: stop paying for calls nobody can publish
+                return
+            except Exception:
+                # Transient storage trouble must not silently stop the heartbeat (that would
+                # expire the lease and repeat paid calls); give up well before expiry instead.
+                failing_since = failing_since or time.monotonic()
+                if time.monotonic() - failing_since > settings.lease_seconds / 2:
                     work.cancel()
                     return
-                job.lease_until = utcnow() + timedelta(seconds=settings.lease_seconds)
+                continue
+            failing_since = None
+            if cancel:
+                work.cancel()
+                return
 
     monitor = asyncio.create_task(pulse())
     try:
@@ -394,7 +530,8 @@ async def run_repair_once(engine, settings, factory=None):
         with contextlib.suppress(Exception), transaction(engine) as session:
             job, item = active_repair(session, lease, allow_cancel=True)
             if item.cancel_requested:
-                item.status, job.status, job.lease_token = "cancelled", "cancelled", None
+                item.status, job.status = "cancelled", "cancelled"
+                item.finished_at, job.lease_token, job.lease_until = utcnow(), None, None
     finally:
         monitor.cancel()
         with contextlib.suppress(asyncio.CancelledError, Exception):

@@ -1,20 +1,18 @@
 """Build the local fixed validator image; no model or API credentials in build context."""
 
-import hashlib
 import os
 import subprocess
+import sys
 
 from _environment import ROOT, require_conda
 
 
 def main():
     require_conda()
+    sys.path.insert(0, str(ROOT / "backend"))
+    from app.validation.registry import validator_fingerprint
+
     context = ROOT / "deploy" / "validator"
-    fingerprint = hashlib.sha256(
-        b"".join(
-            (context / f).read_bytes() for f in ("Dockerfile", "requirements.lock", "harness.py")
-        )
-    ).hexdigest()
     environment = {
         k: v
         for k, v in os.environ.items()
@@ -25,7 +23,7 @@ def main():
             "docker",
             "build",
             "--build-arg",
-            "VALIDATOR_FINGERPRINT=" + fingerprint,
+            "VALIDATOR_FINGERPRINT=" + validator_fingerprint(),
             "-t",
             "aegisforge-validator:m4",
             str(context),

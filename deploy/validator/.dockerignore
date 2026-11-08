@@ -1,4 +1,6 @@
 *
 !Dockerfile
 !harness.py
+!target.py
+!ping_stub.py
 !requirements.lock

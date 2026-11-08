@@ -12,7 +12,8 @@ from starlette.concurrency import run_in_threadpool
 from app.core.errors import DomainError
 from app.models import Artifact, Job, Repair
 from app.services.artifacts import load_artifact
-from app.services.queue import transaction
+from app.services.queue import transaction, utcnow
+from app.services.receipts import canonical
 from app.services.repairs import create_repair, repair_view, require_repair
 
 
@@ -73,6 +74,15 @@ def install_repair_routes(app, require_token):
                 item.cancel_requested = True
                 if item.status == "queued":
                     item.status, session.get(Job, item.job_id).status = "cancelled", "cancelled"
+                    item.finished_at = utcnow()
+            else:
+                # Candidate already exists: this cancels a pending/running dynamic validation.
+                dynamic = json.loads(item.dynamic_json)
+                if dynamic.get("status") == "pending":
+                    item.dynamic_requested = False
+                    item.dynamic_json = canonical({**dynamic, "status": "cancelled"})
+                elif dynamic.get("status") == "running":
+                    item.dynamic_json = canonical({**dynamic, "cancel_requested": True})
             return {"repair": repair_view(session, item)}
 
     @app.get("/api/v1/repairs/{repair_id}/download", dependencies=auth)
@@ -80,8 +90,8 @@ def install_repair_routes(app, require_token):
         repair_id: UUID, session: Annotated[Session, Depends(database)], format: str = "diff"
     ):
         item = require_repair(session, str(repair_id))
-        if item.candidate_id is None:
-            raise DomainError("CANDIDATE_NOT_READY", "候选尚未生成。", 409)
+        if item.candidate_id is None or item.status != "candidate":
+            raise DomainError("CANDIDATE_NOT_READY", "候选尚未生成或已失效。", 409)
         if format not in {"diff", "source"}:
             raise DomainError("INVALID_REQUEST", "下载格式不支持。", 422)
         content = (
@@ -107,6 +117,10 @@ def install_repair_routes(app, require_token):
             if item.status != "candidate":
                 raise DomainError("CANDIDATE_NOT_READY", "候选尚未生成。", 409)
             match_case(item.source_sha256)
+            if json.loads(item.dynamic_json).get("status") in {"pending", "running"}:
+                raise DomainError("VALIDATION_IN_PROGRESS", "受控动态验证正在进行。", 409)
             item.dynamic_requested = True
-            item.dynamic_json = json.dumps({"status": "pending"})
+            item.dynamic_json = canonical(
+                {"status": "pending", "requested_at": utcnow().isoformat()}
+            )
             return {"repair": repair_view(session, item)}

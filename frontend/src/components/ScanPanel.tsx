@@ -27,15 +27,27 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [repairId, setRepairId] = useState(() => new URLSearchParams(location.search).get('repair') ?? '');
+  // A repair request keeps one idempotency key until it succeeds, so a lost response or a
+  // double click can never create (and pay for) a second candidate.
+  const repairSubmission = useRef<{ signature: string; key: string } | null>(null);
+  function showRepair(next: string) {
+    setRepairId(next);
+    const url = new URL(location.href);
+    if (next) url.searchParams.set('repair', next); else url.searchParams.delete('repair');
+    window.history.replaceState(null, '', url);
+  }
   async function repairFinding(finding: StoredFinding) {
     const source = scan?.artifacts.find(a => a.id === finding.location.artifact_id);
-    if (!source) return;
-    setBusy(true);
+    if (!source || busy) return;
+    setBusy(true); setError('');
+    const signature = `${finding.id}|${source.sha256}|${alias}`;
+    const current = repairSubmission.current?.signature === signature ? repairSubmission.current : { signature, key: crypto.randomUUID() };
+    repairSubmission.current = current;
     try {
-      const data = await createRepair(token, finding.id, source.sha256, alias, crypto.randomUUID());
-      setRepairId(data.repair.id);
-      const url = new URL(location.href); url.searchParams.set('repair',data.repair.id); window.history.replaceState(null,'',url);
-    } catch (e) { setError(e instanceof Error ? e.message : '修复创建失败。'); }
+      const data = await createRepair(token, finding.id, source.sha256, alias, current.key);
+      repairSubmission.current = null;
+      showRepair(data.repair.id);
+    } catch (e) { setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '修复创建失败。'); }
     finally { setBusy(false); }
   }
   // One idempotency key per submission intent: reused on resubmit until it succeeds or the
@@ -44,8 +56,10 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
   useEffect(() => { setAlias(aliases.includes('deepseek') ? 'deepseek' : 'fake'); }, [aliases.join(',')]);
 
   function selectScan(next: string) {
+    if (next !== id) showRepair(''); // a repair belongs to one scan; never show it under another
     setId(next); setOffset(0);
     const url = new URL(location.href); url.searchParams.set('scan', next);
+    if (next !== id) url.searchParams.delete('repair');
     window.history.replaceState(null, '', url);
   }
 
@@ -137,7 +151,7 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
       </div>)}
       {findingTotal > 100 && <div className="ingest-actions"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0,offset-100))}>上一页</Button><span>{offset+1}–{Math.min(offset+100,findingTotal)} / {findingTotal}</span><Button disabled={offset+100 >= findingTotal} onClick={() => setOffset(offset+100)}>下一页</Button></div>}
     </article>}
-    <RepairPanel token={token} id={repairId} />
+    <RepairPanel token={token} id={repairId} scanId={scan?.id} />
     <h3>最近任务</h3>
     {history.length === 0 ? <p>暂无任务记录。</p> : <ul className="scan-history">{history.map(item => <li key={item.id}><button onClick={() => selectScan(item.id)}>{STATUS[item.status]} · {item.artifacts.map(a=>a.display_name).join('、')} · {item.id.slice(0,8)}</button></li>)}</ul>}
   </section></ConfigProvider>;
