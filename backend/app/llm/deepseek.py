@@ -176,7 +176,7 @@ def clean_public(value, key: str):
     return value
 
 
-def _decode(content: bytes, request: AnalysisRequest, key: str, usage: dict) -> AnalysisResult:
+def decode_wire(content: bytes, usage: dict):
     """Decode one response; ``usage`` is filled first so rejected outputs still count tokens."""
     try:
         envelope = strict_json(content)
@@ -195,7 +195,11 @@ def _decode(content: bytes, request: AnalysisRequest, key: str, usage: dict) -> 
         data = strict_json(message)
     except (ValueError, TypeError, RecursionError):
         raise OutputRejected("json") from None
-    result = to_result(data, request)
+    return data
+
+
+def _decode(content: bytes, request: AnalysisRequest, key: str, usage: dict) -> AnalysisResult:
+    result = to_result(decode_wire(content, usage), request)
     for finding in result.findings:
         if key in finding.evidence:
             raise OutputRejected("credential")
@@ -222,6 +226,10 @@ class DeepSeekProvider:
         )
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
+        return await self._run(request)
+
+    async def _run(self, request: AnalysisRequest, render=None, decode=None):
+        render, decode = render or messages, decode or _decode
         settings = self.settings
         key = settings.deepseek_api_key.get_secret_value()
         if not settings.valid_model_key:
@@ -236,7 +244,7 @@ class DeepSeekProvider:
             while True:
                 payload = {
                     "model": settings.deepseek_model,
-                    "messages": messages(request, previous),
+                    "messages": render(request, previous),
                     "thinking": {"type": "disabled"},
                     "temperature": 0,
                     "max_tokens": settings.model_output_tokens,
@@ -280,7 +288,7 @@ class DeepSeekProvider:
                                         raise ProviderError("MODEL_OUTPUT_LIMIT")
                                     content.extend(part)
                                 try:
-                                    result = _decode(bytes(content), request, key, usage)
+                                    result = decode(bytes(content), request, key, usage)
                                     code = "succeeded"
                                 except OutputRejected as rejection:
                                     code, result = "MODEL_INVALID_OUTPUT", None

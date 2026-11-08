@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "scope": "development only; holdout registry unchanged",
+  "cases": [
+    {
+      "id": "xss-01",
+      "sample_id": "SRC-XSS-01-V",
+      "source_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+      "tests": [
+        "business_greeting",
+        "business_unicode",
+        "security_browser_no_script"
+      ]
+    },
+    {
+      "id": "sqli-01",
+      "sample_id": "SRC-SQLI-01-V",
+      "source_sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e",
+      "tests": [
+        "business_lookup",
+        "business_apostrophe",
+        "security_query_boundary"
+      ]
+    },
+    {
+      "id": "cmdi-01",
+      "sample_id": "SRC-CMDI-01-V",
+      "source_sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a",
+      "tests": [
+        "business_ping",
+        "business_second_host",
+        "security_shell_boundary"
+      ]
+    }
+  ]
+}

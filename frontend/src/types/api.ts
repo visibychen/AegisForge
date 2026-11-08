@@ -6,12 +6,12 @@ export interface Health {
 export interface Capabilities {
   request_id: string;
   version: string;
-  stage: 'M1' | 'M2' | 'M3';
+  stage: 'M1' | 'M2' | 'M3' | 'M4';
   model_mode: 'fake' | 'real';
   model_aliases?: string[];
   analysis_available: boolean;
-  repair_available: false;
-  dynamic_validation_available: false;
+  repair_available: boolean;
+  dynamic_validation_available: boolean;
   supported_input_types: string[];
   planned_input_types: string[];
   max_file_bytes: number;
@@ -80,4 +80,11 @@ export interface AnalysisReceipt {
 }
 export interface StoredFinding extends Finding {
   id: string; contributors: Finding[]; severity_disagreement: boolean; severity_policy?: string | null;
+}
+export interface Repair {
+  id: string; scan_id: string; finding_id: string; source_id: string; source_sha256: string; anchor: string;
+  candidate_id: string | null; model_alias: string; model: string; status: string; error_code: string | null;
+  diff: string; validation_status: string; call_count: number;
+  checks: { mode?: string; explanation?: string; syntax?: string; static_passed?: boolean; target_remaining?: boolean; llm_complete?: boolean };
+  dynamic: { status?: string; error_code?: string; tests?: { name: string; passed: boolean }[] };
 }

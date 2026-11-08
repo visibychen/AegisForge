@@ -4,8 +4,18 @@ from app.models.foundation import (
     FindingRecord,
     Job,
     ModelCall,
+    Repair,
     ScanTask,
     TaskArtifact,
 )
 
-__all__ = ["Artifact", "Base", "FindingRecord", "Job", "ModelCall", "ScanTask", "TaskArtifact"]
+__all__ = [
+    "Artifact",
+    "Base",
+    "FindingRecord",
+    "Job",
+    "ModelCall",
+    "Repair",
+    "ScanTask",
+    "TaskArtifact",
+]

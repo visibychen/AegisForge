@@ -272,7 +272,9 @@ async def execute(engine, settings, lease, provider_factory=None):
 async def run_once(engine, settings, provider_factory=None):
     lease = with_db_retry(claim, engine, settings)
     if lease is None:
-        return False
+        from app.services.repairs import run_repair_once
+
+        return await run_repair_once(engine, settings)
     work = asyncio.create_task(execute(engine, settings, lease, provider_factory))
 
     async def pulse():

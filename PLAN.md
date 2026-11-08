@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.4 · 基线日期：2026-11-03 · 更新日期：2026-11-07 · 项目：铸盾 AegisForge
+版本：1.5（实施中） · 基线日期：2026-11-03 · 更新日期：2026-11-08 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -15,6 +15,8 @@ M1 工程骨架已完成本地及 Windows/Linux GitHub CI 验收，证据见 [M1
 ## 1. 目标与范围
 
 2026-11-07 用户恢复 M3，指定 DeepSeek API，密钥只存环境变量。本轮分工为：第一轮 Codex 开发/Claude 审，第二轮 Claude 优化/Codex 审，第三阶段多次真实讨论后由 Codex 最终优化。每轮审查从第二阶段起还需提出功能创新。当前 M3 已完成开发和本地验收，待 PR 集成；同会话四次真实调用，后两次为第三阶段讨论。覆盖账本、检测凭证及证据失败分类已落实；三类 DeepSeek 开发例均通过。见 [M3 设计](docs/m3-design.md)、[验证记录](docs/m3-verification.md)和[协作记录](docs/collaboration-2026-11-07.md)。
+
+2026-11-08 开始M4：按Codex开发/Claude审、Claude优化/Codex审、双方多次讨论/Codex最终优化推进；每次审核须提出创新，Claude固定Sonnet5.5 high。现行范围见[M4设计](docs/m4-design.md)，执行与实际证据见[协作记录](docs/collaboration-2026-11-08.md)。
 
 ### 1.1 必须交付的功能
 
@@ -244,7 +246,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
 | M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
-| M4 修复与验证闭环 | 未开始 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
+| M4 修复与验证闭环 | 开发中 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 未开始 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |

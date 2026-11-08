@@ -88,7 +88,7 @@ class TaskArtifact(Base):
 class Job(Base):
     __tablename__ = "jobs"
     __table_args__ = (
-        CheckConstraint("kind = 'scan'", name="ck_job_kind"),
+        CheckConstraint("kind IN ('scan','repair')", name="ck_job_kind"),
         CheckConstraint(
             "status IN ('queued','running','completed','failed','cancelled')", name="ck_job_status"
         ),
@@ -138,3 +138,30 @@ class ModelCall(Base):
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     failure_category: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))
+
+
+class Repair(Base):
+    __tablename__ = "repairs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    scan_id: Mapped[str] = mapped_column(ForeignKey("scan_tasks.id", ondelete="CASCADE"))
+    finding_id: Mapped[str] = mapped_column(ForeignKey("findings.id", ondelete="RESTRICT"))
+    source_id: Mapped[str] = mapped_column(ForeignKey("artifacts.id", ondelete="RESTRICT"))
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), unique=True)
+    candidate_id: Mapped[str | None] = mapped_column(
+        ForeignKey("artifacts.id", ondelete="RESTRICT")
+    )
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    anchor: Mapped[str] = mapped_column(String(64))
+    model_alias: Mapped[str] = mapped_column(String(64))
+    model_name: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(24), default="queued")
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    edits_json: Mapped[str] = mapped_column(Text, default="[]", server_default="[]")
+    diff: Mapped[str] = mapped_column(Text, default="", server_default="")
+    checks_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    dynamic_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    dynamic_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=lambda: datetime.now(UTC))
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())

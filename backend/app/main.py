@@ -11,6 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.artifacts import install_artifact_routes
+from app.api.repairs import install_repair_routes
 from app.api.scans import install_scan_routes
 from app.core.config import Settings
 from app.core.errors import DomainError
@@ -119,6 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     install_artifact_routes(application, require_token)
     install_scan_routes(application, require_token)
+    install_repair_routes(application, require_token)
     return application
 
 

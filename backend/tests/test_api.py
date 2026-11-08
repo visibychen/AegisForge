@@ -30,7 +30,7 @@ def test_capabilities_requires_token_and_does_not_expose_configuration():
     payload = response.json()
     assert payload["model_mode"] == "fake"
     assert payload["analysis_available"] is True
-    assert payload["repair_available"] is False
+    assert payload["repair_available"] is True
     assert payload["supported_input_types"] == ["source", "http"]
     assert not {"api_token", "database_url", "data_dir"} & payload.keys()
 

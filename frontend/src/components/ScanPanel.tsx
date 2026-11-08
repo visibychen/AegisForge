@@ -4,6 +4,8 @@ import { changeScan, createScan, getFindings, getScan, isAuthFailure, listScans 
 import type { ArtifactPreview, Scan, StoredFinding, Strategy } from '../types/api';
 import CoverageLedger from './CoverageLedger';
 import AnalysisReceipt from './AnalysisReceipt';
+import RepairPanel from './RepairPanel';
+import { createRepair } from '../api/client';
 
 const RECONNECT = '会话已失效，请重新连接服务后再查看任务。';
 
@@ -24,6 +26,18 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [repairId, setRepairId] = useState(() => new URLSearchParams(location.search).get('repair') ?? '');
+  async function repairFinding(finding: StoredFinding) {
+    const source = scan?.artifacts.find(a => a.id === finding.location.artifact_id);
+    if (!source) return;
+    setBusy(true);
+    try {
+      const data = await createRepair(token, finding.id, source.sha256, alias, crypto.randomUUID());
+      setRepairId(data.repair.id);
+      const url = new URL(location.href); url.searchParams.set('repair',data.repair.id); window.history.replaceState(null,'',url);
+    } catch (e) { setError(e instanceof Error ? e.message : '修复创建失败。'); }
+    finally { setBusy(false); }
+  }
   // One idempotency key per submission intent: reused on resubmit until it succeeds or the
   // inputs/strategy/model change, so a lost response cannot create a duplicate task.
   const submission = useRef<{ signature: string; key: string } | null>(null);
@@ -119,9 +133,11 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
         <p>{scan.artifacts.find(a => a.id === f.location.artifact_id)?.display_name ?? f.location.artifact_id} · {f.location.kind === 'source' ? `第 ${f.location.start_line}–${f.location.end_line} 行` : f.location.field} · {f.evidence_status}</p>
         <pre>{f.evidence}</pre><p>{f.explanation}</p><p>建议：{f.recommendation}</p>
         <details><summary>查看各来源判断</summary>{f.contributors.map((item,index) => <div key={index}><Tag>{item.sources.join(' + ')}</Tag><Tag>{item.severity}</Tag><p>{item.explanation}</p><p>{item.recommendation}</p></div>)}</details>
+        <Button disabled={busy || f.location.kind !== 'source'} onClick={() => void repairFinding(f)}>生成{alias === 'fake' ? '模拟' : 'DeepSeek'}候选修复</Button>
       </div>)}
       {findingTotal > 100 && <div className="ingest-actions"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0,offset-100))}>上一页</Button><span>{offset+1}–{Math.min(offset+100,findingTotal)} / {findingTotal}</span><Button disabled={offset+100 >= findingTotal} onClick={() => setOffset(offset+100)}>下一页</Button></div>}
     </article>}
+    <RepairPanel token={token} id={repairId} />
     <h3>最近任务</h3>
     {history.length === 0 ? <p>暂无任务记录。</p> : <ul className="scan-history">{history.map(item => <li key={item.id}><button onClick={() => selectScan(item.id)}>{STATUS[item.status]} · {item.artifacts.map(a=>a.display_name).join('、')} · {item.id.slice(0,8)}</button></li>)}</ul>}
   </section></ConfigProvider>;

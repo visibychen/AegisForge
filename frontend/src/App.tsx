@@ -104,7 +104,7 @@ export default function App() {
           </section>
 
           <Alert type="info" showIcon className="preview-alert"
-            title="已开放规则、模型与联合检测；模型失败会明确标记部分完成，修复验证尚未开放。" />
+            title="已开放检测与候选修复；模型失败会明确标记部分完成。普通源码仅做静态复检，登记样例可申请独立容器动态验证。" />
 
           <section className="hero-panel" aria-labelledby="hero-title">
             <div className="hero-streams" aria-hidden="true"><span /><span /><span /></div>
@@ -146,7 +146,7 @@ export default function App() {
                 <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined aria-hidden="true" />}>连接服务</Button>
               </form>
               {error && <Alert type="error" showIcon title={error} role="alert" />}
-              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>{capabilities.model_aliases?.includes('deepseek') ? 'DeepSeek 已配置 · 密钥仅由后端使用' : '模拟模式 · 真实模型尚未配置'}</p><p>可创建持久检测任务；修复验证尚未开放。</p></div></div>}
+              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>{capabilities.model_aliases?.includes('deepseek') ? 'DeepSeek 已配置 · 密钥仅由后端使用' : '模拟模式 · 真实模型尚未配置'}</p><p>可创建检测与候选修复；动态验证需独立 runner。</p></div></div>}
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>

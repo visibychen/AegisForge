@@ -1,4 +1,4 @@
-import type { ArtifactPreview, Capabilities, Health, Scan, StoredFinding, Strategy } from '../types/api';
+import type { ArtifactPreview, Capabilities, Health, Repair, Scan, StoredFinding, Strategy } from '../types/api';
 
 export class ApiError extends Error {
   constructor(message: string, public readonly requestId?: string, public readonly status?: number) {
@@ -74,3 +74,16 @@ export const getFindings = (token: string, id: string, offset = 0) =>
   request<{findings: StoredFinding[]; total: number; attempt: number}>(`/api/v1/scans/${encodeURIComponent(id)}/findings?offset=${offset}&limit=100`, {headers: authorization(token)}, 8000);
 export const changeScan = (token: string, id: string, action: 'cancel' | 'retry') =>
   request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}/${action}`, {method: 'POST', headers: authorization(token)}, 8000);
+
+export const createRepair = (token: string, finding_id: string, source_sha256: string, model_alias: string, key: string) =>
+  request<{repair: Repair}>('/api/v1/repairs', {method:'POST',headers:{...authorization(token),'Content-Type':'application/json','Idempotency-Key':key}, body:JSON.stringify({finding_id,source_sha256,model_alias})},20000);
+export const getRepair = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}`,{headers:authorization(token)},8000);
+export const cancelRepair = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}/cancel`,{method:'POST',headers:authorization(token)},8000);
+export const requestValidation = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}/validate`,{method:'POST',headers:authorization(token)},8000);
+export async function downloadRepair(token: string, id: string, format: 'diff' | 'source') {
+  const response = await fetch(`/api/v1/repairs/${encodeURIComponent(id)}/download?format=${format}`,{headers:authorization(token),cache:'no-store',signal:AbortSignal.timeout(15000)});
+  if (!response.ok) throw new Error('候选下载失败。');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a'); link.href = url; link.download = format === 'diff' ? 'repair.patch' : 'candidate.py'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+}
