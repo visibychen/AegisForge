@@ -123,7 +123,8 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
     <div className="selected-artifacts">{artifacts.map(a => <div key={a.id}><span>{a.display_name}</span><Tag>{a.input_type}</Tag><Button size="small" onClick={() => onRemove(a.id)} aria-label={`移除 ${a.display_name}`}>移除</Button></div>)}</div>
     <div className="scan-controls">
       <div><label htmlFor="scan-strategy">分析方式</label><Select id="scan-strategy" aria-label="分析方式" value={strategy} onChange={setStrategy} options={[{value:'hybrid',label:'规则 + 模型'},{value:'rules',label:'仅规则'},{value:'llm',label:'仅模型'}]} /></div>
-      <div><label htmlFor="scan-model">模型</label><Select id="scan-model" aria-label="模型" value={alias} onChange={setAlias} disabled={strategy === 'rules'} options={aliases.map(value => ({value,label:value === 'deepseek' ? 'DeepSeek' : '模拟模型'}))} /></div>
+      <div><label htmlFor="scan-model">模型</label><Select id="scan-model" aria-label="模型" value={alias} onChange={setAlias} options={aliases.map(value => ({value,label:value === 'deepseek' ? 'DeepSeek' : '模拟模型'}))} /></div>
+      <p>候选修复使用当前选择的模型；DeepSeek 会产生外部调用。仅规则检测不调用模型。</p>
       <Button type="primary" loading={busy} disabled={!token || artifacts.length === 0 || artifacts.length > 10} onClick={() => void submit()}>创建检测任务</Button>
     </div>
     {artifacts.length > 10 && <Alert type="warning" title="每个任务最多 10 个快照，请移除多余输入。" />}

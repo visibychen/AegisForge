@@ -10,7 +10,14 @@ from app.services.receipts import digest
 ROOT = Path(__file__).resolve().parents[3]
 REGISTRY = ROOT / "samples" / "controlled" / "dev_cases.json"
 # Everything that defines what the validator image does; also hashed by build_validator.py.
-VALIDATOR_FILES = ("Dockerfile", "requirements.lock", "harness.py", "target.py", "ping_stub.py")
+VALIDATOR_FILES = (
+    "Dockerfile",
+    "requirements.lock",
+    "harness.py",
+    "target.py",
+    "ping_stub.py",
+    "target_guard.py",
+)
 
 
 def load_cases() -> list[dict]:

@@ -17,6 +17,7 @@ import os
 import signal
 import socket
 import sqlite3
+import stat
 import subprocess
 import sys
 import time
@@ -64,13 +65,16 @@ def get(path, query):
 
 def text(headers, body):
     charset = headers.get_content_charset() if headers is not None else None
-    return body.decode(charset or "utf-8", errors="replace")
+    try:
+        return body.decode(charset or "utf-8", errors="replace")
+    except LookupError:
+        return ""
 
 
 def as_json(body):
     try:
         return json.loads(body.decode("utf-8"))
-    except ValueError:
+    except (ValueError, RecursionError):
         return object()
 
 
@@ -92,6 +96,8 @@ def start_target(deadline):
     )
     while time.monotonic() < deadline:
         if process.poll() is not None:
+            if process.returncode == 3:
+                raise InfrastructureError
             return process, False  # the candidate crashed on import: its tests fail
         with socket.socket() as probe:
             probe.settimeout(0.2)
@@ -101,14 +107,30 @@ def start_target(deadline):
     return process, False
 
 
+def bounded_file(path, limit=1024 * 1024):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_size > limit:
+            raise ValueError("untrusted file")
+        data = stream.read(limit + 1)
+        if len(data) > limit:
+            raise ValueError("untrusted file")
+        return data
+
+
 def ping_calls():
-    if not PING_LOG.exists():
+    try:
+        raw = bounded_file(PING_LOG)
+    except FileNotFoundError:
         return []
     calls = []
-    for line in PING_LOG.read_text(encoding="utf-8").splitlines():
+    for line in raw.decode("utf-8").splitlines():
         try:
-            calls.append(list(json.loads(line)))
-        except ValueError:
+            value = json.loads(line)
+            if isinstance(value, list) and all(isinstance(x, str) for x in value):
+                calls.append(value)
+        except (ValueError, RecursionError):
             continue
     return calls
 
@@ -118,49 +140,42 @@ def seed_database():
         db.execute("CREATE TABLE users (id INTEGER, name TEXT, email TEXT)")
         db.executemany(
             "INSERT INTO users VALUES (?,?,?)",
-            [(1, "Alice", "alice@example.invalid"), (2, "O'Reilly", "oreilly@example.invalid")],
+            [
+                (1, "Alice", "alice@example.invalid"),
+                (2, "O'Reilly", "oreilly@example.invalid"),
+            ],
         )
 
 
-def xss_security():
-    from playwright.sync_api import Error, sync_playwright
+def xss_security(browser):
+    from playwright.sync_api import Error
 
     payload = '<svg onload="window.__aegis_xss=1"></svg>'
     url = f"http://127.0.0.1:{PORT}/greet?" + urllib.parse.urlencode({"name": payload})
-    with sync_playwright() as playwright:
-        try:
-            browser = playwright.chromium.launch(
-                headless=True, timeout=12000, args=["--no-sandbox", "--disable-dev-shm-usage"]
-            )
-        except Error:
-            raise InfrastructureError from None  # no browser says nothing about the candidate
-        try:
-            page = browser.new_page()
-            page.route(
-                "**/*",
-                lambda route: (
-                    route.continue_()
-                    if route.request.url.startswith(f"http://127.0.0.1:{PORT}/")
-                    else route.abort()
-                ),
-            )
-            try:
-                # Real navigation: the browser honours the candidate's Content-Type itself.
-                response = page.goto(url, timeout=5000)
-                page.wait_for_timeout(200)
-                return bool(
-                    response is not None
-                    and response.status == 200
-                    and page.evaluate("window.__aegis_xss === undefined")
-                )
-            except Error:
-                return False  # the candidate's page did not load or evaluate properly
-        finally:
-            browser.close()
+    page = browser.new_page()
+    try:
+        page.route(
+            "**/*",
+            lambda route: (
+                route.continue_()
+                if route.request.url.startswith(f"http://127.0.0.1:{PORT}/")
+                else route.abort()
+            ),
+        )
+        response = page.goto(url, timeout=5000)
+        page.wait_for_timeout(200)
+        return bool(
+            response is not None
+            and response.status == 200
+            and page.evaluate("window.__aegis_xss === undefined")
+        )
+    except Error:
+        return False
+    finally:
+        page.close()
 
 
-def run_case(case, ready):
-    results = {name: False for name in TESTS[case]}
+def run_case(case, ready, browser, results):
     if not ready:
         return results
     if case == "xss-01":
@@ -168,7 +183,10 @@ def run_case(case, ready):
         results["business_greeting"] = status == 200 and "Hello, Alice!" in text(headers, body)
         status, headers, body = get("/greet", {"name": "铸盾"})
         results["business_unicode"] = status == 200 and "铸盾" in text(headers, body)
-        results["security_browser_no_script"] = xss_security()
+        try:
+            results["security_browser_no_script"] = xss_security(browser)
+        except Exception:  # noqa: BLE001 - preserve completed business observations
+            results["security_browser_no_script"] = False
     elif case == "sqli-01":
         status, _, body = get("/user", {"name": "Alice"})
         results["business_lookup"] = status == 200 and as_json(body) == {
@@ -179,34 +197,44 @@ def run_case(case, ready):
             "user": [2, "oreilly@example.invalid"]
         }
         status, _, body = get("/user", {"name": "' OR 1=1 --"})
-        with sqlite3.connect("file:/tmp/app.db?mode=ro", uri=True) as db:
-            intact = db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 2
-        results["security_query_boundary"] = (
-            status == 200 and as_json(body) == {"user": None} and intact
-        )
+        try:
+            bounded_file(Path("/tmp/app.db"))
+            with sqlite3.connect("file:/tmp/app.db?mode=ro", uri=True, timeout=0.1) as db:
+                intact = db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 2
+            results["security_query_boundary"] = (
+                status == 200 and as_json(body) == {"user": None} and intact
+            )
+        except Exception:  # noqa: BLE001 - a corrupt candidate database fails only this test
+            results["security_query_boundary"] = False
     else:
-        # The stub logs argv and fails only for UNREACHABLE_HOST, so a candidate that never
-        # calls ping, or hard-codes True/False, cannot satisfy both business tests.
+        # Two observed calls and opposite expected statuses reject hard-coded returns.
         for name, host, expected in (
             ("business_ping", "127.0.0.1", True),
             ("business_second_host", UNREACHABLE_HOST, False),
         ):
+            try:
+                seen = len(ping_calls())
+                status, _, body = get("/ping", {"host": host})
+                fresh = ping_calls()[seen:]
+                results[name] = (
+                    status == 200
+                    and as_json(body) == {"reachable": expected}
+                    and any(host in argv for argv in fresh)
+                )
+            except Exception:  # noqa: BLE001 - malformed logs cannot stop the other tests
+                results[name] = False
+        try:
             seen = len(ping_calls())
-            status, _, body = get("/ping", {"host": host})
+            status, _, _ = get("/ping", {"host": "127.0.0.1; touch " + str(MARKER)})
             fresh = ping_calls()[seen:]
-            results[name] = (
-                status == 200
-                and as_json(body) == {"reachable": expected}
-                and any(host in argv for argv in fresh)
+            results["security_shell_boundary"] = (
+                status in {200, 400, 422}
+                and not MARKER.exists()
+                and not any("touch" in argv or str(MARKER) in argv for argv in fresh)
             )
-        seen = len(ping_calls())
-        status, _, _ = get("/ping", {"host": "127.0.0.1; touch " + str(MARKER)})
-        fresh = ping_calls()[seen:]
-        results["security_shell_boundary"] = (
-            status in {200, 400, 422}
-            and not MARKER.exists()
-            and not any("touch" in argv or str(MARKER) in argv for argv in fresh)
-        )
+        except Exception:  # noqa: BLE001 - malformed candidate files are test failures
+            results["security_shell_boundary"] = False
+
     return results
 
 
@@ -217,39 +245,85 @@ def main():
     sys.stdin.close()
     if case not in TESTS or len(nonce) != 32 or any(c not in "0123456789abcdef" for c in nonce):
         raise SystemExit(3)
-    deadline = time.monotonic() + BUDGET
     digest = hashlib.sha256(CANDIDATE.read_bytes()).hexdigest()
-    if case == "sqli-01":
-        seed_database()
-    process = None
+    results = {name: False for name in TESTS[case]}
+    emitted, candidate_phase = False, False
+
+    def emit():
+        nonlocal emitted
+        if emitted:
+            return
+        emitted = True
+        tests = [{"name": name, "passed": bool(results[name])} for name in TESTS[case]]
+        payload = {
+            "schema_version": SCHEMA,
+            "case": case,
+            "nonce": nonce,
+            "candidate_sha256": digest,
+            "tests": tests,
+            "passed": all(test["passed"] for test in tests),
+        }
+        os.write(1, (json.dumps(payload) + "\n").encode("utf-8"))
+
+    def watchdog(*_):
+        if candidate_phase:
+            # Incomplete tests stay false. No partial run can be reported as passed.
+            emit()
+            os._exit(1)
+        os._exit(4)  # trusted setup/browser failure, not candidate evidence
+
+    signal.signal(signal.SIGALRM, watchdog)
+    signal.setitimer(signal.ITIMER_REAL, BUDGET)
+    process = browser = playwright = None
     try:
-        process, ready = start_target(deadline)
-        results = run_case(case, ready)
+        # Test the child guard and browser before candidate execution. Failure is an error.
+        probe = subprocess.run(
+            [sys.executable, "/opt/validator/target_guard.py"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+            check=False,
+        )
+        if probe.returncode:
+            raise InfrastructureError
+        if case == "xss-01":
+            from playwright.sync_api import sync_playwright
+
+            playwright = sync_playwright().start()
+            browser = playwright.chromium.launch(
+                headless=True,
+                timeout=12000,
+                args=["--no-sandbox", "--disable-dev-shm-usage"],
+            )
+        if case == "sqli-01":
+            seed_database()
+        candidate_phase = True
+        process, ready = start_target(time.monotonic() + BUDGET)
+        try:
+            results = run_case(case, ready, browser, results)
+        except Exception:  # noqa: BLE001 - malformed candidate responses fail closed
+            pass
+        emit()
+        return 0 if all(results.values()) else 1
     except InfrastructureError:
         return 4
+    except Exception:  # noqa: BLE001 - never expose runtime details or fabricate a pass
+        if candidate_phase:
+            emit()
+            return 1
+        return 4
     finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
         if process is not None:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except OSError:
                 pass
-    tests = [{"name": name, "passed": bool(results[name])} for name in TESTS[case]]
-    passed = all(test["passed"] for test in tests)
-    sys.stdout.write(
-        json.dumps(
-            {
-                "schema_version": SCHEMA,
-                "case": case,
-                "nonce": nonce,
-                "candidate_sha256": digest,
-                "tests": tests,
-                "passed": passed,
-            }
-        )
-        + "\n"
-    )
-    sys.stdout.flush()
-    return 0 if passed else 1
+        if browser is not None:
+            browser.close()
+        if playwright is not None:
+            playwright.stop()
 
 
 if __name__ == "__main__":

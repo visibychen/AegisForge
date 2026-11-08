@@ -1,4 +1,5 @@
 import argparse
+import os
 import secrets
 import shutil
 import subprocess
@@ -10,8 +11,11 @@ from _environment import ROOT, model_environment, require_conda
 def main() -> None:
     require_conda()
     parser = argparse.ArgumentParser(description="AegisForge local development commands")
-    parser.add_argument("command", choices=["init", "migrate", "api", "web", "worker"])
+    parser.add_argument("command", choices=["init", "migrate", "api", "web", "worker", "validator"])
+    parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
+    if args.once and args.command not in {"worker", "validator"}:
+        parser.error("--once applies to worker or validator only")
     if args.command == "init":
         target = ROOT / ".env"
         try:
@@ -29,7 +33,15 @@ def main() -> None:
             print("Created .env. Read its API token locally; do not share or commit it.")
         return
     if args.command == "migrate":
-        command = [sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
+        command = [
+            sys.executable,
+            "-m",
+            "alembic",
+            "-c",
+            "backend/alembic.ini",
+            "upgrade",
+            "head",
+        ]
     elif args.command == "api":
         command = [
             sys.executable,
@@ -45,15 +57,26 @@ def main() -> None:
         ]
     elif args.command == "worker":
         command = [sys.executable, "-m", "app.worker"]
+    elif args.command == "validator":
+        command = [sys.executable, str(ROOT / "scripts/validate_samples.py")]
     else:
         npm = shutil.which("npm.cmd") or shutil.which("npm")
         if not npm:
             raise SystemExit("Node.js / npm is required.")
         command = [npm, "--prefix", "frontend", "run", "dev"]
+    if args.once:
+        command.append("--once")
+    environment = model_environment() if args.command in {"api", "worker"} else None
+    if args.command == "validator":
+        environment = {
+            k: v
+            for k, v in os.environ.items()
+            if k != "AEGISFORGE_DEEPSEEK_API_KEY" and not k.startswith(("ANTHROPIC_", "CLAUDE_"))
+        }
     subprocess.run(
         command,
         cwd=ROOT / "backend" if args.command == "worker" else ROOT,
-        env=model_environment() if args.command in {"api", "worker"} else None,
+        env=environment,
         check=True,
     )
 

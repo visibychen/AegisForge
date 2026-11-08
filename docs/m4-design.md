@@ -1,4 +1,4 @@
-# M4 候选补丁与验证设计（实施中）
+# M4 候选补丁与验证设计
 
 日期：2026-11-08。Refs #5，PLAN R05/R06；基于待审 M3 PR #13，新分支 feat/5-repair-validation。
 
@@ -14,7 +14,7 @@ M4开发与三类真实闭环仅使用开发样例；M2预登记18个保留集�
 
 第一轮验收：编辑原文/越界/重叠/秘密/语法，HTTP边界，队列/取消/租约，真实/fake与复检状态；容器参数及拒绝任意源码执行；三类开发例检测→真实模型补丁→静态/LLM复检→固定安全与业务测试。审查阶段还须提出可验收创新，并在后续轮实现。
 
-## 第二阶段（Claude 实现，待 Codex 实测）
+## 第二阶段（Claude 实现，Codex 已核实并完成最终修正）
 
 以下为实现意图与设计取舍；任何“通过”都只能在 Codex 实际运行后记录。
 
@@ -37,11 +37,11 @@ M4开发与三类真实闭环仅使用开发样例；M2预登记18个保留集�
 - XSS 用真实导航（`page.goto`）而非 `set_content`，浏览器自行遵守候选的 `Content-Type`；SQLi 在安全测试后只读核对数据库未被破坏；CMDi 的 `ping` 桩记录 argv，仅对文档保留地址 `192.0.2.77` 返回非零，因此写死 True/False 或不调用 ping 的候选无法同时通过两个业务测试，攻击载荷必须作为单个 argv 或被拒绝。
 - 宿主严格校验：恰好一行、固定键集合、固定测试名与顺序、布尔类型、nonce 与候选哈希、退出码与整体结论一致；空输出（`VALIDATION_NO_RESULT`）、超限、超时、镜像过期、环境异常使用互不相同的错误码并一律记 `error`，不会成为通过或失败的伪造。
 - 动态记录绑定 `run_id`、请求/开始/结束时间、源/候选 SHA-256、测试集与登记表哈希、镜像 id 与 driver 指纹，并附完整性摘要；`passed/failed` 只有在摘要、候选哈希、源哈希都匹配时才被采信，否则门禁为 `error`。摘要是防误改/随手改的完整性记录，**不是数字签名**，不防御能同时改写记录与摘要的数据库写入者。
-- 运行状态机有界：`running` 超过 120 秒视为 runner 崩溃，下一次运行前改为 `VALIDATION_INTERRUPTED`；未知样例记 `CONTROLLED_SAMPLE_REQUIRED` 而不循环；重复申请在 pending/running 时拒绝；pending 可取消，running 通过 `cancel_requested` 由 runner 1 秒内轮询并回收容器。
-- 容器带 `org.aegisforge.validation=1` 标签与 `aegisforge-validation-` 名称前缀，runner 启动只清扫同时满足两者的孤儿；`docker rm` 失败也会回收本地 CLI 子进程。
-- 限制说明：代码路径隔离（API/worker 不导入 Docker）不等于 OS 权限隔离；同一 Windows 用户下的进程仍可能有 Docker 权限，OS 层隔离留待最终部署阶段。Chromium 因 `cap-drop ALL` 与 no-new-privileges 以 `--no-sandbox` 运行，依赖容器边界。
-- 指纹范围现在包含 `Dockerfile`、`requirements.lock`、`harness.py`、`target.py`、`ping_stub.py`（`validator_fingerprint()` 为构建脚本与 runner 的唯一来源）。**旧镜像必须重新构建**，否则 `VALIDATOR_IMAGE_STALE`。
+- 运行状态机有界：`running` 超过 75 秒视为 runner 崩溃，下一次运行前改为 `VALIDATION_INTERRUPTED`；未知样例记 `CONTROLLED_SAMPLE_REQUIRED` 而不循环；重复申请在 pending/running 时拒绝；pending 可取消，running 通过 `cancel_requested` 由 runner 1 秒内轮询并回收容器。
+- 容器带项目标签、名称前缀与运行 ID，runner 只清扫同时满足标识且创建超过 60 秒的容器，避免误删其他活动任务；`docker rm` 失败也会回收本地 CLI 子进程。
+- 部署使用 Compose：API/worker 的镜像无 Docker CLI/socket，非 root、无 capabilities、只读；受信控制器独占 socket 且无模型密钥。本地同一 Windows 用户启动只有代码路径分离。Chromium 使用 --no-sandbox，依赖容器边界；不是完整 Python 沙箱。
+- 指纹包含 `Dockerfile`、`requirements.lock`、`harness.py`、`target.py`、`ping_stub.py`、`target_guard.py`；构建与运行使用同一个计算入口。旧镜像须重建，否则 `VALIDATOR_IMAGE_STALE`。
 
-### 待 Codex 实测
+### 最终实现与实测
 
-后端 pytest（含 `test_m4_review.py` 七个原红测试、`test_patch_review.py`、`test_m4_stage2.py`）、Ruff、前端 typecheck/Vitest；`python scripts/build_validator.py` 后三类开发例容器实测，确认 driver 不被候选读取/伪造；原脆弱版本（源码例的 V 版）在 `failed`，安全版在 `passed`。
+第三阶段新增一对一风险槽位、移动证据匹配、执行契约、完整看门狗、候选进程 guard 和 Compose 权限边界；候选阶段两次保存复用同一 artifact。修复 API 的写操作在冷启动时也初始化数据库，不依赖先查看历史。XSS 的 PID 上限按实测调为 128，其余仍为 64。三类真实 DeepSeek 修复及原版/安全版对照、五个对抗探针、真实浏览器部署链均已通过。具体计数、命令和边界见 [验证记录](m4-verification.md)、[ADR 0003](decisions/0003-m4-controlled-validation.md)。

@@ -92,6 +92,10 @@ export default function RepairPanel({ token, id, scanId }: { token: string; id: 
       {repair.error_code && <Alert type="warning" title={explain(repair.error_code)} />}
       {repair.checks.review?.status === 'failed' && <Alert type="warning" title={`模型复检未完成：${explain(repair.checks.review.error)}。候选已保留，当前为“未验证”。`} />}
       {['queued', 'running'].includes(repair.status) && <Button disabled={busy} onClick={() => void act(() => cancelRepair(token, id))}>取消修复</Button>}
+      {repair.checks.contract && <details><summary>修复执行契约</summary>
+        <p>记录本次实际模型、规则与提示词版本及快照摘要；摘要用于完整性核对。</p>
+        <pre>{JSON.stringify(repair.checks.contract, null, 2)}</pre>
+      </details>}
       {repair.gates && repair.gates.length > 0 && <RepairGates gates={repair.gates} impact={repair.impact} />}
       {repair.status === 'candidate' && <>
         <p>{repair.simulated ? '' : repair.checks.explanation}</p>

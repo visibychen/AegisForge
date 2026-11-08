@@ -14,7 +14,8 @@ import subprocess
 import tempfile
 import time
 from contextlib import suppress
-from pathlib import Path
+from datetime import UTC, datetime
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -39,7 +40,7 @@ RUN_LABEL = "org.aegisforge.validation-run"
 NAME_PREFIX = "aegisforge-validation-"
 HARD_TIMEOUT = 30  # seconds for the whole container
 RESULT_LIMIT = 16 * 1024
-STALE_AFTER = 120  # a 'running' record older than this belongs to a crashed runner
+STALE_AFTER = 75  # a 'running' record older than this belongs to a crashed runner
 RESULT_KEYS = {"schema_version", "case", "nonce", "candidate_sha256", "tests", "passed"}
 ENVIRONMENT = frozenset(
     {
@@ -77,6 +78,7 @@ def command(image_id, name, case, source, run_id="0" * 32):
         "docker",
         "run",
         "-i",
+        "--init",
         "--name",
         name,
         "--label",
@@ -99,7 +101,7 @@ def command(image_id, name, case, source, run_id="0" * 32):
         "--memory-swap",
         "512m",
         "--pids-limit",
-        "64",
+        "128" if case == "xss-01" else "64",
         "--tmpfs",
         "/tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777",
         "--log-driver",
@@ -109,6 +111,30 @@ def command(image_id, name, case, source, run_id="0" * 32):
         image_id,
         case,
     ]
+
+
+def normalize_daemon_root(source):
+    # Docker Desktop reports the original Windows bind source even through its Linux socket.
+    # Its Linux daemon resolves that drive through this fixed VM mount prefix.
+    if re.match(r"^[A-Za-z]:[\\/]", source):
+        value = PureWindowsPath(source)
+        if ".." in value.parts:
+            raise ResultError("VALIDATION_ENVIRONMENT")
+        return str(PurePosixPath("/run/desktop/mnt/host", value.drive[0].lower(), *value.parts[1:]))
+    value = PurePosixPath(source)
+    if not value.is_absolute() or ".." in value.parts:
+        raise ResultError("VALIDATION_ENVIRONMENT")
+    return str(value)
+
+
+def daemon_source(settings, path):
+    """Only a trusted deployment launcher supplies the daemon's shared-data bind source."""
+    resolved = path.resolve()
+    relative = resolved.relative_to(settings.data_dir.resolve())
+    host_root = os.environ.get("AEGISFORGE_VALIDATOR_HOST_DATA_DIR")
+    if host_root:
+        return str(PurePosixPath(normalize_daemon_root(host_root), *relative.parts))
+    return str(resolved)
 
 
 def strict_object(pairs):
@@ -195,16 +221,37 @@ def sweep_orphans(environment=None) -> int:
         check=True,
     )
     ids = [item for item in listed.stdout.split() if re.fullmatch(r"[0-9a-f]{12,64}", item)]
+    stale = []
     if ids:
+        details = subprocess.run(
+            ["docker", "inspect", *ids],
+            capture_output=True,
+            text=True,
+            env=environment,
+            timeout=15,
+            check=True,
+        )
+        for item in json.loads(details.stdout):
+            labels = item.get("Config", {}).get("Labels", {}) or {}
+            created = datetime.fromisoformat(item["Created"][:26] + "+00:00")
+            age = (datetime.now(UTC) - created).total_seconds()
+            if (
+                age > HARD_TIMEOUT + 30
+                and item.get("Name", "").startswith("/" + NAME_PREFIX)
+                and labels.get("org.aegisforge.validation") == "1"
+                and re.fullmatch(r"[0-9a-f]{32}", labels.get(RUN_LABEL, ""))
+            ):
+                stale.append(item["Id"])
+    if stale:
         subprocess.run(
-            ["docker", "rm", "-f", *ids],
+            ["docker", "rm", "-f", *stale],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             env=environment,
             timeout=30,
             check=False,
         )
-    return len(ids)
+    return len(stale)
 
 
 def run_container(settings, source: str, case, *, run_id=None, should_cancel=None):
@@ -240,7 +287,7 @@ def run_container(settings, source: str, case, *, run_id=None, should_cancel=Non
             cancelled = False
             with output.open("wb") as stream:
                 process = subprocess.Popen(
-                    command(image_id, name, case["id"], path.resolve(), run_id),
+                    command(image_id, name, case["id"], daemon_source(settings, path), run_id),
                     stdin=subprocess.PIPE,
                     stdout=stream,
                     stderr=subprocess.DEVNULL,
@@ -265,6 +312,8 @@ def run_container(settings, source: str, case, *, run_id=None, should_cancel=Non
                     cleanup(process, name, environment)
             if cancelled:
                 return {"status": "cancelled", "run_id": run_id, "elapsed_ms": elapsed()}
+            if process.returncode in {3, 4, 125, 126, 127, 137}:
+                raise ResultError("VALIDATION_ENVIRONMENT")
             tests = parse_harness_output(
                 output.read_bytes(),
                 case=case,

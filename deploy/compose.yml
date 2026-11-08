@@ -1,0 +1,48 @@
+name: aegisforge-m4
+x-app: &app
+  image: aegisforge-app:m4
+  user: "1000:1000"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=64m"]
+  volumes:
+    - ../data:/srv/data
+  environment: &settings
+    AEGISFORGE_DATA_DIR: /srv/data
+    AEGISFORGE_API_TOKEN: ${AEGISFORGE_API_TOKEN:-}
+    AEGISFORGE_MODEL_MODE: ${AEGISFORGE_MODEL_MODE:-fake}
+    AEGISFORGE_DEEPSEEK_MODEL: ${AEGISFORGE_DEEPSEEK_MODEL:-deepseek-flash}
+    AEGISFORGE_DEEPSEEK_API_KEY: ${AEGISFORGE_DEEPSEEK_API_KEY:-}
+services:
+  migrate:
+    <<: *app
+    command: [python, -m, alembic, -c, backend/alembic.ini, upgrade, head]
+    environment:
+      AEGISFORGE_DATA_DIR: /srv/data
+  api:
+    <<: *app
+    command: [python, -m, uvicorn, app.main:app, --host, 0.0.0.0, --port, '8000']
+    ports: [127.0.0.1:8000:8000]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  worker:
+    <<: *app
+    command: [python, -m, app.worker]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  validator:
+    image: aegisforge-runner:m4
+    command: [python, -m, app.validation]
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,noexec,size=64m"]
+    environment:
+      AEGISFORGE_DATA_DIR: /srv/data
+    volumes:
+      - ../data:/srv/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

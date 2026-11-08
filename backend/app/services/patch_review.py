@@ -117,33 +117,97 @@ def locations(findings, source: str) -> list[tuple]:
     return result
 
 
-def _merge(items) -> list[tuple]:
-    merged: dict[tuple, set] = {}
+PATCH_REVIEW_VERSION = "patch-review-1.0"
+
+
+def _slots(items):
+    # Parent results and a fresh rule pass are separate channels; take the maximum
+    # multiplicity, so re-running a rule cannot manufacture extra baseline capacity.
+    positions = {}
     for cwe, start, end, source in items:
-        merged.setdefault((cwe, start, end), set()).add(source)
-    return [(c, s, e, sorted(src)) for (c, s, e), src in sorted(merged.items())]
+        positions.setdefault((cwe, start, end), Counter())[source] += 1
+    slots = []
+    for (cwe, start, end), channels in sorted(positions.items()):
+        engines = set().union(*(set(c.removeprefix("parent:").split("+")) for c in channels))
+        for _ in range(max(channels.values())):
+            for group in slots:
+                if (
+                    group[0] == cwe
+                    and not group[3] & engines
+                    and group[1] <= end
+                    and start <= group[2]
+                ):
+                    group[1], group[2] = max(group[1], start), min(group[2], end)
+                    group[3].update(engines)
+                    break
+            else:
+                slots.append([cwe, start, end, set(engines)])
+    return slots
 
 
-def finding_delta(baseline, target, after, line_map: LineMap) -> dict:
-    """Classify post-patch findings against the pre-patch baseline.
+def finding_delta(baseline, target, after, line_map: LineMap, old_source="", new_source="") -> dict:
+    """One-to-one matching. A prior risk can never explain two post-patch risks."""
+    old, current = _slots(baseline), _slots(after)
+    remaining, matched = set(range(len(old))), {}
+    old_lines, new_lines = old_source.splitlines(), new_source.splitlines()
 
-    persisting: the target vulnerability is still there; preexisting: another vulnerability that
-    was already reported before; introduced: not explained by anything in the baseline.
-    """
-    t_cwe, t_start, t_end = target
-    known = [(cwe, start, end) for cwe, start, end, *_ in baseline]
+    def fingerprint(slot, lines):
+        return " ".join("\n".join(lines[slot[1] - 1 : slot[2]]).split())
+
+    def choose(index, choices):
+        origin = old_lines_for(line_map, current[index][1], current[index][2])
+        pick = min(
+            choices,
+            key=lambda i: (
+                not any(old[i][1] <= line <= old[i][2] for line in origin),
+                old[i][1],
+                i,
+            ),
+        )
+        remaining.remove(pick)
+        matched[index] = pick
+
+    # Exact evidence survives moves; prefer the mapped original when duplicate statements exist.
+    if old_source and new_source:
+        for index, slot in enumerate(current):
+            text = fingerprint(slot, new_lines)
+            choices = [
+                i
+                for i in remaining
+                if old[i][0] == slot[0] and text and fingerprint(old[i], old_lines) == text
+            ]
+            if choices:
+                choose(index, choices)
+    for index, slot in enumerate(current):
+        if index in matched:
+            continue
+        origin = old_lines_for(line_map, slot[1], slot[2])
+        choices = [
+            i
+            for i in remaining
+            if old[i][0] == slot[0] and any(old[i][1] <= line <= old[i][2] for line in origin)
+        ]
+        if choices:
+            choose(index, choices)
     persisting, preexisting, introduced = [], [], []
-    for cwe, start, end, sources in _merge(after):
-        entry = {"cwe": cwe, "start_line": start, "end_line": end, "sources": sources}
-        origin = old_lines_for(line_map, start, end)
-        if not origin:
-            introduced.append(entry)
-        elif cwe == t_cwe and any(t_start <= line <= t_end for line in origin):
-            persisting.append(entry)
-        elif any(c == cwe and s <= line <= e for c, s, e in known for line in origin):
-            preexisting.append(entry)
+    cwe, first, last = target
+    for index, slot in enumerate(current):
+        item = {
+            "cwe": slot[0],
+            "start_line": slot[1],
+            "end_line": slot[2],
+            "sources": sorted(slot[3]),
+        }
+        if index not in matched:
+            item["unchanged_line"] = all(n in line_map.reverse for n in range(slot[1], slot[2] + 1))
+            introduced.append(item)
         else:
-            introduced.append(entry)
+            prior = old[matched[index]]
+            (
+                persisting
+                if prior[0] == cwe and prior[1] <= last and first <= prior[2]
+                else preexisting
+            ).append(item)
     return {
         "target_resolved": not persisting,
         "persisting": persisting,
@@ -366,7 +430,7 @@ def build_gates(checks: dict, dynamic: dict, binding) -> list[dict]:
             add(
                 new,
                 "failed" if part["introduced"] else "passed",
-                "新增：" + _places(part["introduced"])
+                "复检新报告（可能既有漏检或上下文影响）：" + _places(part["introduced"])
                 if part["introduced"]
                 else (
                     "另有原有问题：" + _places(part["preexisting"]) if part["preexisting"] else ""

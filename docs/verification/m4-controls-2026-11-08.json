@@ -1,0 +1,289 @@
+{
+  "scope": "M4 development acceptance; not holdout evaluation",
+  "mode": "controls",
+  "model": null,
+  "passed": true,
+  "results": [
+    {
+      "case": "xss-01",
+      "control": "V",
+      "status": "failed",
+      "run_id": "236f10a9e0994e629d0bd8b64cc33b57",
+      "case_id": "xss-01",
+      "tests": [
+        {
+          "name": "business_greeting",
+          "passed": true
+        },
+        {
+          "name": "business_unicode",
+          "passed": true
+        },
+        {
+          "name": "security_browser_no_script",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 2767,
+      "accepted": true
+    },
+    {
+      "case": "xss-01",
+      "control": "S",
+      "status": "passed",
+      "run_id": "6a50ec969fcb415a831a90c7b251802f",
+      "case_id": "xss-01",
+      "tests": [
+        {
+          "name": "business_greeting",
+          "passed": true
+        },
+        {
+          "name": "business_unicode",
+          "passed": true
+        },
+        {
+          "name": "security_browser_no_script",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "a2c54c8c03e7bed49fa3989e29af112abeb70958af8661326b461f16b6233f7e",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 2720,
+      "accepted": true
+    },
+    {
+      "case": "sqli-01",
+      "control": "V",
+      "status": "failed",
+      "run_id": "f97624166cb34d3a999e3621fe05fd08",
+      "case_id": "sqli-01",
+      "tests": [
+        {
+          "name": "business_lookup",
+          "passed": true
+        },
+        {
+          "name": "business_apostrophe",
+          "passed": false
+        },
+        {
+          "name": "security_query_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1656,
+      "accepted": true
+    },
+    {
+      "case": "sqli-01",
+      "control": "S",
+      "status": "passed",
+      "run_id": "cbeb5d5dfb0644c39631b51eb65c3125",
+      "case_id": "sqli-01",
+      "tests": [
+        {
+          "name": "business_lookup",
+          "passed": true
+        },
+        {
+          "name": "business_apostrophe",
+          "passed": true
+        },
+        {
+          "name": "security_query_boundary",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "dc8cc3e4bd18759a25fb3ea7d68df9a72dc5aa38510f0871cfabd70e62951039",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1712,
+      "accepted": true
+    },
+    {
+      "case": "cmdi-01",
+      "control": "V",
+      "status": "failed",
+      "run_id": "b27d80caaa9d4e4192b2f7b68496a5eb",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": true
+        },
+        {
+          "name": "business_second_host",
+          "passed": true
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1870,
+      "accepted": true
+    },
+    {
+      "case": "cmdi-01",
+      "control": "S",
+      "status": "passed",
+      "run_id": "d1a6ebba80e44c6e904873aef0382e07",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": true
+        },
+        {
+          "name": "business_second_host",
+          "passed": true
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "32511dc8acdb9dc98ba87bca2c553a9a936b63da3b465b2494723ebf661ba165",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1909,
+      "accepted": true
+    },
+    {
+      "probe": "forged_stdout",
+      "status": "failed",
+      "run_id": "b29d5c2d92fd46dca8a76ebeb60056dc",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": false
+        },
+        {
+          "name": "business_second_host",
+          "passed": false
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "5dc210f4d43a9f03f5516aaba981cc52cecd5472b2b1dceb5f346f1488340b7e",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1475,
+      "accepted": true
+    },
+    {
+      "probe": "driver_signal",
+      "status": "failed",
+      "run_id": "ac2642749a2f48cdb86776faa30c7ea4",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": false
+        },
+        {
+          "name": "business_second_host",
+          "passed": false
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "9ae503d7e41a39d9f349974367825bdbeee2bb2d2ee2a07ac97bdc5f09ab01ff",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1556,
+      "accepted": true
+    },
+    {
+      "probe": "infinite_loop",
+      "status": "failed",
+      "run_id": "509c634dc46147c1a1aa443d943ece01",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": false
+        },
+        {
+          "name": "business_second_host",
+          "passed": false
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "d8b5c4b6751d495e5ffef53e4af21891adb500da0df28dc19727ca0cda213d8b",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 28443,
+      "accepted": true
+    },
+    {
+      "probe": "hardcoded_business",
+      "status": "failed",
+      "run_id": "f5ed0f4be2ea4c329dcb88fb13a05e0b",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": false
+        },
+        {
+          "name": "business_second_host",
+          "passed": false
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "240e7a48165da3fd47b69745b29ba2cf95df73f9037e83ff29091271d5862ba3",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1662,
+      "accepted": true
+    },
+    {
+      "probe": "fifo_log",
+      "status": "failed",
+      "run_id": "0f2d8cb9ac1b43aeba5a9c85668c609c",
+      "case_id": "cmdi-01",
+      "tests": [
+        {
+          "name": "business_ping",
+          "passed": false
+        },
+        {
+          "name": "business_second_host",
+          "passed": false
+        },
+        {
+          "name": "security_shell_boundary",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "ca11ce9445810f42e7647c9199025e4bf49d5c6c72b0e8fd582e741a4a97302e",
+      "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+      "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+      "elapsed_ms": 1657,
+      "accepted": true
+    }
+  ]
+}

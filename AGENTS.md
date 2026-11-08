@@ -14,4 +14,5 @@
 - `environment.yml` 管理 conda 运行时；Python 库声明在 `backend/pyproject.toml`，精确版本记录在 `backend/requirements*.lock`，通过该 conda 环境中的 pip 安装。环境或依赖变化同步这些文件和 README；Node 依赖使用 npm 锁文件。
 - 环境固定设置 `PYTHONNOUSERSITE=1`，隔离 Windows 用户级 Python 包；设置 `PYTHONUTF8=1` 统一中文编码。不得通过启用用户 site-packages 绕过缺失依赖。
 - 新的启动/检查命令必须实际验证后才写为可用。用户提到的 `AGENT.md` 作为本文件的入口说明，一并保留 Anaconda 约束。
+- M4 的受控 Docker 运行时与部署镜像使用固定 Python 3.13 基础镜像及各自锁文件；它们不向主机安装 Python 包。主机上的构建编排、模型、迁移、测试命令仍全部使用 Anaconda `AegisForge`。动态验收采用 Compose 隔离配置，API/worker 无 Docker CLI/socket；本地同用户启动仅有代码路径分离。
 - 未获得用户明确要求时，不启动子代理或并行代理任务。

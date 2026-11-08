@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, ConfigProvider, Input, Select, Tag } from 'antd';
+import controlledSamples from '../examples/controlledSamples.json';
 import { ApiError, uploadArtifact } from '../api/client';
 import type { ArtifactPreview, Finding } from '../types/api';
 
@@ -87,6 +88,8 @@ export default function IngestPanel({ token, onArtifact }: { token: string; onAr
       placeholder={kind === 'source' ? '粘贴 Python 源码' : 'GET / HTTP/1.1\nHost: example.invalid\n\n'} />
     <div className="ingest-actions">
       <Button onClick={() => { invalidate(); clearFile(); setContent(SAMPLES[kind]); }}>载入开发示例</Button>
+      {kind === 'source' && controlledSamples.map(sample => <Button key={sample.id}
+        onClick={() => { invalidate(); clearFile(); setContent(sample.source); }}>受控 {sample.id.split('-')[0].toUpperCase()} 示例</Button>)}
       <Button type="primary" loading={busy} disabled={!token || (!file && !content.trim())} onClick={() => void submit()}>保存并预览特征</Button>
     </div>
     {!token && <p>连接服务后即可提交输入。</p>}

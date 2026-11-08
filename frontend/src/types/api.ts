@@ -95,6 +95,7 @@ export interface Repair {
   diff: string; validation_status: 'passed' | 'failed' | 'unverified' | 'error'; call_count: number;
   simulated?: boolean; gates?: Gate[]; impact?: PatchImpact | null; dynamic_requested?: boolean;
   checks: {
+    contract?: { digest: string; model_alias: string; model: string | null; versions: Record<string, string>; candidate_sha256?: string; source_sha256: string; diff_sha256?: string };
     mode?: string; explanation?: string; syntax?: string; static_passed?: boolean; target_remaining?: boolean;
     llm_complete?: boolean; review?: { status: string; error: string | null };
     preexisting?: { cwe: string; start_line: number; end_line: number }[];

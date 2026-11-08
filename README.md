@@ -8,7 +8,7 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
-**M3 智能检测闭环已实现并通过本地验证，待 PR 集成。** 支持 Python/离线 HTTP 输入、规则/模型/联合策略、DeepSeek 真实分析、独立 worker、持久任务、取消/重试及最小结果页。模型失败保留已有证据并明确标为部分完成；修复和动态验证留待 M4。
+**M4 修复与验证闭环已实现并通过本地验收，待 PR 集成。** 支持受限候选补丁、diff 下载、语法/结构/规则/LLM复检、修复门禁账本、变更影响及执行契约。三个登记开发例已通过真实 DeepSeek 检测→修复→受控安全/业务回归；Compose 将 API/worker 与 Docker 控制器分离。见 [M4 验证](docs/m4-verification.md)、[设计](docs/m4-design.md)及[协作记录](docs/collaboration-2026-11-08.md)。
 
 M1 科技流动视觉继续保留。M3 按用户分工完成三阶段、同一 Claude 会话四次真实调用，并在审查中提出和落实创新：逐块覆盖账本、可下载检测凭证。验证包含三类真实 DeepSeek 开发演示；详见 [M3 验证](docs/m3-verification.md)、[设计](docs/m3-design.md)和 [协作记录](docs/collaboration-2026-11-07.md)。冻结的 120 源码/60 HTTP 样例仍保持原划分，人工标注复核 pending，正式准确率评测留待 M6。
 
@@ -123,12 +123,48 @@ $env:PLAYWRIGHT_CHANNEL = 'chrome'
 npm --prefix frontend run test:e2e
 ```
 
-当前三个浏览器场景覆盖连接/动效、上传/脱敏/规则/HTTP 边界、任务/独立 worker/模拟模式/重试/刷新/凭证下载及手机布局。浏览器测试固定选 fake，不消费真实模型预算；真实三类演示由上述脚本单独验证，修复 E2E 留待 M4/M5。其他平台可安装 Playwright Chromium。
+当前默认四个浏览器场景覆盖连接/动效、上传/脱敏/规则/HTTP 边界、任务/独立 worker/模拟模式/重试/刷新/凭证下载及手机布局。浏览器测试固定选 fake，不消费真实模型预算；另外可显式开启真实修复 E2E，下面给出命令。其他平台可安装 Playwright Chromium。
 
-`scripts/check.py` 也校验 [冻结清单](samples/freeze.json)。开发代码仅使用 `samples/dev/`；保留集只作完整性、语法和解析预算检查，正式检测评测留待 M6。18 个受控修复例已预登记，实际隔离测试留待 M4。不要为适配规则结果改写保留标签或静默重新冻结。
+`scripts/check.py` 也校验 [冻结清单](samples/freeze.json)。开发代码仅使用 `samples/dev/`；保留集只作完整性、语法和解析预算检查，正式检测评测留待 M6。18 个保留集受控修复例已预登记，正式实验留待 M6；M4另用三个开发例完成动态闭环。不要为适配规则结果改写保留标签或静默重新冻结。
 
 ## 依赖与后续推进
 
 `environment.yml` 管理 conda 运行时，`backend/pyproject.toml` 声明 Python 库范围，`backend/requirements*.lock` 记录精确版本，前端由 `package-lock.json` 锁定。Python 锁文件由同一 conda 环境中的 pip-tools 生成；依赖调整同步声明、锁文件、测试及 PLAN。
 
-**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR 集成状态以 Issue 为准。M3 分支堆叠在仍待审的 M2 PR #12 上，避免重复审查前序改动。修复与验证加分项仍在 M4 必须交付，最终真实模型对比留待 M6。
+**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR 集成状态以 Issue 为准。M3 分支堆叠在仍待审的 M2 PR #12 上，避免重复审查前序改动。M4已交付修复与验证加分项并完成开发验收，完整历史/报告留M5，最终真实模型对比和18例修复实验留M6。
+
+
+## M4 修复与受控部署
+
+安装并启动 Docker Desktop 的 Linux engine 后，在 Anaconda AegisForge 环境运行：
+
+```text
+conda run --no-capture-output -n AegisForge python scripts/build_validator.py
+conda run --no-capture-output -n AegisForge python scripts/deploy.py build
+conda run --no-capture-output -n AegisForge python scripts/deploy.py up
+npm --prefix frontend run dev
+```
+
+先用 `scripts/dev.py init` 建立本地 API token；真实模型仍只从 OS 环境变量读取。不要与本地主机 api/worker 同时连接同一个运行数据库；启动 Compose 前停止这些进程。Compose 的 migrate、api、worker、validator 都在 Linux 访问共享 data，API 绑定 127.0.0.1:8000；Linux 新机器需使绑定目录 data 可由 UID 1000 写入。首次镜像构建要下载 Chromium 及系统依赖，可能耗时较久。浏览器只使用本地 API token，永远不接触模型 key。
+
+连接页面后可选择“受控 XSS/SQLI/CMDI 示例”，保存、检测，在发现处按当前模型生成候选修复。模型修复会消费额外调用；HTTP 缺源码不可修复，含脱敏占位符或多块源码拒绝自动补丁。候选不覆盖输入。查看门禁、影响和契约，下载补丁/源码，申请动态验证。独立控制器离线时页面保留 pending 并提示启动 runner；环境失败明确为 error；普通源码不在登记表内为 unverified。通过只表示本次固定测试集通过。
+
+离线对照/对抗验收、部署边界检查及有界真实演示：
+
+```text
+conda run --no-capture-output -n AegisForge python scripts/repair_smoke.py controls
+conda run --no-capture-output -n AegisForge python scripts/probe_deployment.py
+conda run --no-capture-output -n AegisForge python scripts/repair_smoke.py live
+```
+
+live 最多12次外部调用/数据库部署，实际本次三例用了9次；临时输入和DB留在被忽略的data。它使用进程内API/worker，并且候选只在Docker执行。独立部署真实浏览器链另行验证，需显式选择：
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chrome'
+$env:AEGISFORGE_E2E_REAL = '1'
+npm --prefix frontend run test:e2e -- --workers=1 tests/e2e/repairs.spec.ts --grep 'real DeepSeek'
+```
+
+默认 E2E 跳过这个付费场景；四个离线场景不调用真实模型，修复动态场景需要上述Compose及验证镜像。`python scripts/deploy.py down` 停止本项目容器并保留 data。仅本机开发也可 `python scripts/dev.py validator` 启动独立受信 runner；它不导入模型 key，但同 Windows 用户不构成 OS 权限隔离，不能替代 Compose 的隔离验收。
+
+![M4 真实修复与门禁](docs/screenshots/m4-real-repair-desktop.png)

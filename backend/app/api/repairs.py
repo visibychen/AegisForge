@@ -26,7 +26,7 @@ class RepairRequest(BaseModel):
 
 def install_repair_routes(app, require_token):
     database = app.state.database_dependency
-    auth = [Depends(require_token)]
+    auth = [Depends(require_token), Depends(database)]
 
     @app.post("/api/v1/repairs", status_code=202, dependencies=auth)
     async def create(request: Request):

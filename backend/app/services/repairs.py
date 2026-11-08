@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import hashlib
 import json
 import time
 from datetime import timedelta
@@ -36,6 +37,7 @@ from app.services.queue import (
     with_db_retry,
 )
 from app.services.receipts import canonical, digest
+from app.services.repair_contract import capture_contract, seal_contract
 from app.validation.registry import dynamic_binding
 
 MAX_REPAIRS_PER_FINDING = 3
@@ -99,7 +101,7 @@ def baseline_for(session, scan, artifact) -> list[tuple]:
     baseline = []
     for row in rows:
         finding = json.loads(row.payload)["finding"]
-        baseline.extend(locations([finding], "+".join(finding.get("sources", []))))
+        baseline.extend(locations([finding], "parent:" + "+".join(finding.get("sources", []))))
     return baseline
 
 
@@ -329,10 +331,24 @@ def store_candidate(engine, settings, lease, wire, candidate, diff, checks, *, f
             session.get(Artifact, item.source_id),
             session.get(FindingRecord, item.finding_id),
         )
-        preview = store_artifact(
-            session, settings, "candidate.py", "source", candidate.encode(), commit=False
-        )
-        item.candidate_id, item.diff = preview["id"], diff
+        sha = hashlib.sha256(candidate.encode()).hexdigest()
+        prior = session.get(Artifact, item.candidate_id) if item.candidate_id else None
+        if prior is not None and prior.sha256 == sha:
+            load_artifact(settings, prior)
+            candidate_id = prior.id
+        else:
+            candidate_id = store_artifact(
+                session, settings, "candidate.py", "source", candidate.encode(), commit=False
+            )["id"]
+        if "contract" in checks:
+            checks["contract"] = seal_contract(
+                {
+                    **checks["contract"],
+                    "candidate_sha256": sha,
+                    "diff_sha256": hashlib.sha256(diff.encode()).hexdigest(),
+                }
+            )
+        item.candidate_id, item.diff = candidate_id, diff
         item.edits_json = canonical(wire.model_dump(mode="json")["edits"])
         item.checks_json = canonical(checks)
         if final:
@@ -362,6 +378,7 @@ async def execute_repair(engine, settings, lease, factory=None):
             target = json.loads(finding.payload)["finding"]
             baseline = baseline_for(session, scan, source)
             remaining = settings.task_timeout_seconds - (utcnow() - item.started_at).total_seconds()
+            checks["contract"] = capture_contract(settings, item, scan)
             simulated = item.model_alias == "fake"
             source_id = source.id
         if remaining <= 0:
@@ -402,6 +419,7 @@ async def execute_repair(engine, settings, lease, factory=None):
         candidate, diff = apply_edits(parsed.content, wire.edits)
         line_map = build_line_map(parsed.content, candidate)
         checks = {
+            "contract": checks["contract"],
             "mode": "fake" if simulated else "real",
             "syntax": "passed",
             "patch": "passed",
@@ -420,7 +438,12 @@ async def execute_repair(engine, settings, lease, factory=None):
             after_rules = detect(UUID(source_id), "source", parse_input("source", candidate))
             known = baseline + locations(before_rules.findings, "rule")
             checks["delta"]["rules"] = finding_delta(
-                known, target_loc, locations(after_rules.findings, "rule"), line_map
+                known,
+                target_loc,
+                locations(after_rules.findings, "rule"),
+                line_map,
+                parsed.content,
+                candidate,
             )
         summarize(checks)
         if simulated:
@@ -456,7 +479,12 @@ async def execute_repair(engine, settings, lease, factory=None):
         if review_error is None and reviewed is not None:
             checks["review"] = {"status": "complete", "error": None}
             checks["delta"]["model"] = finding_delta(
-                known, target_loc, locations(reviewed.findings, "llm"), line_map
+                known,
+                target_loc,
+                locations(reviewed.findings, "llm"),
+                line_map,
+                parsed.content,
+                candidate,
             )
         else:
             checks["review"] = {"status": "failed", "error": review_error}

@@ -6,6 +6,9 @@ import sys
 
 
 def main():
+    from target_guard import apply_guard
+
+    apply_guard()
     port = int(sys.argv[1])
     spec = importlib.util.spec_from_file_location("candidate", "/candidate.py")
     module = importlib.util.module_from_spec(spec)

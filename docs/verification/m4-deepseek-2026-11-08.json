@@ -1,0 +1,467 @@
+{
+  "scope": "M4 development acceptance; not holdout evaluation",
+  "mode": "live",
+  "model": "deepseek-flash",
+  "passed": true,
+  "results": [
+    {
+      "case": "xss-01",
+      "repair_id": "85abe10a-8188-4131-bd7b-bfa8928be420",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "passed",
+      "contract": {
+        "candidate_sha256": "a2c54c8c03e7bed49fa3989e29af112abeb70958af8661326b461f16b6233f7e",
+        "diff_sha256": "d6abc2ba4251db0a3eedb00340f87f8f0ecab50665aec24ea46603f484c543c4",
+        "digest": "ad95c0f7c39e72217b671c88a3e4ad74efeb3e2b33155a91866242e5e2dd990d",
+        "finding_anchor": "0ca55a6ea798815976dbcc7d78f89b8fef8912978521c4e0e34010d71400670f",
+        "limits": {
+          "call_timeout_seconds": 60.0,
+          "task_timeout_seconds": 180.0
+        },
+        "model": "deepseek-flash",
+        "model_alias": "deepseek",
+        "parameters": {
+          "max_tokens": 4096,
+          "response_format": "json_object",
+          "stream": false,
+          "temperature": 0,
+          "thinking": {
+            "type": "disabled"
+          }
+        },
+        "parent_attempt": 0,
+        "schema_version": "repair-contract-1.0",
+        "source_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+        "versions": {
+          "analysis_prompt": "analysis-1.1",
+          "parser": "inputs-1.2",
+          "patch_review": "patch-review-1.0",
+          "redaction": "redaction-1.2",
+          "repair_prompt": "repair-1.1",
+          "repair_wire": "repair-1.0",
+          "rules": "rules-1.1"
+        }
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "passed",
+          "detail": ""
+        }
+      ],
+      "dynamic": {
+        "candidate_sha256": "a2c54c8c03e7bed49fa3989e29af112abeb70958af8661326b461f16b6233f7e",
+        "case_id": "xss-01",
+        "digest": "f7957689b3a139507eaf1e30b337dc6f268686575c6b799099f8cdc84f073f2f",
+        "elapsed_ms": 2826,
+        "finished_at": "2026-11-08T07:50:29.606742+00:00",
+        "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+        "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+        "registry_sha256": "8153d7dfd8d008e6c07eeb3c63b078b6a705588e66115c2746136dbd22422681",
+        "requested_at": "2026-11-08T07:50:26.756156+00:00",
+        "run_id": "fd0fc655985a4698a3ffa90599b4924d",
+        "source_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+        "started_at": "2026-11-08T07:50:26.770945+00:00",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "business_greeting",
+            "passed": true
+          },
+          {
+            "name": "business_unicode",
+            "passed": true
+          },
+          {
+            "name": "security_browser_no_script",
+            "passed": true
+          }
+        ],
+        "tests_sha256": "760a7cf83c7d431f407776a4ef0e4519ddf8d10c17424d6aa9e0291e77307fdb"
+      },
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 1815,
+          "input_tokens": 694,
+          "output_tokens": 193,
+          "prompt_version": "repair-1.1"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 3015,
+          "input_tokens": 1311,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.1"
+        }
+      ],
+      "accepted": true,
+      "scan_id": "67fea122-558a-47a2-8872-b4521d3631ce",
+      "analysis": {
+        "status": "completed",
+        "analysis_complete": true,
+        "llm_cwes": [
+          "CWE-79"
+        ],
+        "detection_call_count": 1
+      }
+    },
+    {
+      "case": "sqli-01",
+      "repair_id": "b7643a8c-303d-4304-ac92-7b94075618d7",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "passed",
+      "contract": {
+        "candidate_sha256": "dc8cc3e4bd18759a25fb3ea7d68df9a72dc5aa38510f0871cfabd70e62951039",
+        "diff_sha256": "144c92a5d01ec7ee43f44237a00458b33863d27ccf7cade246bc0bbceaf54d70",
+        "digest": "25a4d0c42bffcb1b616709fc6a1a65444c0aa13e73b032e84a6826f60009fa22",
+        "finding_anchor": "d537b959e2d290cd239166dbb64c2119ad8c61ac8ed2e0f7b9ff5bc332de921b",
+        "limits": {
+          "call_timeout_seconds": 60.0,
+          "task_timeout_seconds": 180.0
+        },
+        "model": "deepseek-flash",
+        "model_alias": "deepseek",
+        "parameters": {
+          "max_tokens": 4096,
+          "response_format": "json_object",
+          "stream": false,
+          "temperature": 0,
+          "thinking": {
+            "type": "disabled"
+          }
+        },
+        "parent_attempt": 0,
+        "schema_version": "repair-contract-1.0",
+        "source_sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e",
+        "versions": {
+          "analysis_prompt": "analysis-1.1",
+          "parser": "inputs-1.2",
+          "patch_review": "patch-review-1.0",
+          "redaction": "redaction-1.2",
+          "repair_prompt": "repair-1.1",
+          "repair_wire": "repair-1.0",
+          "rules": "rules-1.1"
+        }
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "passed",
+          "detail": ""
+        }
+      ],
+      "dynamic": {
+        "candidate_sha256": "dc8cc3e4bd18759a25fb3ea7d68df9a72dc5aa38510f0871cfabd70e62951039",
+        "case_id": "sqli-01",
+        "digest": "67744e023c5919faaa531b982640ebe66ffc8efe8e3905a57be7075bf9ff7141",
+        "elapsed_ms": 1712,
+        "finished_at": "2026-11-08T07:50:31.354727+00:00",
+        "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+        "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+        "registry_sha256": "8153d7dfd8d008e6c07eeb3c63b078b6a705588e66115c2746136dbd22422681",
+        "requested_at": "2026-11-08T07:50:29.621568+00:00",
+        "run_id": "b58da80ef61c4fdd85163218e38c2977",
+        "source_sha256": "f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e",
+        "started_at": "2026-11-08T07:50:29.633022+00:00",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "business_lookup",
+            "passed": true
+          },
+          {
+            "name": "business_apostrophe",
+            "passed": true
+          },
+          {
+            "name": "security_query_boundary",
+            "passed": true
+          }
+        ],
+        "tests_sha256": "bdce79f57b9fa65da47e3826ad88564e6942d3cb5bb58000f08e6c760459bad8"
+      },
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2018,
+          "input_tokens": 732,
+          "output_tokens": 151,
+          "prompt_version": "repair-1.1"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 4447,
+          "input_tokens": 1337,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.1"
+        }
+      ],
+      "accepted": true,
+      "scan_id": "8b083683-78f5-4869-a5ff-9a1c38bb610d",
+      "analysis": {
+        "status": "completed",
+        "analysis_complete": true,
+        "llm_cwes": [
+          "CWE-89"
+        ],
+        "detection_call_count": 1
+      }
+    },
+    {
+      "case": "cmdi-01",
+      "repair_id": "4de36d23-8854-4f91-a6ee-1b32250f9b11",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "passed",
+      "contract": {
+        "candidate_sha256": "7a65b6b7dfcd42a00d04c65e601aed3eb6f076da67900e72b5db63a48de68f07",
+        "diff_sha256": "dadabdc52f7629b9de2135455392052c0153140acb6de1132d17d36e2391f089",
+        "digest": "de87774ab9df1552021278d446a230325b6da684fce45ecaff3374f6389e9da4",
+        "finding_anchor": "b04e7a0b63466fab8903d0ff41dcb8a51a333b482e305c671f73f2c97a3f93fb",
+        "limits": {
+          "call_timeout_seconds": 60.0,
+          "task_timeout_seconds": 180.0
+        },
+        "model": "deepseek-flash",
+        "model_alias": "deepseek",
+        "parameters": {
+          "max_tokens": 4096,
+          "response_format": "json_object",
+          "stream": false,
+          "temperature": 0,
+          "thinking": {
+            "type": "disabled"
+          }
+        },
+        "parent_attempt": 0,
+        "schema_version": "repair-contract-1.0",
+        "source_sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a",
+        "versions": {
+          "analysis_prompt": "analysis-1.1",
+          "parser": "inputs-1.2",
+          "patch_review": "patch-review-1.0",
+          "redaction": "redaction-1.2",
+          "repair_prompt": "repair-1.1",
+          "repair_wire": "repair-1.0",
+          "rules": "rules-1.1"
+        }
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "passed",
+          "detail": ""
+        }
+      ],
+      "dynamic": {
+        "candidate_sha256": "7a65b6b7dfcd42a00d04c65e601aed3eb6f076da67900e72b5db63a48de68f07",
+        "case_id": "cmdi-01",
+        "digest": "d694987125f9d23c807961f6bddfbfb117b08269041a6723722018cf75a4bf36",
+        "elapsed_ms": 1809,
+        "finished_at": "2026-11-08T07:50:33.194591+00:00",
+        "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+        "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+        "registry_sha256": "8153d7dfd8d008e6c07eeb3c63b078b6a705588e66115c2746136dbd22422681",
+        "requested_at": "2026-11-08T07:50:31.366335+00:00",
+        "run_id": "1e14f0f653eb4a0dbc1f806cc49f42c2",
+        "source_sha256": "235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a",
+        "started_at": "2026-11-08T07:50:31.375923+00:00",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "business_ping",
+            "passed": true
+          },
+          {
+            "name": "business_second_host",
+            "passed": true
+          },
+          {
+            "name": "security_shell_boundary",
+            "passed": true
+          }
+        ],
+        "tests_sha256": "c04d0922dc4c84255ac10868a779d9e810cb7f3791306f99d2b970a695b693c9"
+      },
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2861,
+          "input_tokens": 712,
+          "output_tokens": 231,
+          "prompt_version": "repair-1.1"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 1695,
+          "input_tokens": 1373,
+          "output_tokens": 47,
+          "prompt_version": "analysis-1.1"
+        }
+      ],
+      "accepted": true,
+      "scan_id": "78755952-d18a-43a9-a4d3-707afe170ca1",
+      "analysis": {
+        "status": "completed",
+        "analysis_complete": true,
+        "llm_cwes": [
+          "CWE-78"
+        ],
+        "detection_call_count": 1
+      }
+    }
+  ],
+  "final_harness_recheck": "existing real candidates, zero additional model calls",
+  "external_call_count": 9,
+  "worker_mode": "in_process; candidate execution in Docker only"
+}

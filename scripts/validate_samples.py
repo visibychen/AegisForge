@@ -32,7 +32,10 @@ def main():
             try:
                 worked = validate_one(engine, settings, args.repair)
             except Exception:  # noqa: BLE001 - one bad request must not kill the runner
-                print("Validation request failed; see the repair's dynamic record.", flush=True)
+                print(
+                    "Validation request failed; see the repair's dynamic record.",
+                    flush=True,
+                )
                 worked = False
             if args.once or args.repair:
                 return

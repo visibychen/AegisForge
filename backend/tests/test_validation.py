@@ -1,5 +1,6 @@
 import json
 import subprocess
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -50,17 +51,38 @@ def test_orphan_sweep_is_label_scoped_and_ignores_malformed_ids(monkeypatch):
     calls = []
 
     def fake(args, **_kwargs):
+        from datetime import datetime, timedelta
+        from types import SimpleNamespace
+
         calls.append(args)
+        if args[1] == "ps":
+            return SimpleNamespace(stdout="abcdef123456\n123456abcdef\nnot-an-id;rm -rf\n")
+        if args[1] == "inspect":
+            now = datetime.now(UTC)
 
-        class Result:
-            stdout = "abcdef123456\nnot-an-id;rm -rf\n"
+            def record(ident, seconds):
+                return {
+                    "Id": ident,
+                    "Name": "/" + NAME_PREFIX + ident,
+                    "Created": (now - timedelta(seconds=seconds)).isoformat(),
+                    "Config": {
+                        "Labels": {
+                            "org.aegisforge.validation": "1",
+                            "org.aegisforge.validation-run": "a" * 32,
+                        }
+                    },
+                }
 
-        return Result()
+            return SimpleNamespace(
+                stdout=json.dumps([record("abcdef123456", 90), record("123456abcdef", 5)])
+            )
+        return SimpleNamespace(stdout="")
 
     monkeypatch.setattr("app.validation.runner.subprocess.run", fake)
     assert sweep_orphans({"PATH": "x"}) == 1
-    listing, removal = calls
+    listing, inspection, removal = calls
     assert f"label={PROJECT_LABEL}" in listing and f"name={NAME_PREFIX}" in listing
+    assert inspection == ["docker", "inspect", "abcdef123456", "123456abcdef"]
     assert removal == ["docker", "rm", "-f", "abcdef123456"]
 
 
@@ -93,7 +115,7 @@ def test_runner_command_has_fixed_isolation_and_only_candidate_mount():
     assert args[args.index("--network") + 1] == "none"
     assert args[args.index("--user") + 1] == "65532:65532"
     assert args[args.index("--cap-drop") + 1] == "ALL"
-    assert args[args.index("--pids-limit") + 1] == "64"
+    assert args[args.index("--pids-limit") + 1] == "128"
     assert args[args.index("--memory") + 1] == "512m"
     assert "--read-only" in args and "no-new-privileges:true" in args
     assert sum(arg == "--mount" for arg in args) == 1
