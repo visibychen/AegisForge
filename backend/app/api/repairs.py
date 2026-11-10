@@ -10,11 +10,13 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.core.errors import DomainError
-from app.models import Artifact, Job, Repair
+from app.models import Artifact, FindingRecord, Job, Repair, ScanTask
 from app.services.artifacts import load_artifact
 from app.services.queue import transaction, utcnow
 from app.services.receipts import canonical
 from app.services.repairs import create_repair, repair_view, require_repair
+from app.services.scans import require_scan
+from app.services.workspace import compare_view
 
 
 class RepairRequest(BaseModel):
@@ -54,13 +56,18 @@ def install_repair_routes(app, require_token):
 
     @app.get("/api/v1/repairs", dependencies=auth)
     def history(scan_id: UUID, session: Annotated[Session, Depends(database)]):
+        require_scan(session, str(scan_id))  # a removed scan has no repair history either
         rows = session.scalars(
             select(Repair)
             .where(Repair.scan_id == str(scan_id))
-            .order_by(Repair.created_at.desc())
+            .order_by(Repair.created_at.desc(), Repair.id)
             .limit(20)
         )
         return {"repairs": [repair_view(session, r) for r in rows]}
+
+    @app.get("/api/v1/repairs/{repair_id}/compare", dependencies=auth)
+    def compare(repair_id: UUID, session: Annotated[Session, Depends(database)]):
+        return {"compare": compare_view(session, app.state.settings, str(repair_id))}
 
     @app.get("/api/v1/repairs/{repair_id}", dependencies=auth)
     def detail(repair_id: UUID, session: Annotated[Session, Depends(database)]):
@@ -116,6 +123,12 @@ def install_repair_routes(app, require_token):
             item = require_repair(session, str(repair_id))
             if item.status != "candidate":
                 raise DomainError("CANDIDATE_NOT_READY", "候选尚未生成。", 409)
+            finding = session.get(FindingRecord, item.finding_id)
+            parent = session.get(ScanTask, item.scan_id)
+            if finding is None or finding.attempt != parent.retries:
+                raise DomainError(
+                    "REPAIR_ARCHIVED", "旧尝试候选只能查看，不能重新申请动态验证。", 409
+                )
             match_case(item.source_sha256)
             if json.loads(item.dynamic_json).get("status") in {"pending", "running"}:
                 raise DomainError("VALIDATION_IN_PROGRESS", "受控动态验证正在进行。", 409)

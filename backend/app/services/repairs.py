@@ -47,9 +47,11 @@ PASS_THROUGH = {"LEASE_LOST", "TASK_CANCELLED"}
 
 
 def require_repair(session, repair_id):
+    """Single choke point: a repair of a removed (logically deleted) scan does not exist."""
     item = session.get(Repair, repair_id)
-    if item is None:
-        raise DomainError("REPAIR_NOT_FOUND", "候选修复不存在。", 404)
+    scan = session.get(ScanTask, item.scan_id) if item is not None else None
+    if item is None or scan is None or scan.deleted_at is not None:
+        raise DomainError("REPAIR_NOT_FOUND", "候选修复不存在或其检测任务已移出历史。", 404)
     return item
 
 
@@ -68,6 +70,7 @@ def ensure_fresh(item, scan, artifact, finding):
     """The repair is only meaningful for the exact finding, snapshot and *current* analysis."""
     if (
         scan is None
+        or scan.deleted_at is not None
         or artifact is None
         or finding is None
         or scan.status not in {"completed", "partial"}
@@ -89,12 +92,12 @@ def repair_source(settings, artifact):
     return parsed
 
 
-def baseline_for(session, scan, artifact) -> list[tuple]:
+def baseline_for(session, scan, artifact, attempt=None) -> list[tuple]:
     """Findings reported for this snapshot by the parent analysis (rules and model alike)."""
     rows = session.scalars(
         select(FindingRecord).where(
             FindingRecord.scan_id == scan.id,
-            FindingRecord.attempt == scan.retries,
+            FindingRecord.attempt == (scan.retries if attempt is None else attempt),
             FindingRecord.artifact_id == artifact.id,
         )
     )
@@ -118,14 +121,14 @@ def create_repair(engine, settings, finding_id, sha256, alias, key):
                 alias,
             ):
                 raise DomainError("IDEMPOTENCY_CONFLICT", "幂等键与先前请求不一致。", 409)
+            # Reusing a key must never resurrect a repair of a removed scan.
+            require_repair(session, item.id)
             return item.id
         finding = session.get(FindingRecord, finding_id)
-        if finding is None:
-            raise DomainError("FINDING_NOT_FOUND", "发现不存在。", 404)
-        scan, artifact = (
-            session.get(ScanTask, finding.scan_id),
-            session.get(Artifact, finding.artifact_id),
-        )
+        scan = session.get(ScanTask, finding.scan_id) if finding is not None else None
+        if finding is None or scan is None or scan.deleted_at is not None:
+            raise DomainError("FINDING_NOT_FOUND", "发现不存在或其检测任务已移出历史。", 404)
+        artifact = session.get(Artifact, finding.artifact_id)
         repair_source(settings, artifact)
         if (
             artifact.sha256 != sha256
@@ -168,13 +171,23 @@ def create_repair(engine, settings, finding_id, sha256, alias, key):
         return item.id
 
 
-def repair_view(session, item):
-    calls = session.scalars(select(ModelCall).where(ModelCall.job_id == item.job_id)).all()
+def evaluate_repair(session, item):
+    """(checks, dynamic record, gate ledger, verdict) shared by detail views and aggregates."""
     checks, dynamic = json.loads(item.checks_json), json.loads(item.dynamic_json)
     candidate = session.get(Artifact, item.candidate_id) if item.candidate_id else None
     binding = dynamic_binding(item.source_sha256, dynamic, candidate.sha256 if candidate else None)
     gates = build_gates(checks, dynamic, binding)
+    return checks, dynamic, gates, verdict_for(item.status, item.error_code, checks, gates)
+
+
+def repair_view(session, item):
+    calls = session.scalars(select(ModelCall).where(ModelCall.job_id == item.job_id)).all()
+    checks, dynamic, gates, verdict = evaluate_repair(session, item)
+    finding = session.get(FindingRecord, item.finding_id)
+    scan = session.get(ScanTask, item.scan_id)
     return {
+        "finding_attempt": finding.attempt if finding else None,
+        "archived": finding is None or scan is None or finding.attempt != scan.retries,
         "id": item.id,
         "scan_id": item.scan_id,
         "finding_id": item.finding_id,
@@ -186,6 +199,7 @@ def repair_view(session, item):
         "model": item.model_name,
         "status": item.status,
         "error_code": item.error_code,
+        "created_at": item.created_at.isoformat() if item.created_at else None,
         "diff": item.diff,
         "checks": checks,
         "impact": checks.get("impact"),
@@ -193,7 +207,7 @@ def repair_view(session, item):
         "simulated": checks.get("mode") == "fake",
         "dynamic": dynamic,
         "dynamic_requested": item.dynamic_requested,
-        "validation_status": verdict_for(item.status, item.error_code, checks, gates),
+        "validation_status": verdict,
         "call_count": len(calls),
         "prompt_version": REPAIR_PROMPT_VERSION,
         "calls": [
@@ -228,15 +242,23 @@ def claim_repair(engine, settings):
             else:
                 job.status, item.status = "queued", "queued"
         session.flush()
-        job = session.scalar(
-            select(Job)
-            .where(Job.kind == "repair", Job.status == "queued")
-            .order_by(Job.created_at, Job.id)
-            .limit(1)
-        )
-        if job is None:
-            return None
-        item = session.scalar(select(Repair).where(Repair.job_id == job.id))
+        while True:
+            job = session.scalar(
+                select(Job)
+                .where(Job.kind == "repair", Job.status == "queued")
+                .order_by(Job.created_at, Job.id)
+                .limit(1)
+            )
+            if job is None:
+                return None
+            item = session.scalar(select(Repair).where(Repair.job_id == job.id))
+            scan = session.get(ScanTask, item.scan_id)
+            if scan is not None and scan.deleted_at is None:
+                break
+            # Defence in depth: a queued repair of a removed scan is never executed or paid for.
+            job.status = item.status = "cancelled"
+            item.error_code, item.finished_at = "SCAN_REMOVED", at
+            session.flush()
         job.status, item.status, job.lease_token = "running", "running", str(uuid4())
         job.attempts += 1
         job.heartbeat_at = at

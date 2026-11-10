@@ -39,15 +39,26 @@ def main():
             "model_key_present": model_key,
         }
         if role != "validator":
-            code = (
-                "import json,os,shutil,socket; from pathlib import Path; "
-                "s=socket.socket();s.settimeout(1); "
-                "print(json.dumps({'uid':os.getuid(),"
-                "'docker_cli':shutil.which('docker') is not None,"
-                "'socket':Path('/var/run/docker.sock').exists(),"
-                "'status':Path('/proc/self/status').read_text(),"
-                "'daemon_tcp_accessible':s.connect_ex(('host.docker.internal',2375))==0}))"
-            )
+            code = """
+import json,os,shutil,socket
+from pathlib import Path
+hosts=['host.docker.internal']
+for line in Path('/proc/net/route').read_text().splitlines()[1:]:
+    parts=line.split()
+    if len(parts)>2 and parts[1]=='00000000':
+        hosts.append(socket.inet_ntoa(bytes.fromhex(parts[2])[::-1]))
+accessible=False
+for host in hosts:
+    try:
+        with socket.socket() as connection:
+            connection.settimeout(1)
+            accessible = accessible or connection.connect_ex((host,2375))==0
+    except OSError:
+        pass
+print(json.dumps({'uid':os.getuid(),'docker_cli':shutil.which('docker') is not None,
+    'socket':Path('/var/run/docker.sock').exists(),'status':Path('/proc/self/status').read_text(),
+    'daemon_tcp_accessible':accessible}))
+"""
             result = subprocess.run(
                 ["docker", "exec", name, "python", "-c", code],
                 capture_output=True,

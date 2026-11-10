@@ -72,6 +72,7 @@ class ScanTask(Base):
     attempts_json: Mapped[str] = mapped_column(Text, default="[]", server_default="[]")
     plan_json: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
     attempt_started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
 class TaskArtifact(Base):

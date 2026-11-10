@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.5 · 基线日期：2026-11-03 · 更新日期：2026-11-08 · 项目：铸盾 AegisForge
+版本：1.6 · 基线日期：2026-11-03 · 更新日期：2026-11-10 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -183,7 +183,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | 任务详情 | 阶段、耗时、错误、分析范围、漏洞列表与筛选；失败可重试 |
 | 漏洞详情 | 类型、CWE、等级、输入证据、行号高亮、原因和修复建议 |
 | 修复工作台 | 原始/候选代码对比、补丁下载、每项验证状态、前后风险变化 |
-| 历史记录 | 查询、分页、查看、删除、JSON/Markdown 导出 |
+| 历史记录 | 查询、分页、查看、逻辑移出（保留预算/输入）、JSON/Markdown 导出；物理快照擦除另行设计 |
 
 轮询查询任务进度作为首版机制；页面刷新后可恢复任务查看。处理加载、空结果、部分成功、超时、无模型配置和无 Docker 等状态。代码、HTTP 文本和模型内容统一按不可信文本渲染，禁止直接插入未经处理的 HTML。
 
@@ -247,7 +247,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 实现及本地验收完成，待 PR 集成 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
-| M5 完整 Web 集成 | 未开始 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
+| M5 完整 Web 集成 | 实现中，最终验收见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |
 
@@ -389,10 +389,10 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 | R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；M3 组合任务已实现，完整页面待 M5 |
 | R02 | M2 | AST/HTTP 正反例、行号与脱敏 | M2 AST/HTTP、规则、预算和脱敏已通过自动化验证；标注人工复核待补 |
 | R03 | M3、M6 | Provider 故障、三策略真实评测 | M3 DeepSeek 真实三类演示、Provider 故障验证通过；正式对比评测待 M6 |
-| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M3 最小结果、来源分歧、覆盖与凭证已实现；完整筛选统计待 M5 |
-| R05 | M4、M5 | 编辑校验、diff、修复 E2E | M4候选/diff/下载/静态及LLM复检、门禁/影响/契约与修复E2E完成；完整报告待M5 |
+| R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M5筛选、分面统计、证据定位和对比已实现；最终验收见M5记录 |
+| R05 | M4、M5 | 编辑校验、diff、修复 E2E | M4候选/diff/下载/静态及LLM复检、门禁/影响/契约与修复E2E完成；M5源代码无关报告与修复说明卡已实现 |
 | R06 | M4、M6 | 静态复检、18 例动态实验、沙箱约束 | M4三类真实开发闭环、6个对照、5个对抗探针及部署隔离完成；18例正式修复实验留M6 |
-| R07 | M3、M5 | 持久化、删除、导出、脱敏 | M3 持久任务、旧尝试结果与凭证下载已实现；完整历史/报告待 M5 |
+| R07 | M3、M5 | 持久化、删除、导出、脱敏 | M5完整历史查询/逻辑移出/JSON与Markdown报告已实现；物理擦除未实现，保留预算与输入并明确告知 |
 | R08 | M1、M6、M7 | CI、部署、报告及课程清单核对 | M1 环境、锁文件、CI、设计及验证记录完成；最终交付待 M6/M7 |
 
 | 日期 | 版本 | 变更 | 原因 |
@@ -419,3 +419,8 @@ M4实施补充（1.5，2026-11-08）：三阶段同会话四次Sonnet5.5 high调
 - [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)：上传校验、文件命名、存储和限额。
 - [OWASP LLM Prompt Injection Prevention](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)：不可信输入分离、输出校验与最小权限。
 - [Docker Engine Security](https://docs.docker.com/engine/security/) 及 [Resource Constraints](https://docs.docker.com/engine/containers/resource_constraints/)：容器权限边界与资源限制。
+
+
+2026-11-10，版本1.6，M5补充：沿原Claude会话Sonnet5.5/high三阶段四次真实调用，最终由Codex优化。实现总览/历史/筛选分页、证据导航、原文候选对比和源代码无关报告；逻辑移出关闭任务/发现/修复入口但保留调用账务和输入，artifact仍可按ID预览，物理擦除及引用回收另行设计（不宣称完整数据删除）。归档候选仍可读但不能新验证，当前与归档计数分开；长源码窗口保留绝对行号。report-2.1内容摘要及离线校验不构成数字签名，MD文字不在摘要覆盖范围。新增干净Compose浏览器CI，实际结果见[M5验证](docs/m5-verification.md)与[Issue6](https://github.com/visibychen/AegisForge/issues/6)。ADR见[0004](docs/decisions/0004-m5-history-and-reports.md)。冻结保留集和M6门槛不变。
+
+M5实际新增接口：GET /api/v1/workspace、/workspace/history，POST /workspace/{id}/delete（逻辑移出），GET /workspace/{id}/report?format=json|markdown，GET /scans/{id}/inputs/{artifact_id}，GET /repairs/{id}/compare；原初接口表是设计基线，运行协议以OpenAPI及阶段设计为准。

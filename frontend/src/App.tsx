@@ -8,6 +8,7 @@ import { ApiError, getCapabilities, getHealth } from './api/client';
 import HeroVisual from './components/HeroVisual';
 import IngestPanel from './components/IngestPanel';
 import ScanPanel from './components/ScanPanel';
+import Workspace from './components/Workspace';
 import MotionToggle, { useSystemReducedMotion } from './components/MotionToggle';
 import type { ArtifactPreview, Capabilities } from './types/api';
 
@@ -60,6 +61,13 @@ export default function App() {
     }
   }
 
+  // Any panel that learns the token is no longer accepted drops the session once, so every panel
+  // stops polling and clears its data together (the address keeps the task id for restoring).
+  function authLost() {
+    setSessionToken(''); setCapabilities(null);
+    setError('会话已失效，请重新连接服务。');
+  }
+
   return (
     <div className={`app-shell${motionEnabled ? ' motion-on' : ''}`}>
       <div className="backdrop" aria-hidden="true"><div className="backdrop-grid" /><div className="aurora aurora-a" /><div className="aurora aurora-b" /></div>
@@ -74,12 +82,12 @@ export default function App() {
           <a href="#workspace" className="nav-item active" aria-current="page" title="工作台"><DashboardOutlined aria-hidden="true" /><span className="nav-text">工作台</span></a>
           <a href="#scans" className="nav-item" title="检测任务"><FileSearchOutlined aria-hidden="true" /><span className="nav-text">检测任务</span></a>
           <a href="#scans" className="nav-item" title="修复工作台（在检测结果中生成候选修复）"><ToolOutlined aria-hidden="true" /><span className="nav-text">修复工作台</span></a>
-          <span className="nav-item unavailable" aria-disabled="true" title="历史记录（未开放）"><HistoryOutlined aria-hidden="true" /><span className="nav-text">历史记录</span></span>
+          <a className="nav-item" href="#history" title="历史记录"><HistoryOutlined aria-hidden="true" /><span className="nav-text">历史记录</span></a>
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note"><span className="small-dot" />本地安全工作空间</div>
           <p>发现风险，修复缺陷。<br />让每一次改动更有依据。</p>
-          <span className="build-label">INPUT PREVIEW</span>
+          <span className="build-label">WORKBENCH · M5</span>
         </div>
       </aside>
 
@@ -150,8 +158,9 @@ export default function App() {
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>
+          <Workspace token={sessionToken} onAuthLost={authLost} />
           <IngestPanel token={sessionToken} onArtifact={artifact => setArtifacts(items => items.some(item => item.id === artifact.id) ? items : [...items, artifact])} />
-          <ScanPanel token={sessionToken} aliases={capabilities?.model_aliases ?? ['fake']} artifacts={artifacts} onRemove={id => setArtifacts(items => items.filter(item => item.id !== id))} />
+          <ScanPanel token={sessionToken} aliases={capabilities?.model_aliases ?? ['fake']} artifacts={artifacts} onRemove={id => setArtifacts(items => items.filter(item => item.id !== id))} onAuthLost={authLost} />
           <footer>AegisForge 铸盾<span>面向代码安全的分析与修复工作空间</span></footer>
         </main>
       </div>

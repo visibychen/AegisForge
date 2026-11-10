@@ -52,7 +52,7 @@ def check_inputs(settings, artifacts):
 
 def require_scan(session, scan_id):
     scan = session.get(ScanTask, scan_id)
-    if scan is None:
+    if scan is None or scan.deleted_at is not None:
         raise DomainError("SCAN_NOT_FOUND", "检测任务不存在。", 404)
     return scan
 

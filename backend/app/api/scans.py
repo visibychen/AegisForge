@@ -1,5 +1,5 @@
 import json
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Depends, Query, Request
@@ -12,6 +12,7 @@ from app.core.errors import DomainError
 from app.models import FindingRecord, ModelCall, ScanTask
 from app.schemas.contracts import ScanCreate
 from app.services.scans import change_scan, create_scan, require_scan, scan_view
+from app.services.workspace import finding_conditions, finding_facets, input_view
 
 
 def inline_schema(model):
@@ -72,11 +73,14 @@ def install_scan_routes(application, require_token):
     ):
         scans = session.scalars(
             select(ScanTask)
+            .where(ScanTask.deleted_at.is_(None))
             .order_by(ScanTask.created_at.desc(), ScanTask.id)
             .offset(offset)
             .limit(limit)
         ).all()
-        total = session.scalar(select(func.count()).select_from(ScanTask))
+        total = session.scalar(
+            select(func.count()).select_from(ScanTask).where(ScanTask.deleted_at.is_(None))
+        )
         return {
             "request_id": request.state.request_id,
             "total": total,
@@ -100,10 +104,15 @@ def install_scan_routes(application, require_token):
         limit: Annotated[int, Query(ge=1, le=100)] = 100,
         offset: Annotated[int, Query(ge=0)] = 0,
         attempt: Annotated[int | None, Query(ge=0, le=2)] = None,
+        cwe: Literal["CWE-79", "CWE-89", "CWE-78"] | None = None,
+        severity: Literal["critical", "high", "medium", "low", "info"] | None = None,
+        source: Literal["rule", "llm"] | None = None,
+        evidence_status: Literal["potential", "attack_indicator"] | None = None,
     ):
         scan = require_scan(session, str(scan_id))
         chosen = scan.retries if attempt is None else attempt
-        scope = (FindingRecord.scan_id == str(scan_id), FindingRecord.attempt == chosen)
+        base = (FindingRecord.scan_id == str(scan_id), FindingRecord.attempt == chosen)
+        scope = (*base, *finding_conditions(cwe, severity, source, evidence_status))
         rows = session.scalars(
             select(FindingRecord)
             .where(*scope)
@@ -129,7 +138,18 @@ def install_scan_routes(application, require_token):
             "attempt": chosen,
             "total": total,
             "findings": items,
+            "facets": finding_facets(session, str(scan_id), chosen),
         }
+
+    @application.get("/api/v1/scans/{scan_id}/inputs/{artifact_id}", dependencies=auth)
+    def input_text(
+        scan_id: UUID,
+        artifact_id: UUID,
+        request: Request,
+        session: Annotated[Session, Depends(database)],
+    ):
+        view = input_view(session, request.app.state.settings, str(scan_id), str(artifact_id))
+        return {"request_id": request.state.request_id, "input": view}
 
     @application.post("/api/v1/scans/{scan_id}/cancel", dependencies=auth)
     def cancel(scan_id: UUID, request: Request, session: Annotated[Session, Depends(database)]):

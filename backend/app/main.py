@@ -121,6 +121,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_artifact_routes(application, require_token)
     install_scan_routes(application, require_token)
     install_repair_routes(application, require_token)
+    from app.api.workspace import install_workspace_routes
+
+    install_workspace_routes(application, require_token)
     return application
 
 

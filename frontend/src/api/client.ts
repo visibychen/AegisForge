@@ -1,4 +1,7 @@
-import type { ArtifactPreview, Capabilities, Health, Repair, Scan, StoredFinding, Strategy } from '../types/api';
+import type {
+  ArtifactPreview, Capabilities, CompareView, FindingFacets, FindingFilters, Health, HistoryFilters, HistoryRow,
+  InputView, Overview, Repair, Scan, StoredFinding, Strategy,
+} from '../types/api';
 
 export class ApiError extends Error {
   constructor(message: string, public readonly requestId?: string, public readonly status?: number) {
@@ -9,6 +12,12 @@ export class ApiError extends Error {
 /** Session is unusable (missing/invalid token): callers should stop polling and ask to reconnect. */
 export const isAuthFailure = (error: unknown) =>
   error instanceof ApiError && (error.status === 401 || error.status === 403);
+
+/** The task/repair is gone (for example removed from history): callers stop polling and clear selection. */
+export const isGone = (error: unknown) => error instanceof ApiError && error.status === 404;
+
+/** The caller cancelled on purpose (unmount, newer request): never show this as an error. */
+export const isAborted = (error: unknown) => error instanceof DOMException && error.name === 'AbortError';
 
 const OFFLINE = '无法连接服务，请确认后端已启动。';
 
@@ -66,20 +75,53 @@ export const createScan = (token: string, ids: string[], strategy: Strategy, ali
   request<{scan: Scan}>('/api/v1/scans', {method: 'POST', headers: {...authorization(token),
     'Content-Type': 'application/json', 'Idempotency-Key': key},
     body: JSON.stringify({artifact_ids: ids, strategy, model_alias: alias})}, 20000);
-export const getScan = (token: string, id: string) =>
-  request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}`, {headers: authorization(token)}, 8000);
+export const getScan = (token: string, id: string, signal?: AbortSignal) =>
+  request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}`, {headers: authorization(token)}, 8000, signal);
 export const listScans = (token: string) =>
   request<{scans: Scan[]; total: number}>('/api/v1/scans?limit=10', {headers: authorization(token)}, 8000);
-export const getFindings = (token: string, id: string, offset = 0) =>
-  request<{findings: StoredFinding[]; total: number; attempt: number}>(`/api/v1/scans/${encodeURIComponent(id)}/findings?offset=${offset}&limit=100`, {headers: authorization(token)}, 8000);
+export const FINDING_PAGE = 20;
+const query = (params: Record<string, string | number | undefined>) =>
+  new URLSearchParams(Object.entries(params).flatMap(([key, value]) => (value === undefined || value === '' ? [] : [[key, String(value)]])));
+export const getFindings = (token: string, id: string, offset = 0, filters: FindingFilters = {}, signal?: AbortSignal) =>
+  request<{findings: StoredFinding[]; total: number; attempt: number; facets?: FindingFacets}>(
+    `/api/v1/scans/${encodeURIComponent(id)}/findings?${query({ offset, limit: FINDING_PAGE, ...filters })}`, {headers: authorization(token)}, 8000, signal);
 export const changeScan = (token: string, id: string, action: 'cancel' | 'retry') =>
   request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}/${action}`, {method: 'POST', headers: authorization(token)}, 8000);
 
 export const createRepair = (token: string, finding_id: string, source_sha256: string, model_alias: string, key: string) =>
   request<{repair: Repair}>('/api/v1/repairs', {method:'POST',headers:{...authorization(token),'Content-Type':'application/json','Idempotency-Key':key}, body:JSON.stringify({finding_id,source_sha256,model_alias})},20000);
-export const getRepair = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}`,{headers:authorization(token)},8000);
+export const getRepair = (token: string, id: string, signal?: AbortSignal) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}`,{headers:authorization(token)},8000,signal);
 export const cancelRepair = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}/cancel`,{method:'POST',headers:authorization(token)},8000);
 export const requestValidation = (token: string, id: string) => request<{repair: Repair}>(`/api/v1/repairs/${encodeURIComponent(id)}/validate`,{method:'POST',headers:authorization(token)},8000);
+export const listRepairs = (token: string, scanId: string, signal?: AbortSignal) =>
+  request<{repairs: Repair[]}>(`/api/v1/repairs?${query({ scan_id: scanId })}`, {headers: authorization(token)}, 8000, signal);
+export const getCompare = (token: string, id: string, signal?: AbortSignal) =>
+  request<{compare: CompareView}>(`/api/v1/repairs/${encodeURIComponent(id)}/compare`, {headers: authorization(token)}, 15000, signal);
+export const getInput = (token: string, scanId: string, artifactId: string, signal?: AbortSignal) =>
+  request<{input: InputView}>(`/api/v1/scans/${encodeURIComponent(scanId)}/inputs/${encodeURIComponent(artifactId)}`, {headers: authorization(token)}, 15000, signal);
+
+export const HISTORY_PAGE = 10;
+export const getOverview = (token: string, signal?: AbortSignal) =>
+  request<Overview>('/api/v1/workspace', {headers: authorization(token)}, 8000, signal);
+export const getHistory = (token: string, filters: HistoryFilters, offset: number, signal?: AbortSignal) =>
+  request<{scans: HistoryRow[]; total: number}>(`/api/v1/workspace/history?${query({ ...filters, offset, limit: HISTORY_PAGE })}`, {headers: authorization(token)}, 8000, signal);
+export const deleteScan = (token: string, id: string) =>
+  request<{deleted: boolean; scan_id: string; retained: string}>(`/api/v1/workspace/${encodeURIComponent(id)}/delete`, {method: 'POST', headers: authorization(token)}, 8000);
+export async function downloadReport(token: string, id: string, format: 'json' | 'markdown') {
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1/workspace/${encodeURIComponent(id)}/report?format=${format}`, {headers: authorization(token), cache: 'no-store', signal: withTimeout(15000)});
+  } catch { throw new ApiError(OFFLINE); }
+  if (!response.ok) {
+    let message: string | undefined;
+    try { message = (await response.json())?.error?.message; } catch { /* a proxy may answer with HTML */ }
+    throw new ApiError(message ?? statusMessage(response.status), undefined, response.status);
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url; link.download = `aegisforge-report-${id.slice(0, 8)}.${format === 'json' ? 'json' : 'md'}`; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 export async function downloadRepair(token: string, id: string, format: 'diff' | 'source') {
   const response = await fetch(`/api/v1/repairs/${encodeURIComponent(id)}/download?format=${format}`,{headers:authorization(token),cache:'no-store',signal:AbortSignal.timeout(15000)});
   if (!response.ok) throw new Error('候选下载失败。');
