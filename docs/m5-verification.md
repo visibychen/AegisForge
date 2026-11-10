@@ -1,6 +1,6 @@
 # M5 验证记录
 
-日期：2026-11-10，分支feat/6-web-workbench，基于M4 PR14，Refs #6。实现及验收进展以本记录和Issue #6为准，不自动合并前序PR。
+日期：2026-11-10，分支feat/6-web-workbench，基于M4 PR14，Refs #6。[PR #15](https://github.com/visibychen/AegisForge/pull/15)实现及开发验收完成，待审、未合并；不自动合并前序PR。
 
 ## 范围与协作
 
@@ -13,6 +13,19 @@
 - 本机浏览器初次连接/输入/任务三个旧场景通过；新工作台联调发现并修复按钮汉字间距造成的可访问名称问题，补充网络失败重试和父任务重试后归档状态刷新。
 - 本机Windows默认8000/18000端口被系统拒绝绑定，采用28000的隔离测试API和临时库；Vite默认仍8000，可用AEGISFORGE_DEV_API_PORT指定回环端口。本机出现间歇代理连接超时，DockerDesktop启动后退出且服务权限不足，**不记录本机Docker动态验收通过**。
 - GitHub新增Workbench Compose E2E：干净Ubuntu、固定镜像、实际迁移和独立API/worker/控制器、Playwright默认场景、隔离探测、无源码报告校验。与本机验证分开记录，以实际CI为据。仅fake、没有模型密钥，真实模型显式场景跳过。原M4三类真实DeepSeek证据保留，本轮不额外消费模型预算。
+
+## 干净环境CI验收与永久证据
+
+实现提交`ec83cd48a11ab3f74ec59d4f1df4c4c04c9a9408`的[CI运行42775495453](https://github.com/visibychen/AegisForge/actions/runs/42775495453)五项均success：Ubuntu和Windows后端各326 passed（CI权限允许运行符号链接用例），前端48 passed及类型/构建通过，Controlled Docker回归通过，Workbench Compose E2E通过。
+
+Workbench实际构建固定镜像、执行0006迁移、启动独立API/worker/受信控制器、探测隔离边界，完整默认Playwright结果为**5 passed / 1真实模型显式场景skip，39.3秒**。覆盖证据定位、原文/候选对比、JSON/Markdown真实下载、手机宽度、父任务重试后的归档提示/禁止新验证、逻辑移出和失效入口。离线报告CLI校验通过。全部服务未提供模型密钥，外部模型调用0；不替代M6真实模型和18例正式实验。既有Controlled Docker作业还运行6个V/S对照和5个对抗探针。
+
+CI artifact `m5-workbench-evidence`（ID13743029571，保留7天）的下载ZIP经SHA256核对为`a2f352316b67002989ceb126d94fe2f3400004ee2ac48f3485061bd003e1cfd0`；只按固定白名单提取以下永久仓库证据，未提交原始运行库、凭证或私有日志：
+
+- [桌面截图](screenshots/m5-workbench-desktop.png)与[手机截图](screenshots/m5-workbench-mobile.png)：Codex查看确认，纯fake开发样例。
+- [E2E摘要](verification/m5-e2e-ci.json)：passed=true、external_model_calls=0。
+- [隔离探测](verification/m5-isolation-ci.json)：API/worker无Docker CLI/socket/TCP daemon访问；候选只读、禁外网、非root、资源限制与权限收紧；各项accepted=true。
+- [报告样例](verification/m5-report-example.json)：来自该CI的无源码报告。在主机Anaconda环境再次执行`python scripts/verify_report.py docs/verification/m5-report-example.json`，内容校验通过；摘要不证明模型效果或发布者身份。
 
 ## 安全及数据规则
 

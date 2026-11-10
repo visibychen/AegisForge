@@ -247,7 +247,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 实现及本地验收完成，待 PR 集成 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
-| M5 完整 Web 集成 | 实现中，最终验收见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
+| M5 完整 Web 集成 | 实现及开发验收完成，PR #15 待集成；见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
 | M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |
 
@@ -386,7 +386,7 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 
 | 需求 | 负责阶段 | 主要测试 | 当前状态 |
 | --- | --- | --- | --- |
-| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；M3 组合任务已实现，完整页面待 M5 |
+| R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；M3 组合任务、M5完整页面与干净Compose浏览器验收完成，待PR集成 |
 | R02 | M2 | AST/HTTP 正反例、行号与脱敏 | M2 AST/HTTP、规则、预算和脱敏已通过自动化验证；标注人工复核待补 |
 | R03 | M3、M6 | Provider 故障、三策略真实评测 | M3 DeepSeek 真实三类演示、Provider 故障验证通过；正式对比评测待 M6 |
 | R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M5筛选、分面统计、证据定位和对比已实现；最终验收见M5记录 |

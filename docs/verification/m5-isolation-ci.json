@@ -1,0 +1,50 @@
+{
+  "services": {
+    "api": {
+      "running": true,
+      "socket_mounted": false,
+      "model_key_present": false,
+      "uid": 1000,
+      "docker_cli": false,
+      "socket": false,
+      "daemon_tcp_accessible": false,
+      "no_new_privileges": true,
+      "capabilities_empty": true,
+      "accepted": true
+    },
+    "worker": {
+      "running": true,
+      "socket_mounted": false,
+      "model_key_present": false,
+      "uid": 1000,
+      "docker_cli": false,
+      "socket": false,
+      "daemon_tcp_accessible": false,
+      "no_new_privileges": true,
+      "capabilities_empty": true,
+      "accepted": true
+    },
+    "validator": {
+      "running": true,
+      "socket_mounted": true,
+      "model_key_present": false,
+      "accepted": true
+    }
+  },
+  "validator": {
+    "uid": 65532,
+    "candidate_readonly": true,
+    "interfaces": [
+      "lo"
+    ],
+    "memory": "536870912",
+    "pids": "128",
+    "cpu": "100000 100000",
+    "no_new_privileges": true,
+    "capabilities_empty": true,
+    "docker_socket": false,
+    "external_access": false,
+    "accepted": true
+  },
+  "passed": true
+}

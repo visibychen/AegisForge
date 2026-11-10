@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "mode": "fake",
+  "external_model_calls": 0,
+  "deployment": "Compose API/worker and trusted Docker controller"
+}
