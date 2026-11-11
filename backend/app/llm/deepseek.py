@@ -38,21 +38,32 @@ FAILURE_CATEGORIES = (
     "ambiguous_evidence",  # several distinct places match inside the claimed range
     "span",  # grounded evidence spans more lines than the model policy allows
     "credential",  # provider credential echoed
+    # Repair edits failing the exact apply_edits checks (services/patches.check_edits).
+    "patch_conflict",  # old_text differs from the immutable snapshot lines
+    "patch_range",  # edit range outside the file, overlapping or unordered
+    "patch_newline",  # replacement drops the line ending of the replaced lines
 )
 _INFORMATIVE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
 _ALNUM = re.compile(r"[A-Za-z0-9]")
+# Server-computed correction facts are integers and fixed words only; never source or model text.
+_DETAIL = re.compile(r"[A-Za-z0-9_ ,;:=.\-()\[\]]{1,240}")
 
 
 class ProviderError(DomainError):
     def __init__(self, code: str, category: str | None = None):
         super().__init__(code, "模型分析未完成；具体原因见任务错误码。", 503)
         self.category = category
+        self.detail: str | None = None  # server-computed integers/words of the last rejection
 
 
 class OutputRejected(ValueError):
-    def __init__(self, category: str):
+    """A rejected model output. ``detail`` carries only server-computed integers/words for the
+    single correction round; str(error) stays the bare category (tests and logs rely on it)."""
+
+    def __init__(self, category: str, detail: str | None = None):
         super().__init__(category)
         self.category = category
+        self.detail = detail if detail and _DETAIL.fullmatch(detail) else None
 
 
 def strict_json(text):
@@ -81,17 +92,29 @@ def _ground_source(item: Finding, request: AnalysisRequest) -> Finding:
     content = request.content
     starts = [0] + [index + 1 for index, char in enumerate(content) if char == "\n"]
     spans: set[tuple[int, int]] = set()
+    elsewhere: list[tuple[int, int]] = []  # other occurrences; used for the hint only
     position = content.find(evidence)
-    while position != -1 and len(spans) < 2:
+    while position != -1 and len(spans) < 2:  # identical stop rule to the original check
         first = bisect_right(starts, position) - 1 + request.start_line
         last = bisect_right(starts, position + len(evidence) - 1) - 1 + request.start_line
         if first <= location.end_line and last >= location.start_line:
             spans.add((first, last))
+        elif len(elsewhere) < 3:
+            elsewhere.append((first, last))
         position = content.find(evidence, position + 1)
     if not spans:
-        raise OutputRejected("location_mismatch" if evidence in content else "evidence")
+        if evidence not in content:
+            raise OutputRejected("evidence")
+        # The check is unchanged (the declared range must intersect the evidence). The correction
+        # round only learns where the verbatim text really is, as integers.
+        places = ",".join(f"{a}-{b}" for a, b in elsewhere)
+        raise OutputRejected(
+            "location_mismatch",
+            f"declared {location.start_line}-{location.end_line}; evidence lines {places}",
+        )
     if len(spans) > 1:
-        raise OutputRejected("ambiguous_evidence")
+        places = ",".join(f"{a}-{b}" for a, b in sorted(spans))
+        raise OutputRejected("ambiguous_evidence", f"evidence lines inside the range {places}")
     first, last = spans.pop()
     if last - first + 1 > MAX_MODEL_SPAN:
         raise OutputRejected("span")
@@ -104,7 +127,7 @@ def validate_result(result: AnalysisResult, request: AnalysisRequest) -> Analysi
     if result.mode != "real" or not result.analysis_complete:
         raise OutputRejected("incomplete")
     checked = []
-    for item in result.findings:
+    for number, item in enumerate(result.findings, 1):
         location = item.location
         if location.artifact_id != request.artifact_id or location.kind != request.input_type:
             raise OutputRejected("location")
@@ -113,7 +136,12 @@ def validate_result(result: AnalysisResult, request: AnalysisRequest) -> Analysi
         if not item.evidence.strip():
             raise OutputRejected("evidence")
         if location.kind == "source":
-            checked.append(_ground_source(item, request))
+            try:
+                checked.append(_ground_source(item, request))
+            except OutputRejected as rejected:
+                if rejected.detail:
+                    rejected.detail = f"finding {number}; {rejected.detail}"
+                raise
             continue
         if location.field not in request.fields:
             raise OutputRejected("field")
@@ -234,7 +262,7 @@ class DeepSeekProvider:
         key = settings.deepseek_api_key.get_secret_value()
         if not settings.valid_model_key:
             raise ProviderError("MODEL_NOT_CONFIGURED")
-        network_retries, corrections, previous = 0, 0, None
+        network_retries, corrections, previous, previous_detail = 0, 0, None, None
         async with httpx.AsyncClient(
             transport=self.transport,
             timeout=settings.model_timeout_seconds,
@@ -244,7 +272,7 @@ class DeepSeekProvider:
             while True:
                 payload = {
                     "model": settings.deepseek_model,
-                    "messages": render(request, previous),
+                    "messages": render(request, previous, previous_detail),
                     "thinking": {"type": "disabled"},
                     "temperature": 0,
                     "max_tokens": settings.model_output_tokens,
@@ -258,7 +286,7 @@ class DeepSeekProvider:
                     raise ProviderError("MODEL_INPUT_CREDENTIAL", "credential")
                 call_id = self.reserve(len(request.content))
                 started, usage, size = time.monotonic(), {}, 0
-                code, result, category = "MODEL_TRANSPORT", None, None
+                code, result, category, detail = "MODEL_TRANSPORT", None, None, None
                 try:
                     async with asyncio.timeout(settings.model_timeout_seconds):
                         async with client.stream(
@@ -292,7 +320,7 @@ class DeepSeekProvider:
                                     code = "succeeded"
                                 except OutputRejected as rejection:
                                     code, result = "MODEL_INVALID_OUTPUT", None
-                                    category = rejection.category
+                                    category, detail = rejection.category, rejection.detail
                 except asyncio.CancelledError:
                     code = "cancelled"
                     raise
@@ -326,6 +354,8 @@ class DeepSeekProvider:
                     await asyncio.sleep(0.2 * network_retries)
                     continue
                 if code == "MODEL_INVALID_OUTPUT" and corrections < 1:
-                    corrections, previous = corrections + 1, category
+                    corrections, previous, previous_detail = corrections + 1, category, detail
                     continue
-                raise ProviderError(code, category)
+                failure = ProviderError(code, category)
+                failure.detail = detail
+                raise failure

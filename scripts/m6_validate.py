@@ -64,11 +64,12 @@ def controls(settings):
     }
 
 
-def candidates(settings, path, baseline):
+def candidates(settings, path, baseline, *, posthoc=False):
     from app.validation.registry import load_cases
     from app.validation.runner import run_container
 
     from evaluation.experiment import file_hash
+    from evaluation.gate import candidate_success
 
     bundle = json.loads(path.read_text(encoding="utf-8"))
     baseline_result = json.loads(baseline.read_text(encoding="utf-8"))
@@ -86,7 +87,9 @@ def candidates(settings, path, baseline):
     if len(inputs) != len(bundle["rows"]):
         raise ValueError("Duplicate candidate identity")
     rows = []
-    for repeat in range(1, 4):
+    repeats = (1,) if posthoc else (1, 2, 3)
+    denominator = 18 * len(repeats)
+    for repeat in repeats:
         for sample, case in cases.items():
             row = dict(
                 inputs.get(
@@ -106,20 +109,8 @@ def candidates(settings, path, baseline):
                     raise ValueError("Invalid candidate binding/size")
                 dynamic = run_container(settings, source, case)
                 row["dynamic"] = dynamic
-                checks = row.get("checks", {})
-                # Conservatively require both rechecks with no introduced risk of any level.
-                deltas = checks.get("delta") or {}
-                reviewed = (checks.get("review") or {}).get("status") == "complete"
-                no_new = all(
-                    not (deltas.get(kind) or {}).get("introduced") for kind in ("rules", "model")
-                )
-                row["success"] = (
-                    valid_controls[sample]
-                    and dynamic["status"] == "passed"
-                    and all(checks.get(k) == "passed" for k in ("syntax", "patch", "roundtrip"))
-                    and reviewed
-                    and no_new
-                )
+                # One shared definition (evaluation/gate.py) for the run and the independent audit.
+                row["success"] = candidate_success(row, valid_controls[sample])
             rows.append(row)
             print(
                 json.dumps(
@@ -138,11 +129,28 @@ def candidates(settings, path, baseline):
         for cwe in ("CWE-79", "CWE-89", "CWE-78")
     }
     total = sum(r["success"] for r in rows)
+    # Two different questions. "Complete": all 54 attempts are present and every candidate that
+    # exists reached a real passed/failed dynamic verdict (no missing bundle row, no environment
+    # error). "Passed": the numeric course threshold. A complete run may still not pass.
+    environment_errors = [
+        r
+        for r in rows
+        if r.get("dynamic") and r["dynamic"].get("status") not in {"passed", "failed"}
+    ]
+    missing = [r for r in rows if r.get("error_code") == "CANDIDATE_MISSING"]
     return {
-        "scope": "all 54 pre-registered first-candidate repair attempts",
+        "scope": (
+            "post-hoc conditional repair diagnosis; not independent acceptance"
+            if posthoc
+            else "all 54 pre-registered first-candidate repair attempts"
+        ),
+        "course_acceptance_evaluated": not posthoc,
+        "execution_complete": len(rows) == denominator and not environment_errors and not missing,
+        "environment_errors": len(environment_errors),
+        "missing_candidates": len(missing),
         "bundle_sha256": file_hash(path),
         "controls_sha256": file_hash(baseline),
-        "denominator": 54,
+        "denominator": denominator,
         "successes": total,
         "by_cwe": by_cwe,
         "rounds": [
@@ -151,11 +159,23 @@ def candidates(settings, path, baseline):
                 "successes": sum(r["success"] for r in rows if r["repeat"] == i),
                 "denominator": 18,
             }
-            for i in range(1, 4)
+            for i in repeats
         ],
-        "passed": total >= 45 and all(n >= 12 for n in by_cwe.values()),
+        "passed": None if posthoc else total >= 45 and all(n >= 12 for n in by_cwe.values()),
         "rows": rows,
         "human_review_pending": True,
+    }
+
+
+def verdicts(result):
+    """Per attempt: the dynamic verdict and each fixed test outcome (no timings or run ids)."""
+    return {
+        (r.get("sample_id"), r.get("repeat")): (
+            r.get("success"),
+            (r.get("dynamic") or {}).get("status"),
+            sorted((t["name"], t["passed"]) for t in (r.get("dynamic") or {}).get("tests", [])),
+        )
+        for r in result.get("rows", [])
     }
 
 
@@ -169,8 +189,18 @@ def main():
     from evaluation.experiment import write_json
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["controls", "candidates"])
+    parser.add_argument("command", choices=["controls", "candidates", "diagnostics"])
     parser.add_argument("--bundle", type=lambda p: ROOT / p)
+    parser.add_argument(
+        "--compare",
+        type=lambda p: ROOT / p,
+        help="committed result to replay against; any changed verdict exits 3",
+    )
+    parser.add_argument(
+        "--require-threshold",
+        action="store_true",
+        help="exit 1 when the numeric repair threshold is not met (strict acceptance)",
+    )
     parser.add_argument(
         "--baseline", type=lambda p: ROOT / p, default=ROOT / "data/m6-controls-ci.json"
     )
@@ -179,16 +209,42 @@ def main():
     )
     args = parser.parse_args()
     settings = Settings(_env_file=None, data_dir=ROOT / "data/m6-validation", model_mode="fake")
-    if args.command == "candidates" and args.bundle is None:
+    if args.command in {"candidates", "diagnostics"} and args.bundle is None:
         parser.error("--bundle required")
+    if args.command == "diagnostics" and args.require_threshold:
+        parser.error("Post-hoc diagnostics cannot evaluate the formal course threshold")
     result = (
         controls(settings)
         if args.command == "controls"
-        else candidates(settings, args.bundle, args.baseline)
+        else candidates(settings, args.bundle, args.baseline, posthoc=args.command == "diagnostics")
     )
     write_json(args.output, result)
-    print("M6 validation:", "passed" if result["passed"] else "failed")
-    return 0 if result["passed"] else 1
+    print(
+        "M6 validation:",
+        "not evaluated (post-hoc)"
+        if args.command == "diagnostics"
+        else "passed"
+        if result["passed"]
+        else "failed",
+    )
+    if args.command == "controls":
+        return 0 if result["passed"] else 1
+    # Execution (2), replay drift (3), numeric threshold (1): separate verdicts.
+    if not result["execution_complete"]:
+        print("Execution incomplete: missing candidate rows or a Docker/environment error.")
+        return 2
+    if args.compare:
+        committed = json.loads(args.compare.read_text(encoding="utf-8"))
+        if verdicts(committed) != verdicts(result):
+            print("Replay differs from the committed record.")
+            return 3
+        print("Replay equals the committed record.")
+    if args.command == "diagnostics":
+        print("Diagnostic execution complete; this does not evaluate course acceptance.")
+        return 0
+    if not result["passed"]:
+        print("Execution complete; the numeric repair threshold is NOT met.")
+    return 1 if args.require_threshold and not result["passed"] else 0
 
 
 if __name__ == "__main__":

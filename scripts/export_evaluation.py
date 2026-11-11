@@ -10,6 +10,14 @@ import sys
 from _environment import ROOT, model_environment, require_conda
 
 
+def immutable_json(path, payload, writer):
+    if path.exists():
+        if json.loads(path.read_text(encoding="utf-8")) != payload:
+            raise ValueError("Baseline evidence is immutable; use a separately named result")
+        return
+    writer(path, payload)
+
+
 def main():
     require_conda()
     sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
@@ -33,7 +41,7 @@ def main():
             raise ValueError("Refusing credential publication")
         return payload
 
-    write_json(target / "m6-detection-baseline.json", checked(summary))
+    immutable_json(target / "m6-detection-baseline.json", checked(summary), write_json)
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer)
     writer.writerow(
@@ -75,16 +83,20 @@ def main():
                         ],
                     ]
                 )
-    (target / "m6-detection-baseline.csv").write_text(
-        buffer.getvalue(), encoding="utf-8", newline=""
-    )
+    csv_path = target / "m6-detection-baseline.csv"
+    csv_text = buffer.getvalue().replace("\r\n", "\n")
+    if csv_path.exists():
+        if csv_path.read_text(encoding="utf-8") != csv_text:
+            raise ValueError("Baseline CSV is immutable")
+    else:
+        csv_path.write_text(csv_text, encoding="utf-8", newline="\n")
     if args.candidates:
         generated = json.loads((directory / "repair-generation.json").read_text(encoding="utf-8"))
         for row in generated["rows"]:
             path = directory / f"hybrid-{row['repeat']}-{row['sample_id']}" / "candidate.txt"
             if path.exists():
                 row["candidate_source"] = path.read_text(encoding="utf-8")
-        write_json(
+        immutable_json(
             target / "m6-baseline-candidates.json",
             checked(
                 {
@@ -96,14 +108,16 @@ def main():
                     **generated,
                 }
             ),
+            write_json,
         )
     performance = ROOT / "data/m6-performance"
     for name in ("api", "live", "boundary"):
         path = performance / f"{name}.json"
         if path.exists():
-            write_json(
+            immutable_json(
                 target / f"m6-performance-{name}.json",
                 checked(json.loads(path.read_text(encoding="utf-8"))),
+                write_json,
             )
     for name in ("python", "npm"):
         path = ROOT / f"data/m6-{name}-audit.json"
@@ -116,7 +130,7 @@ def main():
                     "vulnerabilities": payload.get("vulnerabilities"),
                     "error": payload.get("error"),
                 }
-            write_json(target / f"m6-{name}-audit-baseline.json", checked(payload))
+            immutable_json(target / f"m6-{name}-audit-baseline.json", checked(payload), write_json)
     print("Exported checked synthetic evidence under evaluation/results.")
     return 0
 

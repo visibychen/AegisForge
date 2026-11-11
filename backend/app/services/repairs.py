@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.llm.deepseek import DeepSeekProvider
+from app.llm.prompts import PROMPT_VERSION
 from app.llm.repair import REPAIR_PROMPT_VERSION, RepairProvider
 from app.models import Artifact, FindingRecord, Job, ModelCall, Repair, ScanTask
 from app.parsers.inputs import parse_input
@@ -378,6 +379,9 @@ def store_candidate(engine, settings, lease, wire, candidate, diff, checks, *, f
             job.status, job.lease_token, job.lease_until = "completed", None, None
 
 
+PATCH_DIAGNOSTIC_CATEGORIES = {"patch_conflict", "patch_range", "patch_newline"}
+
+
 def target_location(target) -> tuple:
     location = target["location"]
     return target["cwe"], location["start_line"], location["end_line"]
@@ -476,7 +480,7 @@ async def execute_repair(engine, settings, lease, factory=None):
         # Phase 2: model recheck. A failure here must not discard the paid-for candidate.
         review_error, reviewed = None, None
         try:
-            ledger.version = "analysis-1.1"
+            ledger.version = PROMPT_VERSION  # the recheck is an analysis call; ledger = contract
             reviewer = (
                 factory(settings, ledger)
                 if factory
@@ -533,6 +537,11 @@ async def execute_repair(engine, settings, lease, factory=None):
                 kept["impact"] = impact
             if (kept.get("review") or {}).get("status") == "pending":
                 kept["review"] = {"status": "failed", "error": item.error_code}
+            category, detail = getattr(error, "category", None), getattr(error, "detail", None)
+            if category in PATCH_DIAGNOSTIC_CATEGORIES and detail:
+                # Server-computed integers and fixed words only: explains the refusal without
+                # keeping the model's raw edits, the snapshot text or any credential.
+                kept["patch_diagnostic"] = {"category": category, "detail": detail}
             if kept:
                 item.checks_json = canonical(summarize(kept))
             item.finished_at, job.status, job.lease_token, job.lease_until = (

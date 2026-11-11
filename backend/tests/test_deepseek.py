@@ -141,7 +141,9 @@ def test_wire_input_carries_no_internal_provenance(monkeypatch):
         recommendation="rule advice",
     )
     payload = json.loads(messages(req.model_copy(update={"rule_hints": [hint]}))[1]["content"])
-    assert set(payload) == {"input_type", "start_line", "end_line", "content", "rule_hints"}
+    # Source is addressed by explicit {n, text} lines (n = global line number), not one string.
+    assert set(payload) == {"input_type", "start_line", "end_line", "lines", "rule_hints"}
+    assert payload["lines"] == [{"n": 10, "text": "os.system(cmd)"}]
     assert payload["rule_hints"] == [
         {
             "cwe": "CWE-78",

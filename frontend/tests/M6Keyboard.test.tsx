@@ -22,6 +22,31 @@ it('opens the next marked finding when navigation and activation arrive in one b
   expect(activate).toHaveBeenCalledWith(expect.objectContaining({ id: 'last' }));
 });
 
+it('returns to the controlled line when the parent asks for the same line again (focusKey)', () => {
+  const props = { label: 'refocus source', content, marks };
+  const { rerender } = render(<SourceLines {...props} focusLine={2} focusKey={1} />);
+  const region = screen.getByRole('group', { name: 'refocus source' });
+  fireEvent.keyDown(region, { key: 'n' });
+  expect(screen.getByText('第 501–600 行，共 600 行')).toBeInTheDocument();
+  rerender(<SourceLines {...props} focusLine={2} focusKey={2} />);
+  expect(document.querySelector('[data-line="2"]')).toHaveAttribute('aria-current', 'true');
+  expect(screen.getByText('第 1–500 行，共 600 行')).toBeInTheDocument();
+});
+
+it('opens a multi-line mark from any of its lines, including one in another window', () => {
+  const activate = vi.fn();
+  const span: Mark[] = [{ start: 498, end: 502, kind: 'finding', id: 'span' }];
+  render(<SourceLines label="span source" content={content} marks={span} focusLine={1} onActivate={activate} />);
+  const region = screen.getByRole('group', { name: 'span source' });
+  act(() => {
+    fireEvent.keyDown(region, { key: 'End' });
+    fireEvent.keyDown(region, { key: 'Home' });
+    for (let i = 0; i < 500; i += 1) fireEvent.keyDown(region, { key: 'ArrowDown' }); // line 501
+    fireEvent.keyDown(region, { key: 'Enter' });
+  });
+  expect(activate).toHaveBeenCalledWith(expect.objectContaining({ id: 'span' }));
+});
+
 it('uses the new controlled focus before passive effects when keyboard input follows a commit', () => {
   const activate = vi.fn();
   function Harness({ focus }: { focus: number }) {

@@ -130,3 +130,23 @@ def test_m6_runner_registers_exact_frozen_ids_and_cannot_accept_an_unknown_sourc
         assert case["tests"] == ["business_primary", "business_secondary", "security_regression"]
     with pytest.raises(DomainError):
         match_case("0" * 64)
+
+
+def test_development_ab_subset_preserves_each_cwe_pair_and_all_http():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from development_ab import select_subset
+
+    from evaluation.datasets import load_dev_samples
+
+    manifest, _ = load_dev_samples()
+    selected = select_subset(manifest["samples"])
+    assert len(selected) == len({r["id"] for r in selected}) == 48
+    for cwe in ("CWE-79", "CWE-89", "CWE-78"):
+        source = [r for r in selected if r["kind"] == "source" and r["cwe"] == cwe]
+        assert len(source) == 8
+        assert sum(r["label"] == "vulnerable" for r in source) == 4
+        for family in {r["family"] for r in source}:
+            assert {r["label"] for r in source if r["family"] == family} == {"vulnerable", "safe"}
+    assert {r["id"] for r in selected if r["kind"] == "http"} == {
+        r["id"] for r in manifest["samples"] if r["kind"] == "http"
+    }

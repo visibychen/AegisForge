@@ -84,22 +84,97 @@ def apply_unified_diff(source: str, diff: str) -> str:
     return "".join(out)
 
 
-def apply_edits(source: str, edits: list[Edit]):
+class EditRejected(DomainError):
+    """An edit that fails the exact snapshot checks.
+
+    ``category`` is the stable failure word used by the model-call ledger; ``detail`` is a
+    server-computed description made only of integers and fixed words (never source text), which
+    may be given to the model's single correction round and stored with the failed repair.
+    """
+
+    def __init__(self, code: str, message: str, status: int, category: str, detail: str):
+        super().__init__(code, message, status)
+        self.category, self.detail = category, detail
+
+
+def _conflict_detail(lines: list[str], edit: Edit, number: int) -> str:
+    """Why old_text differs from the declared lines, as integers and fixed words only."""
+    declared = "".join(lines[edit.start_line - 1 : edit.end_line])
+    old_lines = edit.old_text.splitlines(keepends=True)
+    declared_lines = declared.splitlines(keepends=True)
+    kinds = []
+    if edit.old_text.rstrip("\r\n") == declared.rstrip("\r\n"):
+        kinds.append("line_ending_only")
+    elif [x.rstrip() for x in old_lines] == [x.rstrip() for x in declared_lines]:
+        kinds.append("trailing_whitespace_only")
+    if edit.end_line == len(lines) and lines and not lines[-1].endswith("\n"):
+        kinds.append("last_line_has_no_line_ending")
+    found = []
+    if old_lines:
+        width = len(old_lines)
+        for index in range(len(lines) - width + 1):
+            window = "".join(lines[index : index + width])
+            if lines[index] == old_lines[0] and window == edit.old_text:
+                found.append(index + 1)
+                if len(found) == 3:
+                    break
+    if found:
+        kinds.append("exact_text_at_lines_" + "_".join(str(item) for item in found))
+    if len(old_lines) != edit.end_line - edit.start_line + 1:
+        kinds.append(f"old_text_has_{len(old_lines)}_lines")
+    return (
+        f"edit {number}; declared {edit.start_line}-{edit.end_line}; file has {len(lines)} lines; "
+        + (", ".join(kinds) or "no_exact_match_found")
+    )
+
+
+def check_edits(source: str, edits: list[Edit]):
+    """The exact range/text/line-ending checks of :func:`apply_edits`, shared with the preflight.
+
+    Nothing here is lenient: ranges must be inside the file and strictly ordered, old_text must
+    equal the snapshot lines byte for byte, and a replacement may not drop a line ending.
+    """
     lines = source.splitlines(keepends=True)
     ordered = sorted(edits, key=lambda e: e.start_line)
-    previous, parts, cursor = 0, [], 0
-    for edit in ordered:
+    previous = 0
+    for number, edit in enumerate(ordered, 1):
         if not previous < edit.start_line <= edit.end_line <= len(lines):
-            raise DomainError("PATCH_RANGE", "编辑范围越界、重叠或顺序不正确。", 422)
+            raise EditRejected(
+                "PATCH_RANGE",
+                "编辑范围越界、重叠或顺序不正确。",
+                422,
+                "patch_range",
+                f"edit {number}; declared {edit.start_line}-{edit.end_line}; "
+                f"file has {len(lines)} lines; previous edit ends at {previous}",
+            )
         old = "".join(lines[edit.start_line - 1 : edit.end_line])
         if old != edit.old_text:
-            raise DomainError("PATCH_CONFLICT", "编辑原文与不可变快照不匹配。", 409)
-        if edit.new_text and old.endswith("\n") and not edit.new_text.endswith("\n"):
-            raise DomainError(
-                "PATCH_NEWLINE", "替换文本必须保留原有的行结束，避免与下一行粘连。", 422
+            raise EditRejected(
+                "PATCH_CONFLICT",
+                "编辑原文与不可变快照不匹配。",
+                409,
+                "patch_conflict",
+                _conflict_detail(lines, edit, number),
             )
+        if edit.new_text and old.endswith("\n") and not edit.new_text.endswith("\n"):
+            raise EditRejected(
+                "PATCH_NEWLINE",
+                "替换文本必须保留原有的行结束，避免与下一行粘连。",
+                422,
+                "patch_newline",
+                f"edit {number}; declared {edit.start_line}-{edit.end_line}; "
+                "new_text must end with a line feed",
+            )
+        previous = edit.end_line
+    return lines, ordered
+
+
+def apply_edits(source: str, edits: list[Edit]):
+    lines, ordered = check_edits(source, edits)
+    parts, cursor = [], 0
+    for edit in ordered:
         parts.extend(["".join(lines[cursor : edit.start_line - 1]), edit.new_text])
-        cursor, previous = edit.end_line, edit.end_line
+        cursor = edit.end_line
     parts.append("".join(lines[cursor:]))
     candidate = "".join(parts)
     if not candidate.strip() or len(candidate) > 12000:

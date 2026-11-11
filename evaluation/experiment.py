@@ -183,7 +183,9 @@ def request_json(api, method, path, **kwargs):
     return response.json()
 
 
-def run_detection(directory, config, budget, record, content, strategy, repeat):
+def run_detection(
+    directory, config, budget, record, content, strategy, repeat, *, provider_factory=None
+):
     from app.core.database import build_engine
     from app.main import create_app
     from app.models import Base
@@ -246,7 +248,9 @@ def run_detection(directory, config, budget, record, content, strategy, repeat):
                 },
             )["scan"]
             ident = scan["id"]
-            asyncio.run(run_once(app.state.engine, settings, budget.factory(job.name)))
+            asyncio.run(
+                run_once(app.state.engine, settings, provider_factory or budget.factory(job.name))
+            )
             scan = request_json(api, "get", f"/api/v1/scans/{ident}")["scan"]
             findings = request_json(api, "get", f"/api/v1/scans/{ident}/findings?limit=100")[
                 "findings"
@@ -426,6 +430,7 @@ def generate_repairs(directory, config, budget):
                                     "delta",
                                     "impact",
                                     "contract",
+                                    "patch_diagnostic",
                                 )
                             },
                             "gates": item["gates"],
