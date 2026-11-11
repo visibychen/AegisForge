@@ -1,0 +1,207 @@
+{
+  "scope": "formal M6 detection and repair records",
+  "integrity_ok": true,
+  "failed_checks": [],
+  "checks": 23,
+  "numeric_requirements_unmet": [
+    "detection.source_precision",
+    "repairs.total",
+    "repairs.CWE-89",
+    "labels.human_review"
+  ],
+  "note": "integrity is independent of the thresholds; see scripts/acceptance.py",
+  "report": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "file.m6-detection-baseline.json",
+        "ok": true,
+        "detail": "present"
+      },
+      {
+        "name": "file.m6-detection-baseline.csv",
+        "ok": true,
+        "detail": "present"
+      },
+      {
+        "name": "file.m6-repairs-baseline.json",
+        "ok": true,
+        "detail": "present"
+      },
+      {
+        "name": "file.m6-baseline-candidates.json",
+        "ok": true,
+        "detail": "present"
+      },
+      {
+        "name": "file.m6-controls-final-baseline.json",
+        "ok": true,
+        "detail": "present"
+      },
+      {
+        "name": "detection.schedule",
+        "ok": true,
+        "detail": "756 rows, 756 scheduled"
+      },
+      {
+        "name": "detection.model_tasks",
+        "ok": true,
+        "detail": "648 real-model tasks (samples x 3 rounds x 2 strategies)"
+      },
+      {
+        "name": "detection.row_bindings",
+        "ok": true,
+        "detail": "strict state, strategy and input hash"
+      },
+      {
+        "name": "detection.metrics_recomputed",
+        "ok": true,
+        "detail": "every group equals the file"
+      },
+      {
+        "name": "detection.threshold_recomputed",
+        "ok": true,
+        "detail": "recomputed passed=False, file passed=False"
+      },
+      {
+        "name": "detection.budget",
+        "ok": true,
+        "detail": "695 recorded calls <= 695 reservations <= ceiling 1000"
+      },
+      {
+        "name": "detection.historical_review_state",
+        "ok": true,
+        "detail": "recorded historical state matches its manifest; no human identity is authenticated"
+      },
+      {
+        "name": "detection.frozen_data_unchanged",
+        "ok": true,
+        "detail": "freeze file, records and per-sample hashes equal the baseline manifest"
+      },
+      {
+        "name": "detection.csv",
+        "ok": true,
+        "detail": "14 rows reconcile"
+      },
+      {
+        "name": "repairs.rows_unique_and_complete",
+        "ok": true,
+        "detail": "54 rows for 18 registered cases"
+      },
+      {
+        "name": "repairs.controls",
+        "ok": true,
+        "detail": "36 control rows, 18 valid pairs"
+      },
+      {
+        "name": "repairs.control_bindings",
+        "ok": true,
+        "detail": "fixed tests, cases and sources"
+      },
+      {
+        "name": "repairs.file_bindings",
+        "ok": true,
+        "detail": "candidate bundle and control files match the recorded SHA-256"
+      },
+      {
+        "name": "repairs.candidate_sha_binding",
+        "ok": true,
+        "detail": "bundle rows bind to results"
+      },
+      {
+        "name": "repairs.dynamic_bindings",
+        "ok": true,
+        "detail": "fixed tests, candidate, case, image and harness match"
+      },
+      {
+        "name": "repairs.success_recomputed",
+        "ok": true,
+        "detail": "recomputed 36/54, by CWE {'CWE-79': 16, 'CWE-89': 8, 'CWE-78': 12}"
+      },
+      {
+        "name": "repairs.passed_recomputed",
+        "ok": true,
+        "detail": "the recorded passed flag equals the threshold applied to the recomputed counts"
+      },
+      {
+        "name": "repairs.execution_complete",
+        "ok": true,
+        "detail": "0 rows ended in an environment error"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "detection.source_precision",
+        "required": ">= 0.85 (mean)",
+        "observed": 0.5921845574387947,
+        "met": false
+      },
+      {
+        "id": "detection.source_recall",
+        "required": ">= 0.85 (mean)",
+        "observed": 0.9814814814814815,
+        "met": true
+      },
+      {
+        "id": "detection.http_f1",
+        "required": ">= 0.85 (mean)",
+        "observed": 1.0,
+        "met": true
+      },
+      {
+        "id": "detection.recall.CWE-79",
+        "required": ">= 0.80 (mean)",
+        "observed": 1.0,
+        "met": true
+      },
+      {
+        "id": "detection.recall.CWE-89",
+        "required": ">= 0.80 (mean)",
+        "observed": 0.9444444444444444,
+        "met": true
+      },
+      {
+        "id": "detection.recall.CWE-78",
+        "required": ">= 0.80 (mean)",
+        "observed": 1.0,
+        "met": true
+      },
+      {
+        "id": "detection.rounds_complete",
+        "required": "every scheduled row present",
+        "observed": true,
+        "met": true
+      },
+      {
+        "id": "repairs.total",
+        "required": ">= 45/54",
+        "observed": 36,
+        "met": false
+      },
+      {
+        "id": "repairs.CWE-79",
+        "required": ">= 12/18",
+        "observed": 16,
+        "met": true
+      },
+      {
+        "id": "repairs.CWE-89",
+        "required": ">= 12/18",
+        "observed": 8,
+        "met": false
+      },
+      {
+        "id": "repairs.CWE-78",
+        "required": ">= 12/18",
+        "observed": 12,
+        "met": true
+      },
+      {
+        "id": "labels.human_review",
+        "required": "human review completed",
+        "observed": "pending",
+        "met": false
+      }
+    ]
+  }
+}

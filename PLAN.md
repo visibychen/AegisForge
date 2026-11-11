@@ -248,7 +248,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 实现及本地验收完成，待 PR 集成 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 实现及开发验收完成，PR #15 待集成；见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
-| M6 全面测试与实验 | 实施中，先冻结基线测试实验，再三轮协作优化 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
+| M6 全面测试与实验 | 全量实验及三轮优化完成，数值门槛/人工复核未通过，PR #16待审 | M4、M5 | 756检测任务、54次首次修复、性能/资源/兼容及事后开发诊断；详见测试报告，不回填失败 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |
 
 阶段推进规则：完成条件和证据齐备才勾选完成；仅有代码或模拟结果不算通过。阶段内可交叉完善 UI 与测试，依赖阶段未验收时不得标记后续阶段完成。每阶段更新需求追踪矩阵以及本表状态。
@@ -332,7 +332,7 @@ M1–M6 逐步提供以下统一命令接口。M1 已实现 `scripts/check.py` �
 python scripts/check.py             # 已实现检查项的统一入口：格式、类型、单元与集成
 python scripts/evaluate.py --help   # 数据集校验、dry-run、三种检测策略及真实模型评测
 python scripts/validate_samples.py --help  # 固定样例动态验证与隔离检查
-python scripts/acceptance.py        # 完整验收编排，缺密钥/缺 Docker 等不得默认为通过
+python scripts/acceptance.py        # 已实现核心实验严格门禁；其他矩阵项明确不在重算范围
 npm --prefix frontend run test:e2e  # 浏览器业务流程
 ```
 
@@ -362,7 +362,7 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 - [ ] 检测→候选补丁→差异→验证→导出流程可在 Web 中完成。
 - [ ] 代码与 HTTP 风险结论区分清楚，缺源码不能虚构修复。
 - [ ] 真实模型检测与修复实验完成，达到既定指标，保留失败与局限分析。
-- [x] 受控动态验证真实运行，三类开发例安全测试和业务回归均有证据；保留集实验仍待M6。
+- [x] 受控动态验证真实运行，三类开发例有证据；M6保留集54次首次尝试已完成，36/54通过，未达标。
 - [ ] 安全、可靠性、兼容性、性能检查完成；无阻断/严重缺陷，普通 CI 通过。
 - [ ] 干净环境从 GitHub 克隆后按 README 可部署，配置中不包含秘密。
 - [ ] 详细设计、实现报告、截图、用户指南、完整源码、配置样例齐备。
@@ -388,10 +388,10 @@ npm --prefix frontend run test:e2e  # 浏览器业务流程
 | --- | --- | --- | --- |
 | R01 | M1、M2、M5 | 输入边界、API、上传 E2E | M2 上传、粘贴、示例、脱敏预览已完成；M3 组合任务、M5完整页面与干净Compose浏览器验收完成，待PR集成 |
 | R02 | M2 | AST/HTTP 正反例、行号与脱敏 | M2 AST/HTTP、规则、预算和脱敏已通过自动化验证；标注人工复核待补 |
-| R03 | M3、M6 | Provider 故障、三策略真实评测 | M3 DeepSeek 真实三类演示、Provider 故障验证通过；正式对比评测待 M6 |
+| R03 | M3、M6 | Provider 故障、三策略真实评测 | M6全部756任务完成；源码联合P约0.592/R约0.981，HTTP F1=1，精确率门槛未过；人工复核pending |
 | R04 | M3、M5 | 结果 schema、UI 行为、XSS 渲染 | M5筛选、分面统计、证据定位和对比已实现；最终验收见M5记录 |
 | R05 | M4、M5 | 编辑校验、diff、修复 E2E | M4候选/diff/下载/静态及LLM复检、门禁/影响/契约与修复E2E完成；M5源代码无关报告与修复说明卡已实现 |
-| R06 | M4、M6 | 静态复检、18 例动态实验、沙箱约束 | M4三类真实开发闭环、6个对照、5个对抗探针及部署隔离完成；18例正式修复实验留M6 |
+| R06 | M4、M6 | 静态复检、18 例动态实验、沙箱约束 | M6的36个V/S对照有效、54首次尝试36成功；SQLi8/18及总数未达标。后续15/18仅事后条件诊断 |
 | R07 | M3、M5 | 持久化、删除、导出、脱敏 | M5完整历史查询/逻辑移出/JSON与Markdown报告已实现；物理擦除未实现，保留预算与输入并明确告知 |
 | R08 | M1、M6、M7 | CI、部署、报告及课程清单核对 | M1 环境、锁文件、CI、设计及验证记录完成；最终交付待 M6/M7 |
 
@@ -426,3 +426,5 @@ M4实施补充（1.5，2026-11-08）：三阶段同会话四次Sonnet5.5 high调
 M5实际新增接口：GET /api/v1/workspace、/workspace/history，POST /workspace/{id}/delete（逻辑移出），GET /workspace/{id}/report?format=json|markdown，GET /scans/{id}/inputs/{artifact_id}，GET /repairs/{id}/compare；原初接口表是设计基线，运行协议以OpenAPI及阶段设计为准。
 
 2026-11-11，版本1.7，用户恢复M6，要求先测试/实验再与Sonnet5.5 high协作三轮优化，并明确批准全流程最多1000次外部模型调用（包含重试）。执行预登记见[实验协议](docs/m6-protocol.md)。原数据和阈值不改，基线与优化后结果分开；若按保留结果修改检测逻辑，必须标记事后调优偏差。人工标签复核不能由AI运行替代。
+
+2026-11-11，版本1.8，M6全量实验后完成原Claude会话Sonnet5.5/high三轮协作，最后由Codex优化。新增显式行寻址、精确补丁预检/带事实单次纠错、子额度保护、误报归因、冻结历史/记录审计、按浏览器保留证据；修复键盘时序与Flask低危依赖。累计942/1000模型调用。正式P与修复门槛未过、人工标签复核pending，Issue #7不关闭、无v1.0.0；开发A/B及后续修复只作事后诊断。严格数值CLI保持非零，普通CI检查记录与容器重放，未降低第7节指标。后续独立质量结论需新的未暴露保留集及人工复核，不能重复使用本次暴露集宣称独立验收。[测试证据](docs/test-report.md)、[协作核实](docs/collaboration-2026-11-11.md)。

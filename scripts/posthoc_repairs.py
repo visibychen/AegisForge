@@ -190,7 +190,11 @@ def main():
         "course_acceptance_evaluated": False,
     }
     write_json(destination / "summary.json", result)
-    write_json(ROOT / "evaluation/results/m6-posthoc-candidates.json", result)
+    target = ROOT / "evaluation/results/m6-posthoc-candidates.json"
+    if target.exists() and json.loads(target.read_text(encoding="utf-8")) != result:
+        raise ValueError("Refuse overwriting existing post-hoc evidence")
+    if not target.exists():
+        write_json(target, result)
     print(
         json.dumps(
             {

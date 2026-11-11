@@ -75,7 +75,7 @@ def make(monkeypatch, handler, cls=DeepSeekProvider):
 
 
 def test_versions_are_bumped_and_the_source_map_uses_global_numbers():
-    assert PROMPT_VERSION == "analysis-1.2" and REPAIR_PROMPT_VERSION == "repair-1.2"
+    assert PROMPT_VERSION == "analysis-1.3" and REPAIR_PROMPT_VERSION == "repair-1.2"
     request = source_request()
     assert source_lines(request) == [
         {"n": 10, "text": "a = 1"},

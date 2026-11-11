@@ -86,6 +86,18 @@ def test_unscoped_history_counts_and_invalid_scopes_are_refused(tmp_path):
         ExperimentBudget(path, 10, "only-name")
 
 
+def test_unscoped_reservations_cannot_steal_promised_allowances(tmp_path):
+    path = tmp_path / "budget.db"
+    scoped = ExperimentBudget(path, 10, "promised", 6)
+    plain = ExperimentBudget(path, 10)
+    assert plain.remaining() == 4
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        assert sum(pool.map(lambda _: attempt(plain, 3)[0], range(4))) == 4
+    assert plain.remaining() == 0
+    assert attempt(scoped, 8) == (6, ["EXPERIMENT_BUDGET"] * 2)
+    assert scoped.summary()["reservations"] == 10
+
+
 def test_scope_allowance_is_atomic_across_threads(tmp_path):
     path = tmp_path / "budget.db"
     ExperimentBudget(path, 20, "race", 4)

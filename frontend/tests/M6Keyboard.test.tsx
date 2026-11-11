@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { StrictMode, useLayoutEffect } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import SourceLines from '../src/components/SourceLines';
@@ -11,9 +11,9 @@ const marks: Mark[] = [
   { start: 600, end: 600, kind: 'finding', id: 'last' },
 ];
 
-it('opens the next marked finding when navigation and activation arrive in one burst', () => {
+it.each([false, true])('opens the next marked finding in one burst (StrictMode=%s)', strict => {
   const activate = vi.fn();
-  render(<SourceLines label="burst source" content={content} marks={marks} focusLine={2} onActivate={activate} />);
+  render(<SourceLines label="burst source" content={content} marks={marks} focusLine={2} onActivate={activate} />, { wrapper: strict ? StrictMode : undefined });
   const region = screen.getByRole('group', { name: 'burst source' });
   act(() => {
     fireEvent.keyDown(region, { key: 'n' });
@@ -47,7 +47,7 @@ it('opens a multi-line mark from any of its lines, including one in another wind
   expect(activate).toHaveBeenCalledWith(expect.objectContaining({ id: 'span' }));
 });
 
-it('uses the new controlled focus before passive effects when keyboard input follows a commit', () => {
+it.each([false, true])('uses controlled focus before passive effects (StrictMode=%s)', strict => {
   const activate = vi.fn();
   function Harness({ focus }: { focus: number }) {
     useLayoutEffect(() => {
@@ -58,7 +58,7 @@ it('uses the new controlled focus before passive effects when keyboard input fol
     }, [focus]);
     return <SourceLines label="controlled source" content={content} marks={marks} focusLine={focus} onActivate={activate} />;
   }
-  const { rerender } = render(<Harness focus={1} />);
+  const { rerender } = render(<Harness focus={1} />, { wrapper: strict ? StrictMode : undefined });
   rerender(<Harness focus={600} />);
   expect(activate).toHaveBeenCalledWith(expect.objectContaining({ id: 'middle' }));
 });

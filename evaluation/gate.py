@@ -14,6 +14,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -33,6 +34,44 @@ FILES = {
 }
 STATIC_CHECKS = ("syntax", "patch", "roundtrip")
 MAX_RECORD_BYTES = 8 * 1024 * 1024
+TEST_NAMES = {"business_primary", "business_secondary", "security_regression"}
+
+
+def registered_cases():
+    labels = read_json(ROOT / "samples/holdout/controlled_repairs.json")["samples"]
+    cwes = {row["id"]: row["cwe"] for row in labels}
+    cases = read_json(ROOT / "samples/controlled/m6_cases.json")["cases"]
+    result = {case["sample_id"]: {**case, "cwe": cwes[case["sample_id"]]} for case in cases}
+    if len(result) != REPAIR_CASES or set(result) != set(cwes):
+        raise ValueError("Invalid registered repair schedule")
+    return result
+
+
+def test_outcomes(dynamic):
+    tests = dynamic.get("tests")
+    if not isinstance(tests, list) or len(tests) != len(TEST_NAMES):
+        return None
+    if any(not isinstance(t, dict) or type(t.get("passed")) is not bool for t in tests):
+        return None
+    outcomes = {t.get("name"): t["passed"] for t in tests}
+    if set(outcomes) != TEST_NAMES:
+        return None
+    expected = "passed" if all(outcomes.values()) else "failed"
+    return outcomes if dynamic.get("status") == expected else None
+
+
+def control_accepted(row):
+    tests = test_outcomes(row)
+    if tests is None:
+        return False
+    if row.get("control") == "S":
+        return row.get("status") == "passed"
+    return (
+        row.get("control") == "V"
+        and row.get("status") == "failed"
+        and tests["business_primary"] is True
+        and tests["security_regression"] is False
+    )
 
 
 def bounded_text(path):
@@ -91,10 +130,17 @@ def candidate_success(row: dict, control_valid: bool) -> bool:
     checks = row.get("checks") or {}
     deltas = checks.get("delta") or {}
     reviewed = (checks.get("review") or {}).get("status") == "complete"
-    no_new = all(not (deltas.get(kind) or {}).get("introduced") for kind in ("rules", "model"))
+    no_new = all(
+        isinstance(deltas.get(kind), dict)
+        and isinstance(deltas[kind].get("introduced"), list)
+        and not deltas[kind]["introduced"]
+        for kind in ("rules", "model")
+    )
+    dynamic = row.get("dynamic") or {}
     return bool(
         control_valid
-        and (row.get("dynamic") or {}).get("status") == "passed"
+        and dynamic.get("status") == "passed"
+        and test_outcomes(dynamic) is not None
         and all(checks.get(key) == "passed" for key in STATIC_CHECKS)
         and reviewed
         and no_new
@@ -136,7 +182,9 @@ def verify_detection(summary: dict, samples: list[dict], csv_text=None, plan=Non
     results = [
         check(
             "detection.schedule",
-            len(identities) == len(set(identities)) and set(identities) == expected,
+            all(type(r.get("repeat")) is int for r in records)
+            and len(identities) == len(set(identities))
+            and set(identities) == expected,
             f"{len(records)} rows, {len(expected)} scheduled",
         ),
         check(
@@ -145,6 +193,32 @@ def verify_detection(summary: dict, samples: list[dict], csv_text=None, plan=Non
             f"{model_tasks} real-model tasks (samples x 3 rounds x 2 strategies)",
         ),
     ]
+    expected_hashes = (plan or {}).get("sample_hashes")
+    source_ok = all(
+        type(r.get("analysis_complete")) is bool
+        and (r.get("status") == "completed") is r["analysis_complete"]
+        and isinstance(r.get("calls"), list)
+        and (not expected_hashes or r.get("source_sha256") == expected_hashes[r["sample_id"]])
+        and all(
+            isinstance(f.get("sources"), list)
+            and bool(f["sources"])
+            and set(f["sources"])
+            <= (
+                {"rule"}
+                if r["strategy"] == "rules"
+                else {"llm"}
+                if r["strategy"] == "llm"
+                else {"rule", "llm"}
+            )
+            for f in r.get("findings", [])
+        )
+        and (r["strategy"] != "rules" or not r["calls"])
+        and (r["strategy"] == "rules" or bool(r["calls"]))
+        for r in records
+    )
+    results.append(
+        check("detection.row_bindings", source_ok, "strict state, strategy and input hash")
+    )
     recomputed = recompute_groups(samples, records)
     stored = summary.get("groups") or {}
     metrics_ok = all(
@@ -175,9 +249,9 @@ def verify_detection(summary: dict, samples: list[dict], csv_text=None, plan=Non
     pending = "pending" in str((summary.get("manifest") or {}).get("human_review")).lower()
     results.append(
         check(
-            "detection.human_review_pending",
-            summary.get("human_review_pending") is True and pending,
-            "AI-authored labels stay marked as pending human review",
+            "detection.historical_review_state",
+            summary.get("human_review_pending") is pending,
+            "recorded historical state matches its manifest; no human identity is authenticated",
         )
     )
     if plan is not None:
@@ -197,7 +271,25 @@ def verify_detection(summary: dict, samples: list[dict], csv_text=None, plan=Non
 
 
 def reconcile_csv(text: str, recomputed: dict):
-    rows = list(csv.DictReader(io.StringIO(text)))
+    reader = csv.DictReader(io.StringIO(text))
+    columns = [
+        "strategy",
+        "repeat",
+        "kind",
+        "tp",
+        "fp",
+        "fn",
+        "precision",
+        "recall",
+        "f1",
+        "tasks",
+        "failed",
+    ]
+    if reader.fieldnames != columns:
+        return False, "CSV schema differs"
+    rows = list(reader)
+    if any(None in row or any(value is None for value in row.values()) for row in rows):
+        return False, "CSV column count differs"
     expected = [
         (strategy, entry["repeat"], kind)
         for strategy, entries in recomputed.items()
@@ -255,7 +347,7 @@ def control_validity(controls: dict) -> dict:
     return {
         sample: len(items) == 2
         and {i.get("control") for i in items} == {"V", "S"}
-        and all(i.get("accepted") is True for i in items)
+        and all(i.get("accepted") is True and control_accepted(i) for i in items)
         for sample, items in grouped.items()
     }
 
@@ -271,14 +363,20 @@ def repair_threshold_met(total: int, by_cwe: dict) -> bool:
     return total >= 45 and all(by_cwe.get(cwe, 0) >= 12 for cwe in CWES)
 
 
-def verify_repairs(repairs: dict, bundle_path, controls_path, controls: dict, bundle: dict) -> list:
+def verify_repairs(
+    repairs: dict, bundle_path, controls_path, controls: dict, bundle: dict, sample_hashes=None
+) -> list:
+    registered = registered_cases()
     rows = repairs.get("rows") or []
     identities = [(r.get("sample_id"), r.get("repeat")) for r in rows]
     cases = {i[0] for i in identities}
     results = [
         check(
             "repairs.rows_unique_and_complete",
-            len(rows) == REPAIR_CASES * REPAIR_ROUNDS
+            all(type(r.get("repeat")) is int for r in rows)
+            and set(identities) == {(s, i) for s in registered for i in (1, 2, 3)}
+            and all(r.get("cwe") == registered.get(r.get("sample_id"), {}).get("cwe") for r in rows)
+            and len(rows) == REPAIR_CASES * REPAIR_ROUNDS
             and len(set(identities)) == len(identities)
             and len(cases) == REPAIR_CASES
             and {i[1] for i in identities} == {1, 2, 3},
@@ -295,6 +393,21 @@ def verify_repairs(repairs: dict, bundle_path, controls_path, controls: dict, bu
             f"{len(control_rows)} control rows, {sum(valid.values())} valid pairs",
         )
     )
+    controls_bound = True
+    for row in control_rows:
+        case = registered.get(row.get("sample_id"), {})
+        source_id = str(row.get("sample_id"))[:-1] + str(row.get("control"))
+        expected_hash = (sample_hashes or {}).get(source_id)
+        controls_bound &= (
+            row.get("case_id") == case.get("id")
+            and row.get("cwe") == case.get("cwe")
+            and row.get("accepted") is control_accepted(row)
+            and test_outcomes(row) is not None
+            and (not expected_hash or row.get("candidate_sha256") == expected_hash)
+        )
+    results.append(
+        check("repairs.control_bindings", controls_bound, "fixed tests, cases and sources")
+    )
     results.append(
         check(
             "repairs.file_bindings",
@@ -304,16 +417,51 @@ def verify_repairs(repairs: dict, bundle_path, controls_path, controls: dict, bu
         )
     )
     bundled = {(r.get("sample_id"), r.get("repeat")): r for r in bundle.get("rows") or []}
-    bound = len(bundled) == len(bundle.get("rows") or [])
+    bound = (
+        len(bundled) == len(bundle.get("rows") or []) == len(rows)
+        and set(bundled) == set(identities)
+        and all(type(r.get("repeat")) is int for r in bundle.get("rows") or [])
+    )
+    dynamic_bindings = True
+    runtimes = {(r.get("image_id"), r.get("harness_sha256")) for r in control_rows}
     for row in rows:
         source = bundled.get((row.get("sample_id"), row.get("repeat")), {})
         text = source.get("candidate_source")
         if text is not None:
             bound &= hashlib.sha256(text.encode()).hexdigest() == source.get("candidate_sha256")
         bound &= row.get("candidate_sha256") == source.get("candidate_sha256")
+        bound &= all(
+            row.get(k) == value
+            for k, value in source.items()
+            if k not in {"candidate_source", "success"}
+        )
+        bound &= row.get("first_candidate") is True
+        dynamic = row.get("dynamic")
+        if text is not None:
+            case = registered.get(row.get("sample_id"), {})
+            runtime = ((dynamic or {}).get("image_id"), (dynamic or {}).get("harness_sha256"))
+            dynamic_bindings &= (
+                isinstance(dynamic, dict)
+                and test_outcomes(dynamic) is not None
+                and dynamic.get("candidate_sha256") == row.get("candidate_sha256")
+                and dynamic.get("case_id") == case.get("id")
+                and runtime in runtimes
+                and len(runtimes) == 1
+                and bool(re.fullmatch(r"sha256:[0-9a-f]{64}", str(runtime[0])))
+                and bool(re.fullmatch(r"[0-9a-f]{64}", str(runtime[1])))
+            )
+        else:
+            dynamic_bindings &= dynamic is None and bool(row.get("error_code"))
     results.append(check("repairs.candidate_sha_binding", bound, "bundle rows bind to results"))
+    results.append(
+        check(
+            "repairs.dynamic_bindings",
+            dynamic_bindings,
+            "fixed tests, candidate, case, image and harness match",
+        )
+    )
     flags, total, by_cwe, rounds = count_successes(rows, valid)
-    flagged = all(ok == r.get("success") for r, ok in flags)
+    flagged = all(type(r.get("success")) is bool and ok == r["success"] for r, ok in flags)
     results.append(
         check(
             "repairs.success_recomputed",
@@ -371,7 +519,12 @@ def _verify_all(directory=RESULTS, samples=None, plan=None) -> dict:
     csv_text = bounded_text(paths["csv"])
     results += verify_detection(read["detection"], samples, csv_text, plan)
     results += verify_repairs(
-        read["repairs"], paths["bundle"], paths["controls"], read["controls"], read["bundle"]
+        read["repairs"],
+        paths["bundle"],
+        paths["controls"],
+        read["controls"],
+        read["bundle"],
+        (plan or {}).get("sample_hashes"),
     )
     hybrid = recompute_groups(samples, read["detection"].get("records") or [])["hybrid"]
     reviewed = read["detection"].get("human_review_pending") is False

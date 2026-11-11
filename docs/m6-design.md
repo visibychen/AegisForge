@@ -1,6 +1,6 @@
-# M6 实验后优化设计（第 2 轮实现，待 Codex 实测）
+# M6 实验后优化设计
 
-2026-11-11，Refs #7。本文件说明第二轮 Claude 修改的设计、边界与**尚未证实**之处。所有结论以 Codex 实际运行的测试和付费开发验证为准；本文件不声明任何测试通过。
+2026-11-11，Refs #7。A–C及“待验证”列表保留第二轮Claude交接时的设计和不确定性；第三轮后的最终状态见末节及[测试报告](test-report.md)。没有把交接时的推断当成已运行证据。
 
 ## 先说明解释边界（必须保留）
 
@@ -39,9 +39,9 @@
 ## C. 键盘与依赖
 
 - **`SourceLines.tsx`**：光标有唯一权威（ref），按键处理读写 ref，因此同一批次内的 N→Enter、以及提交与被动 effect 之间到达的按键，都作用于上一键产生的位置；受控 `focusLine/focusKey/content` 变化在**渲染阶段**重置光标，早于任何布局 effect 或事件处理。Enter 在全部标记中查找（光标刚跨过 500 行窗口时仍有效）。保持绝对行号、全局 N/P、纯文本和 500 行 DOM 窗口。
-- **`deploy/validator/requirements.in`**：`flask==3.1.3`（GHSA-68rp-wp8r-4726，低危，3.1.3 修复）。**`requirements.lock` 未改，也没有伪造哈希**，Codex 需在 conda 环境中重新生成/核对锁后再验收。
+- **第二轮交接时`deploy/validator/requirements.in`**：`flask==3.1.3`（GHSA-68rp-wp8r-4726，低危，3.1.3修复）。Claude当时未改锁，之后Codex已在conda中实际重新生成精确哈希锁并审计。
 
-## 必须由 Codex 验证的事项
+## 第二轮交接时待验证的事项
 
 1. 后端：`python -m pytest backend/tests/test_m6_prompts.py backend/tests/test_m6_patches.py backend/tests/test_m6_budget.py backend/tests/test_m6_gate.py backend/tests/test_deepseek.py backend/tests/test_repairs.py backend/tests/test_evaluation.py backend/tests/test_m4_stage2.py backend/tests/test_m4_review.py`，再跑全量与 Ruff。重点：prompt 版本改变后既有回执/契约/覆盖测试是否需要更新期望。
 2. 前端：`npm --prefix frontend test`（含 `M6Keyboard`、`M5Review`、`Workbench`）、`typecheck`、`build`。
@@ -49,10 +49,23 @@
 4. 付费开发验证只用子额度，例如先备份账本文件再运行：`python scripts/evaluate.py dev-ab --run dev-ab-new-prompt --split dev --execute-real --scope dev-ab-new --allowance 96 --strategy hybrid --per-group 4`。旧提示一臂需在旧提交的工作树中运行（本脚本只依赖 `run_detection`），并使用不同的 `--run` 与 `--scope`，两臂合计不得超过剩余额度。
 5. 修复候选复测应单独计划并标记事后诊断；`evaluation/experiment.py` 的 `generate_repairs` 只持久化固定的 `checks` 键，若要在 `repair.json` 中保留 `patch_diagnostic`，需 Codex 另行修改该文件（不在本轮授权范围）。
 
-## 仍未证实
+## 第二轮交接时尚未证实
 
 - 行寻址是否真正降低 `location_mismatch` 与 `PATCH_CONFLICT`、是否改变召回/精确率、输入 token 增加多少。
 - 四个重复冲突样例的共同原因。
 - JS 字符串上下文的两个候选业务回归能否由提示改善。
 - 子额度并发在多进程下的锁等待行为、旧库 `ALTER TABLE` 在 Windows 上的表现。
 - `m6-records` 与 `m6-acceptance` 在 GitHub 环境中的实际结果。
+
+## 第三轮后最终实现与已验证边界
+
+- `analysis-1.3`补充Flask常量模板/上下文、Markup方法参数转义、命令解释与数据参数的通用语义。只发静态文本，严格原文/行号/输出校验不变；未增加按样例、来源或置信度过滤。`repair-1.2`保留。12例定向开发回归TP9/FP1/FN0，无输出拒绝；不构成独立保留验收。原48例A/B和18例后续修复的协议指纹保持1.2历史版本，不覆盖重跑。
+- 修复诊断实际18个全部生成，固定容器综合通过15个，3个业务/安全失败保留；14次基线PATCH_CONFLICT的具体线协议根因依然未被证明。行寻址及预检是结构性改进，不能把小样本结果泛化为不会冲突。
+- `candidate_success`必须有三个固定测试名/真实布尔结果且状态一致，delta两个引擎的introduced必须是明确空列表；缺失不是干净复检。审计逐字段对账候选束，绑定登记ID/CWE、候选哈希、固定测试、镜像/runner摘要与冻结V/S源码摘要，重算控制accepted。真实Docker重放仍是运行证据，不将JSON自洽视为真实性证明。
+- `m6_freeze_guard.py`核对预调优提交`e527d91fe49fd1e0991c15f2a3e2b9d3d7d9be20`中的samples及所有原baseline。普通记录CI取完整Git历史运行；不是密码签名，修改守卫本身仍需代码审查。
+- 无scope预留也必须避开已承诺子额度，原子并发测试验证；全局不超过1000。未加入额度retire/释放API，当前无需释放；最终942次，两个命名scope剩余仍被保护。`remaining()`为显示用快照，真正准入在事务中决定。
+- `core_accepted`只指核心实验，辅助记录损坏退出2且不回显。历史人工标志与当时manifest核对，人工身份不能由程序验证；本次历史pending保留。人工复核附件及新的独立保留集属于后续验收，未伪造完成。
+- 光标在渲染期重置state、layout effect同步ref，事件同步写ref；未在渲染期写ref。保留两项原失败断言并各补StrictMode版本，6个键盘压力用例均实际通过。
+- Flask精确锁3.1.3及45个包的升级后审计已实测；原3.1.2报告不回写。`m6-records`在GitHub已实际通过；严格数值CLI仍返回1，手动严格CI未声称已运行。最终浏览器/全量CI证据见测试报告。
+
+后续可选创新：AST中性static_facts、独立人工复核附件、子额度退役、细化新增风险等级及更广的框架语义，均不在本次已完成声明内。性能100次读API与另10次提交仍分开，未重新付费运行性能实验。

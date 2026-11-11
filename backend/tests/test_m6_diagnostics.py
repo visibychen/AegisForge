@@ -54,7 +54,13 @@ def test_diagnostics_are_conditional_even_when_every_container_verdict_passes(
     def fake_container(settings, candidate, case):
         assert candidate == source
         calls.append(case["id"])
-        return {"status": "passed", "tests": []}
+        return {
+            "status": "passed",
+            "tests": [
+                {"name": name, "passed": True}
+                for name in ("business_primary", "business_secondary", "security_regression")
+            ],
+        }
 
     monkeypatch.setattr(runner, "run_container", fake_container)
     report = m6_validate.candidates(None, bundle, controls, posthoc=True)

@@ -30,7 +30,7 @@ def main():
     require_conda()
     sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
     from evaluation.experiment import load_data, plan, write_json
-    from evaluation.gate import RESULTS, verify_all
+    from evaluation.gate import RESULTS, read_json, verify_all
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results", type=lambda p: ROOT / p, default=RESULTS)
@@ -43,15 +43,26 @@ def main():
         samples, frozen = None, None
     report = verify_all(args.results, samples, frozen)
     recorded = {}
-    for name in RECORDED_ONLY:
-        path = args.results / name
-        if path.is_file():
-            recorded[name] = {"recorded_passed": json.loads(path.read_text("utf-8")).get("passed")}
+    try:
+        for name in RECORDED_ONLY:
+            path = args.results / name
+            recorded[name] = {
+                "recorded_passed": read_json(path).get("passed") if path.exists() else None
+            }
+    except (OSError, ValueError, TypeError, RecursionError):
+        report["ok"] = False
+        report["checks"].append(
+            {
+                "name": "recorded_only.parse",
+                "ok": False,
+                "detail": "Invalid auxiliary evidence; contents withheld",
+            }
+        )
     unmet = [item for item in report["requirements"] if not item["met"]]
     verdict = (
         "records_invalid"
         if not report["ok"]
-        else "accepted"
+        else "core_accepted"
         if report["requirements"] and not unmet
         else "not_accepted"
     )
@@ -62,11 +73,20 @@ def main():
         "requirements": report["requirements"],
         "unmet": [item["id"] for item in unmet],
         "recorded_not_recomputed": recorded,
+        "not_evaluated": [
+            "performance",
+            "coverage",
+            "dependencies",
+            "resources",
+            "browsers",
+            "human reviewer identity",
+            "independent post-optimization quality",
+        ],
     }
     if args.output:
         write_json(args.output, result)
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    return {"accepted": 0, "not_accepted": 1, "records_invalid": 2}[verdict]
+    return {"core_accepted": 0, "not_accepted": 1, "records_invalid": 2}[verdict]
 
 
 if __name__ == "__main__":

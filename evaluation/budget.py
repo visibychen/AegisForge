@@ -106,6 +106,8 @@ class ExperimentBudget:
                 used = db.execute("SELECT COUNT(*) FROM calls WHERE scope=?", (self.scope,))
                 if used.fetchone()[0] >= self.allowance:
                     raise DomainError("EXPERIMENT_ALLOWANCE", "本实验的子额度已用完。", 429)
+            elif self._unallocated(db) <= 0:
+                raise DomainError("EXPERIMENT_ALLOWANCE", "剩余调用名额已分配给命名实验。", 429)
             return db.execute(
                 "INSERT INTO calls(job,started,status,scope) VALUES (?,?,?,?)",
                 (job, datetime.now(UTC).isoformat(), "reserved", self.scope),
@@ -133,7 +135,17 @@ class ExperimentBudget:
             if self.scope is not None:
                 used = db.execute("SELECT COUNT(*) FROM calls WHERE scope=?", (self.scope,))
                 left = min(left, self.allowance - used.fetchone()[0])
+            else:
+                left = self._unallocated(db)
         return max(left, 0)
+
+    def _unallocated(self, db):
+        used = dict(db.execute("SELECT scope, COUNT(*) FROM calls GROUP BY scope"))
+        promised = sum(
+            max(size - used.get(name, 0), 0)
+            for name, size in db.execute("SELECT scope, allowance FROM allowances")
+        )
+        return self.limit - sum(used.values()) - promised
 
     def summary(self):
         with closing(self.connect()) as db:

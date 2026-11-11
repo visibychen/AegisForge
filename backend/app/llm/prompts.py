@@ -3,10 +3,9 @@ import json
 from app.llm.wire import EXAMPLE, WIRE_SCHEMA_VERSION, WireResult
 from app.schemas.contracts import AnalysisRequest
 
-# analysis-1.2: source is sent as explicit {n, text} lines (n = GLOBAL line number) instead of one
-# unnumbered string, and the system prompt carries general context-sensitive security guidance.
+# analysis-1.3 adds general framework escaping and command/data boundaries to line addressing.
 # The wire schema and every server-side check are unchanged.
-PROMPT_VERSION = "analysis-1.2"
+PROMPT_VERSION = "analysis-1.3"
 MAX_MODEL_SPAN = 30  # server-enforced maximum lines for one model source finding
 
 
@@ -59,7 +58,19 @@ CONTEXT_GUIDANCE = (
     "interpret shell syntax, but an explicitly started shell (for example sh -c or bash -c) "
     "interprets its single string argument; shlex.quote on each interpolated value or an int() "
     "cast neutralises that value. A constant or a validated allow-listed value is not "
-    "untrusted. In the explanation name the untrusted input and the sink. "
+    "untrusted. Distinguish Flask/Jinja template source from context variables: a constant "
+    "render_template_string template with ordinary context values uses autoescaping by default "
+    "in HTML text and quoted attributes. Untrusted template source, disabled autoescaping, "
+    "safe/Markup values, JavaScript, unquoted attributes and dangerous URL schemes need separate "
+    "analysis. Markup(constant_template).format(ordinary_string) and Markup(constant_template) "
+    "% ordinary_string escape arguments; constructing Markup from an already interpolated "
+    "untrusted string does not. Arguments already marked Markup or exposing __html__ are trusted "
+    "by that mechanism, not re-escaped. For CWE-78, distinguish interpreted command/code from "
+    "data: a fixed executable with an argv list and untrusted data arguments does not by itself "
+    "interpret shell syntax. Check explicit interpreters, executable control and options that "
+    "enable command execution; path traversal or ordinary argument issues alone are not CWE-78. "
+    "Do not suppress an interpreted command merely because its outer invocation uses an argv "
+    "list. In the explanation name the untrusted input and the sink. "
 )
 
 

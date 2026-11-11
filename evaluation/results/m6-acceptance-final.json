@@ -1,0 +1,111 @@
+{
+  "verdict": "not_accepted",
+  "integrity_ok": true,
+  "failed_checks": [],
+  "requirements": [
+    {
+      "id": "detection.source_precision",
+      "required": ">= 0.85 (mean)",
+      "observed": 0.5921845574387947,
+      "met": false
+    },
+    {
+      "id": "detection.source_recall",
+      "required": ">= 0.85 (mean)",
+      "observed": 0.9814814814814815,
+      "met": true
+    },
+    {
+      "id": "detection.http_f1",
+      "required": ">= 0.85 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-79",
+      "required": ">= 0.80 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-89",
+      "required": ">= 0.80 (mean)",
+      "observed": 0.9444444444444444,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-78",
+      "required": ">= 0.80 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.rounds_complete",
+      "required": "every scheduled row present",
+      "observed": true,
+      "met": true
+    },
+    {
+      "id": "repairs.total",
+      "required": ">= 45/54",
+      "observed": 36,
+      "met": false
+    },
+    {
+      "id": "repairs.CWE-79",
+      "required": ">= 12/18",
+      "observed": 16,
+      "met": true
+    },
+    {
+      "id": "repairs.CWE-89",
+      "required": ">= 12/18",
+      "observed": 8,
+      "met": false
+    },
+    {
+      "id": "repairs.CWE-78",
+      "required": ">= 12/18",
+      "observed": 12,
+      "met": true
+    },
+    {
+      "id": "labels.human_review",
+      "required": "human review completed",
+      "observed": "pending",
+      "met": false
+    }
+  ],
+  "unmet": [
+    "detection.source_precision",
+    "repairs.total",
+    "repairs.CWE-89",
+    "labels.human_review"
+  ],
+  "recorded_not_recomputed": {
+    "m6-performance-api.json": {
+      "recorded_passed": true
+    },
+    "m6-performance-live.json": {
+      "recorded_passed": true
+    },
+    "m6-performance-boundary.json": {
+      "recorded_passed": true
+    },
+    "m6-resources-baseline.json": {
+      "recorded_passed": true
+    },
+    "m6-browsers-baseline.json": {
+      "recorded_passed": true
+    }
+  },
+  "not_evaluated": [
+    "performance",
+    "coverage",
+    "dependencies",
+    "resources",
+    "browsers",
+    "human reviewer identity",
+    "independent post-optimization quality"
+  ]
+}

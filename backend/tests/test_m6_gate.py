@@ -37,7 +37,10 @@ def record(strategy, repeat, sample):
         "strategy": strategy,
         "repeat": repeat,
         "analysis_complete": True,
-        "findings": findings[sample],
+        "status": "completed",
+        "findings": [
+            {**f, "sources": ["rule" if strategy == "rules" else "llm"]} for f in findings[sample]
+        ],
         "calls": [{"status": "succeeded"}] if strategy != "rules" else [],
     }
 
@@ -99,7 +102,7 @@ def test_untouched_detection_records_pass_and_every_tamper_is_caught():
 
     reviewed = copy.deepcopy(summary)
     reviewed["human_review_pending"] = False
-    assert "detection.human_review_pending" in audit_detection(reviewed, text)
+    assert "detection.historical_review_state" in audit_detection(reviewed, text)
 
     spent = copy.deepcopy(summary)
     spent["budget"]["reservations"] = 0  # fewer reservations than recorded calls is impossible
@@ -126,7 +129,7 @@ def test_success_rule_needs_valid_controls_a_passed_dynamic_run_and_clean_rechec
             "review": {"status": "complete"},
             "delta": {"rules": {"introduced": []}, "model": {"introduced": []}},
         },
-        "dynamic": {"status": "passed"},
+        "dynamic": dynamic_result(True),
     }
     assert gate.candidate_success(ok, True)
     assert not gate.candidate_success(ok, False)
@@ -143,12 +146,34 @@ def test_success_rule_needs_valid_controls_a_passed_dynamic_run_and_clean_rechec
         assert not gate.candidate_success(broken, True)
 
 
+def dynamic_result(good, case=None, digest=None):
+    return {
+        "status": "passed" if good else "failed",
+        "tests": [
+            {"name": name, "passed": good or name != "security_regression"}
+            for name in sorted(gate.TEST_NAMES)
+        ],
+        "case_id": case,
+        "candidate_sha256": digest,
+        "image_id": "sha256:" + "a" * 64,
+        "harness_sha256": "b" * 64,
+    }
+
+
 def build_repairs(tmp_path, successes):
     """18 cases x 3 rounds; the first ``successes`` attempts (round-major) succeed."""
-    cases = [(f"SRC-{n:02d}-V", CWES[n % 3]) for n in range(18)]
+    registered = gate.registered_cases()
+    groups = [[(s, c["cwe"]) for s, c in registered.items() if c["cwe"] == cwe] for cwe in CWES]
+    cases = [c for group in zip(*groups, strict=True) for c in group]
     control_rows = [
-        {"sample_id": sample, "control": label, "accepted": True}
-        for sample, _ in cases
+        {
+            "sample_id": sample,
+            "control": label,
+            "accepted": True,
+            "cwe": cwe,
+            **dynamic_result(label == "S", registered[sample]["id"]),
+        }
+        for sample, cwe in cases
         for label in ("V", "S")
     ]
     controls = {"passed": True, "rows": control_rows}
@@ -171,6 +196,7 @@ def build_repairs(tmp_path, successes):
                 "cwe": cwe,
                 "repeat": repeat,
                 "candidate_sha256": digest,
+                "first_candidate": True,
                 "checks": {
                     "syntax": "passed",
                     "patch": "passed",
@@ -178,9 +204,25 @@ def build_repairs(tmp_path, successes):
                     "review": {"status": "complete"},
                     "delta": {"rules": {"introduced": []}, "model": {"introduced": []}},
                 },
-                "dynamic": {"status": "passed" if good else "failed"},
+                "dynamic": dynamic_result(good, registered[sample]["id"], digest),
                 "baseline_accepted": True,
                 "success": good,
+            }
+        )
+    for original, row in zip(bundle_rows, rows, strict=True):
+        original.update(
+            {
+                k: row.get(k)
+                for k in (
+                    "sample_id",
+                    "repeat",
+                    "cwe",
+                    "checks",
+                    "status",
+                    "error_code",
+                    "candidate_sha256",
+                    "first_candidate",
+                )
             }
         )
     bundle = {"rows": bundle_rows}
@@ -323,3 +365,76 @@ def test_oversized_evidence_is_rejected_before_json_parsing(tmp_path):
         pass
     else:
         raise AssertionError("Unbounded evidence accepted")
+
+
+def test_coherent_dynamic_flag_without_fixed_tests_is_rejected(tmp_path):
+    parts = build_repairs(tmp_path, successes=54)
+    repairs = copy.deepcopy(parts[0])
+    repairs["rows"][0]["dynamic"] = {"status": "passed"}
+    assert {"repairs.dynamic_bindings", "repairs.success_recomputed"} <= failed(
+        audit((repairs, *parts[1:]))
+    )
+
+
+def test_missing_delta_engine_or_modified_static_checks_are_not_a_clean_recheck(tmp_path):
+    parts = build_repairs(tmp_path, successes=54)
+    repairs = copy.deepcopy(parts[0])
+    repairs["rows"][0]["checks"]["delta"].pop("model")
+    assert {"repairs.candidate_sha_binding", "repairs.success_recomputed"} <= failed(
+        audit((repairs, *parts[1:]))
+    )
+    repairs = copy.deepcopy(parts[0])
+    repairs["rows"][0]["checks"]["review"]["status"] = "failed"
+    assert "repairs.candidate_sha_binding" in failed(audit((repairs, *parts[1:])))
+
+
+def test_boolean_repeat_fake_cwe_and_missing_bundle_row_fail(tmp_path):
+    parts = build_repairs(tmp_path, successes=54)
+    for key, value in (("repeat", True), ("cwe", "CWE-999"), ("sample_id", "unregistered")):
+        repairs = copy.deepcopy(parts[0])
+        repairs["rows"][0][key] = value
+        assert "repairs.rows_unique_and_complete" in failed(audit((repairs, *parts[1:])))
+    bundle = copy.deepcopy(parts[4])
+    bundle["rows"].pop()
+    assert "repairs.candidate_sha_binding" in failed(audit((*parts[:4], bundle)))
+
+
+def test_false_control_acceptance_and_candidate_or_test_binding_fail(tmp_path):
+    parts = build_repairs(tmp_path, successes=54)
+    controls = copy.deepcopy(parts[3])
+    controls["rows"][0]["tests"] = []
+    assert "repairs.control_bindings" in failed(audit((*parts[:3], controls, parts[4])))
+    for mutate in (
+        lambda d: d.update(candidate_sha256="c" * 64),
+        lambda d: d.update(case_id="wrong-case"),
+        lambda d: d["tests"][0].update(passed=1),
+        lambda d: d["tests"][0].update(passed=False),
+        lambda d: d.update(image_id="sha256:" + "d" * 64),
+    ):
+        repairs = copy.deepcopy(parts[0])
+        mutate(repairs["rows"][0]["dynamic"])
+        assert "repairs.dynamic_bindings" in failed(audit((repairs, *parts[1:])))
+
+
+def test_invalid_auxiliary_evidence_exits_two_without_echoing_private_content(
+    tmp_path, monkeypatch, capsys
+):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import acceptance
+
+    monkeypatch.setattr(
+        gate,
+        "verify_all",
+        lambda *a, **kw: {
+            "ok": True,
+            "checks": [],
+            "requirements": [{"id": "stub", "met": True}],
+        },
+    )
+    monkeypatch.setattr(acceptance, "RECORDED_ONLY", ("aux.json",))
+    (tmp_path / "aux.json").write_text("private-auxiliary-content", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["acceptance", "--results", str(tmp_path)])
+    assert acceptance.main() == 2
+    output = capsys.readouterr().out
+    assert '"verdict": "records_invalid"' in output
+    assert "private-auxiliary-content" not in output

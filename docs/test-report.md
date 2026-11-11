@@ -1,6 +1,6 @@
 # M6 测试与实验报告
 
-日期：2026-11-11，Refs #7，[草稿PR #16](https://github.com/visibychen/AegisForge/pull/16)。当前先记录冻结基线，修复实验及三轮Claude协作结果随后补齐；未将M6标为通过。协议见[m6-protocol.md](m6-protocol.md)。
+日期：2026-11-11，Refs #7，[PR #16](https://github.com/visibychen/AegisForge/pull/16)。冻结基线实验与三轮Claude协作均已完成；M6正式数值验收未通过。协议见[m6-protocol.md](m6-protocol.md)。
 
 ## 环境及可复现性
 
@@ -53,4 +53,19 @@
 
 ## 后续协作与验收状态
 
-先完成全部基线实验，再开展Sonnet5.5/high同会话三轮协作。检测Precision已知未达标、标签人工复核待补；若据保留结果调优检测逻辑，原集变为事后开发评测。基线摘要永不回填，优化后的结果另外归档。M7课程模板报告、查重与最终发布不在本报告的完成声明中。
+先完成全部基线实验，再完成Sonnet5.5/high同会话三轮协作，[记录及独立核实](collaboration-2026-11-11.md)。按结果优化后，原保留集已暴露，后续数字是事后诊断；独立质量验收须新的未暴露样本和人工复核，不能将改进结果回填基线。
+
+- [开发A/B](../evaluation/results/m6-postdev-ab.json)：两臂各48例，99调用；当前运行时配历史渲染器对比新提示，不是完整旧产品复现。模型完整47→48、行号拒绝2→0，源码TP12不变、FP5→3，P约0.706→0.8，R均1；HTTP均TP12/FP1/FN0。只运行一轮。
+- [最终定向开发回归](../evaluation/results/m6-postdev-final.json)：analysis-1.3，12个事后选择的开发例，12调用、模型完整12/12，TP9/FP1/FN0，P0.9/R1。9个漏洞目标全检出，3个原误报中仍1个误报；样本量/选择方式不同，不能与48例结果直接对比推断总体准确性。
+- [后续修复诊断](../evaluation/results/m6-posthoc-repairs.json)：历史第2轮18个正确检测目标各申请后续候选，36调用，18生成；固定Docker全部运行，15/18综合通过，XSS6/6、SQLi4/6、CMDi5/6。SQLI-12业务失败，SQLI-17/CMDI-20安全失败。`passed=null`且`course_acceptance_evaluated=false`，不替代首次36/54。ZIP与运行来源见协作记录。
+- 最终累计942/1000次调用（795基线/性能 +99开发A/B +36后续修复 +12最终开发回归），输入1277786/输出149765token；已停止付费调优。预留子额度仍计入同一全局上限，重启不清零。保留未用58次不表示可绕开已分配scope。
+- 键盘同步、精确补丁预检/单次纠错、子额度原子保护、严谨记录核对和分浏览器证据管线已实现。普通CI分别检查固定54次真实重放一致与记录完整性；严格数值验收仍实际返回1，未达项为源码P、修复总数、SQLi修复数和人工复核。没有降低指标；`core_accepted`也只表示脚本列出的核心门槛，不是全矩阵声明。
+- [升级后依赖审计](../evaluation/results/m6-python-audit-final.json)：实际重新生成Flask3.1.3哈希锁，45个精确版本均checked、无已知公告，保留原3.1.2低危发现。一次包查询网络失败后仅重查该包；没有把unavailable当无漏洞。
+
+M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issue #7保持未完成，不能发布v1.0.0。
+
+## 最终本地检查
+
+第三轮最终修改后，Anaconda AegisForge内实际运行`scripts/check.py`：**377后端passed、1本机symlink skip，54前端passed**；依赖一致性、Ruff/格式、迁移、冻结数据、TypeScript和生产构建均通过。原先两项确定性键盘红测及新增StrictMode版本保持断言并通过。Starlette的httpx弃用提示与Vite约654kB压缩前JS包体提示仍存在，均未阻断检查，不宣称已消除性能风险。
+
+`m6_freeze_guard.py`实际返回0，原samples及baseline相对调优前提交无改动。[最终记录审计](../evaluation/results/m6-records-final.json)23项通过、退出0；[最终严格核心验收](../evaluation/results/m6-acceptance-final.json)退出1、not_accepted，四项未达如上。损坏/非有限/重复键记录、伪造动态passed、缺引擎delta、错误登记/CWE、候选/镜像/测试绑定和子额度并发均有回归测试。密钥只在OS环境及必要子进程内存，发布前按当前真实key字节检查全部待提交文件，未发现泄漏。

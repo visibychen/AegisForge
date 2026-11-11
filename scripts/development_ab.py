@@ -198,7 +198,11 @@ def main():
         ),
     }
     write_json(directory / "summary.json", report)
-    write_json(ROOT / "evaluation/results/m6-postdev-ab.json", report)
+    target = ROOT / "evaluation/results/m6-postdev-ab.json"
+    if target.exists() and json.loads(target.read_text(encoding="utf-8")) != report:
+        raise ValueError("Refuse replacing development A/B evidence")
+    if not target.exists():
+        write_json(target, report)
     print(
         json.dumps(
             {
