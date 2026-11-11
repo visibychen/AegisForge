@@ -71,3 +71,7 @@ M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issu
 `m6_freeze_guard.py`实际返回0，原samples及baseline相对调优前提交无改动。[最终记录审计](../evaluation/results/m6-records-final.json)23项通过、退出0；[最终严格核心验收](../evaluation/results/m6-acceptance-final.json)退出1、not_accepted，四项未达如上。损坏/非有限/重复键记录、伪造动态passed、缺引擎delta、错误登记/CWE、候选/镜像/测试绑定和子额度并发均有回归测试。密钥只在OS环境及必要子进程内存，发布前按当前真实key字节检查全部待提交文件，未发现泄漏。
 
 浏览器安装基础设施问题：运行43033123844未进入浏览器测试，日志明确`Temporary failure resolving 'azure.archive.ubuntu.com'`，后被新提交工作流取代。为防止安装长时间停滞，CI只在临时Ubuntu runner中把Azure归档URL替换为官方HTTPS archive，保留apt签名校验，连接/数据超时20秒、下载重试2次，浏览器安装步骤8分钟上限；不改应用或模型超时。配置依据[Ubuntu sources.list](https://manpages.ubuntu.com/manpages/noble/man5/sources.list.5.html)、[apt.conf](https://manpages.ubuntu.com/manpages/noble/man5/apt.conf.5.html)及[Playwright CI](https://playwright.dev/docs/ci)。最终是否安装/测试通过以新CI实际结果为准，不把该次取消记为通过。
+
+首次源替换只覆盖sources.list/.sources，进一步读原始日志发现该runner实际使用`mirror+file:/etc/apt/apt-mirrors.txt`；最终补充替换这个已知mirrorlist和mirrors/*.list，避免其继续优先Azure。格式依据[APT mirror传输文档](https://manpages.ubuntu.com/manpages/noble/man1/apt-transport-mirror.1.html)。没有更改系统DNS、绕过TLS或放宽软件包验证。
+
+[43037962830](https://github.com/visibychen/AegisForge/actions/runs/43037962830)六个非浏览器作业全部success，浏览器安装8分钟后按上限失败，完整日志确认mirrorlist仍引用Azure；浏览器用例没有运行。[事件记录](../evaluation/results/m6-ci-install-incidents.json)保留该失败，不用其他作业通过掩盖。随后提交真正mirrorlist替换及最后两项审计一致性加固，重新验证。

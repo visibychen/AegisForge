@@ -256,7 +256,15 @@ def verify_detection(summary: dict, samples: list[dict], csv_text=None, plan=Non
     )
     if plan is not None:
         manifest = summary.get("manifest") or {}
-        keys = ("dataset_sha256", "records_sha256", "sample_hashes", "samples", "source", "http")
+        keys = (
+            "dataset_sha256",
+            "records_sha256",
+            "sample_hashes",
+            "samples",
+            "source",
+            "http",
+            "human_review",
+        )
         results.append(
             check(
                 "detection.frozen_data_unchanged",

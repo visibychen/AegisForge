@@ -41,7 +41,20 @@ def test_diagnostics_are_conditional_even_when_every_container_verdict_passes(
         json.dumps(
             {
                 "rows": [
-                    {"sample_id": c["sample_id"], "control": label, "accepted": True}
+                    {
+                        "sample_id": c["sample_id"],
+                        "control": label,
+                        "accepted": True,
+                        "status": "passed" if label == "S" else "failed",
+                        "tests": [
+                            {"name": name, "passed": label == "S" or name != "security_regression"}
+                            for name in (
+                                "business_primary",
+                                "business_secondary",
+                                "security_regression",
+                            )
+                        ],
+                    }
                     for c in cases
                     for label in ("V", "S")
                 ]
@@ -72,3 +85,10 @@ def test_diagnostics_are_conditional_even_when_every_container_verdict_passes(
     formal = m6_validate.candidates(None, bundle, controls)
     assert formal["denominator"] == 54 and formal["execution_complete"] is False
     assert formal["missing_candidates"] == 36 and formal["passed"] is False
+    forged = json.loads(controls.read_text(encoding="utf-8"))
+    for row in forged["rows"]:
+        row["tests"] = []  # an accepted flag alone is not evidence of a valid control
+    controls.write_text(json.dumps(forged), encoding="utf-8")
+    diagnostic = m6_validate.candidates(None, bundle, controls, posthoc=True)
+    assert diagnostic["successes"] == 0
+    assert all(r["baseline_accepted"] is False for r in diagnostic["rows"])

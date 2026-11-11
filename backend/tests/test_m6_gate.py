@@ -111,13 +111,25 @@ def test_untouched_detection_records_pass_and_every_tamper_is_caught():
 
 def test_a_changed_frozen_dataset_is_detected_when_a_plan_is_supplied():
     summary, text = detection_files()
-    keys = ("dataset_sha256", "records_sha256", "sample_hashes", "samples", "source", "http")
+    keys = (
+        "dataset_sha256",
+        "records_sha256",
+        "sample_hashes",
+        "samples",
+        "source",
+        "http",
+        "human_review",
+    )
     summary["manifest"] |= {"dataset_sha256": "a", "records_sha256": "b", "sample_hashes": {}}
     summary["manifest"] |= {"samples": 3, "source": 2, "http": 1}
     same = {k: summary["manifest"][k] for k in keys}
     assert "detection.frozen_data_unchanged" not in audit_detection(summary, text, same)
     changed = {**same, "dataset_sha256": "changed"}
     assert "detection.frozen_data_unchanged" in audit_detection(summary, text, changed)
+    fake_review = copy.deepcopy(summary)
+    fake_review["manifest"]["human_review"] = "completed"
+    fake_review["human_review_pending"] = False
+    assert "detection.frozen_data_unchanged" in audit_detection(fake_review, text, same)
 
 
 def test_success_rule_needs_valid_controls_a_passed_dynamic_run_and_clean_rechecks():

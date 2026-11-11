@@ -69,20 +69,15 @@ def candidates(settings, path, baseline, *, posthoc=False):
     from app.validation.runner import run_container
 
     from evaluation.experiment import file_hash
-    from evaluation.gate import candidate_success
+    from evaluation.gate import candidate_success, control_validity
 
     bundle = json.loads(path.read_text(encoding="utf-8"))
     baseline_result = json.loads(baseline.read_text(encoding="utf-8"))
     cases = {
         c["sample_id"]: c for c in load_cases(include_holdout=True) if c["id"].startswith("h-")
     }
-    valid_controls = {
-        sample: all(
-            row["accepted"] for row in baseline_result["rows"] if row["sample_id"] == sample
-        )
-        and sum(row["sample_id"] == sample for row in baseline_result["rows"]) == 2
-        for sample in cases
-    }
+    observed_controls = control_validity(baseline_result)
+    valid_controls = {sample: observed_controls.get(sample, False) for sample in cases}
     inputs = {(row["sample_id"], row["repeat"]): row for row in bundle["rows"]}
     if len(inputs) != len(bundle["rows"]):
         raise ValueError("Duplicate candidate identity")
