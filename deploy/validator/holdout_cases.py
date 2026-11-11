@@ -193,7 +193,8 @@ def run_xss(number, browser, results):
             page.close()
     payload = "<svg onload=window.__aegis_xss=1>"
     if number == 11:
-        payload = "'><svg onload=window.__aegis_xss=1>"
+        # Cookie grammar must not split an unquoted value on whitespace.
+        payload = "'><script>window.__aegis_xss=1</script>"
     elif number == 14:
         payload = "';window.__aegis_xss=1;//"
     results["security_regression"] = browser_observation(
