@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 from _environment import ROOT, model_environment, require_conda
 
@@ -308,6 +309,4 @@ def main():
 
 
 if __name__ == "__main__":
-    from pathlib import Path
-
     raise SystemExit(main())

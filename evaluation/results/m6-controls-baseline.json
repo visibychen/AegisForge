@@ -1,0 +1,766 @@
+{
+  "scope": "All 18 original/reference controls before candidate generation",
+  "commit": "866c968b40ef1e5eeaa9c0bbfef7a79e26349c01",
+  "workflow": "https://github.com/visibychen/AegisForge/actions/runs/43019168996",
+  "passed": true,
+  "rows": [
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-11-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-11-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-13-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-13-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-19-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-XSS-19-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-10-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-10-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-12-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-12-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-18-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-18-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "control": "V",
+      "status": "failed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "control": "S",
+      "status": "passed",
+      "accepted": true,
+      "error_code": null,
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "human_review_pending": true,
+  "note": "Original special-character failures retained. References are frozen AI-authored safe counterparts; human confirmation pending. SQL numeric invalid inputs may return 500 without crossing query boundary; this is a recorded validation limitation, not a general safe-error claim."
+}

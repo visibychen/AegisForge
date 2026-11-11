@@ -64,6 +64,24 @@ def main():
             )
             ready("http://127.0.0.1:5173/")
             run(npm, "--prefix", "frontend", "run", "test:e2e", "--", "--workers=1")
+            subprocess.run(
+                [
+                    npm,
+                    "--prefix",
+                    "frontend",
+                    "run",
+                    "test:e2e",
+                    "--",
+                    "--workers=1",
+                    "tests/e2e/foundation.spec.ts",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PLAYWRIGHT_BROWSER": "firefox"},
+                check=True,
+            )
+            for viewport in ("desktop", "mobile"):
+                screenshot = ROOT / "frontend/test-results" / f"foundation-{viewport}.png"
+                screenshot.rename(screenshot.with_name(f"m6-firefox-foundation-{viewport}.png"))
             run(sys.executable, "scripts/verify_report.py", "data/m5-e2e-report.json")
             passed = True
     finally:
@@ -73,6 +91,7 @@ def main():
                     "passed": passed,
                     "mode": "fake",
                     "external_model_calls": 0,
+                    "browsers": ["chromium", "firefox"],
                     "deployment": "Compose API/worker and trusted Docker controller",
                 },
                 indent=2,

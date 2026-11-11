@@ -1,0 +1,574 @@
+{
+  "mode": "real loopback HTTP; fake provider; isolated synthetic database",
+  "concurrency": 10,
+  "requests": 100,
+  "latency": {
+    "count": 100,
+    "p50_ms": 70.0354000000516,
+    "p95_ms": 157.3845999992045,
+    "max_ms": 296.7315000023518
+  },
+  "unexpected_errors": 0,
+  "submissions": [
+    {
+      "status": 202,
+      "duration_ms": 402.20529999714927,
+      "id": "9aeaba0c-9db1-4546-9bac-5585d923d37d"
+    },
+    {
+      "status": 202,
+      "duration_ms": 118.75689999942551,
+      "id": "60972de6-d1ce-4901-b37b-d84f9fdadb75"
+    },
+    {
+      "status": 202,
+      "duration_ms": 148.17570000013802,
+      "id": "f8da6bbb-5112-4903-bcd5-b68f42feff88"
+    },
+    {
+      "status": 202,
+      "duration_ms": 280.9423999970022,
+      "id": "12ab01cb-bad9-43e2-87be-35feecf792a9"
+    },
+    {
+      "status": 202,
+      "duration_ms": 246.33100000210106,
+      "id": "88b11aa7-2142-43ab-94ba-6630aa96a72e"
+    },
+    {
+      "status": 202,
+      "duration_ms": 118.47710000074585,
+      "id": "8bc44c16-1fd3-4e05-b0f8-4d661232420f"
+    },
+    {
+      "status": 202,
+      "duration_ms": 179.6479000004183,
+      "id": "54fd9555-a67b-4bc3-b654-59319a48b21a"
+    },
+    {
+      "status": 202,
+      "duration_ms": 205.98570000220207,
+      "id": "4d44f844-550e-40b2-8bc7-dd8b4c2950a0"
+    },
+    {
+      "status": 202,
+      "duration_ms": 140.01080000161892,
+      "id": "d9683f26-4d3f-4a66-a517-d84eba218bc6"
+    },
+    {
+      "status": 202,
+      "duration_ms": 68.79589999880409,
+      "id": "6d17e0aa-0d63-4aa8-a98d-a1ce71bd236e"
+    }
+  ],
+  "passed": true,
+  "observations": [
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 59.90440000095987
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 61.95979999756673
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 80.5938999983482
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 126.70870000147261
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 144.71169999887934
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 54.7028999972099
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 56.63739999727113
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 77.337599999737
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 106.27369999929215
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 140.0947999973141
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 20.960599998943508
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 26.67240000300808
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 49.281699997663964
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 99.67690000121365
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 134.13280000168015
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 20.20799999809242
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 21.980399997119093
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 47.21869999775663
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 89.64920000289567
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 126.21350000335951
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 31.542000000627013
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 32.12020000137272
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 52.16139999902225
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 102.23600000244915
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 134.92110000152024
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 23.755799997161375
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 25.379899998370092
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 53.633799998351606
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 88.58519999921555
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 116.89990000013495
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 18.929000001662644
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 39.73250000126427
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 39.27239999757148
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 69.12979999833624
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 105.38939999969443
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 34.841699998651166
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 31.00830000039423
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 36.69369999988703
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 84.15489999970305
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 106.10799999994924
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 24.832600000081584
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 27.78319999924861
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 47.01289999866276
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 75.24299999931827
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 105.02550000092015
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 21.154300000489457
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 21.7800000027637
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 38.05409999768017
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 64.55229999846779
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 96.82310000061989
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 25.852700000541518
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 27.051299999584444
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 39.763100001437124
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 73.59599999836064
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 92.81419999751961
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 35.36019999955897
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 91.83819999816478
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 45.35379999651923
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 60.118299999885494
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 76.50759999887669
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 120.90860000171233
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 48.30080000101589
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 65.26169999779086
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 54.01930000152788
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 82.43959999890649
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 69.48980000015581
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 47.77660000036121
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 275.35859999989043
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 117.98850000195671
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 72.41399999838904
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 168.71629999877769
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 106.0274000010395
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 73.75279999905615
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 45.494499998312676
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 55.158000002847984
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 61.86069999967003
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 96.78830000120797
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 115.8794000002672
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 62.62749999950756
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 296.7315000023518
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 112.0480999998108
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 39.344400000118185
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 161.6899000000558
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 61.424300001817755
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 100.67180000260123
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 54.6412000003329
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 85.60380000199075
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 101.58179999780259
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 120.26650000188965
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 157.3845999992045
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 163.17130000243196
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 143.16319999852567
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 56.658400000742404
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 80.72060000267811
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 155.82379999978002
+    },
+    {
+      "path": "/health",
+      "status": 200,
+      "duration_ms": 82.16750000065076
+    },
+    {
+      "path": "/api/v1/capabilities",
+      "status": 200,
+      "duration_ms": 70.0354000000516
+    },
+    {
+      "path": "/api/v1/workspace",
+      "status": 200,
+      "duration_ms": 92.1042000009038
+    },
+    {
+      "path": "/api/v1/workspace/history",
+      "status": 200,
+      "duration_ms": 71.18489999993471
+    },
+    {
+      "path": "/api/v1/scans",
+      "status": 200,
+      "duration_ms": 79.64659999925061
+    }
+  ],
+  "platform": {
+    "os": "Windows",
+    "release": "11",
+    "python": "3.13.18",
+    "cpu": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "cpu_count": 24
+  }
+}
