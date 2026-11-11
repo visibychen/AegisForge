@@ -34,12 +34,19 @@
 
 原版引号/JavaScript字符串业务缺陷保留。SQL数字输入的参考版本对非法表达式可能返回500，测试只判断未越查询边界，不能据此宣称错误处理完善；后续应单独改进。命令例中外部实用程序使用固定离线stub，实际shell仍运行，安全由无害标记与正常调用观测判定；不等于验证真实外部工具的全部语义。浏览器驱动真实执行HTML/脚本，保留M4隔离及同UID/Chromium禁沙箱局限。
 
-三轮54次首次修复申请已完成：38个候选、14个PATCH_CONFLICT、2个TARGET_NOT_DETECTED；生成与模型复检另耗90次请求，全流程连同性能共790/1000次。公开合成[首次候选束](../evaluation/results/m6-baseline-candidates.json)只供固定容器测试，不在主机导入执行。动态结果随后补齐；即使38个候选全部通过，总成功数也低于45/54，**基线修复门槛已知不达标**。未检出/生成失败/缺动态证据一律不算成功，仍执行全量动态观察而不提前丢弃失败。
+三轮54次首次修复申请已完成：38个候选、14个PATCH_CONFLICT、2个TARGET_NOT_DETECTED；生成与模型复检另耗90次请求。公开合成[首次候选束](../evaluation/results/m6-baseline-candidates.json)只供固定容器测试，不在主机导入执行。[完整动态结果](../evaluation/results/m6-repairs-baseline.json)：各轮12/18、13/18、11/18，总36/54；XSS16/18、SQLi8/18、CMDi12/18，38候选中36动态通过、2个XSS脚本字符串候选业务回归失败。**总数未到45/54，SQLi未到12/18，基线修复门槛未通过。** 未检出/生成失败/缺动态证据均留在分母，没有重选后续候选回填。
+
+候选观察暂采用保守判据：模型复检必须完成，任何等级新增风险均阻止计为成功（比PLAN只限制新增high/critical更严格）；原产品复检位置增量没有保留severity，不能伪称已按等级精确判定。该统计约束和改进方案交由后续协作审查，原36/54结果保留。
+
+动态CI真实运行见[43022170175](https://github.com/visibychen/AegisForge/actions/runs/43022170175)。该提交前端、两平台后端、M4对抗/控制、Chromium完整流程与Firefox核心冒烟均通过，M6实验作业因未达到修复数值门槛退出1；不是未运行，也不把实验失败掩盖为通过。[资源实测](../evaluation/results/m6-resources-baseline.json)：128MiB限制下768MiB分配被OOM终止137，32进程限制在30个子进程后EAGAIN，根文件系统拒写、tmpfs可写、无Docker socket/外网、UID65532，三项均accepted。
+
+已校验下载artifact ZIP摘要：受控实验`2f49616a55a338e6ec064c1dab690458c02aa351386d5ddb7ed5814aa3eaa241`，浏览器`96ff93acab6f2b78d6eb0ced185b773209aaef3e73af09433002285c6003517e`。只白名单提取永久证据。[浏览器摘要](../evaluation/results/m6-browsers-baseline.json)、[Firefox桌面](screenshots/m6-firefox-desktop.png)、[手机](screenshots/m6-firefox-mobile.png)均保留；第二次Playwright执行清理输出目录，导致本次artifact没有保留先前Chromium截图，此证据管线问题留待协作修复。
 
 ## 性能、覆盖与依赖
 
 - [API负载](../evaluation/results/m6-performance-api.json)：实际回环HTTP、假模型、10并发/100请求，p50=70.0354ms、p95=157.3846ms、最大296.7315ms、非预期错误0；10并发任务提交全为202，达到p95<500ms。数据与模型延迟分开，未把此结果推广到公网部署。
 - [连续真实任务](../evaluation/results/m6-performance-live.json)：同一DB/单worker按顺序运行5个91字节开发源码任务，服务3091/4001/2496/2321/4907ms，全部完整，均≤120秒；另耗5次调用，纳入同一1000次账本。
+- [50KiB边界](../evaluation/results/m6-performance-boundary.json)：51200字节、5分块全部处理，真实模型完整完成，服务12113ms；额外5调用，全部基线与性能合计795/1000次，剩余205次用于实验后的优化验证。
 - 原基线后端325passed/1本机符号链接skip；核心服务/解析/规则分支626/724=86.4641%，语句1778/1919=92.6524%，合并覆盖90.9572%，达到核心分支≥80%目标。覆盖不是安全保证。
 - 原本机前端47passed/1failed，证据导航N紧接Enter未切换2/2；GitHub同提交前端通过，作为时序相关问题保留待审。后续修复不能靠拉长等待或删除断言掩盖。
 - [npm审计](../evaluation/results/m6-npm-audit-baseline.json)：0已知漏洞。[Python精确锁审计](../evaluation/results/m6-python-audit-baseline.json)：45个锁定包版本全部查到，其中验证镜像Flask3.1.2命中GHSA-68rp-wp8r-4726（低危、3.1.3修复）；这是同一公告的两个别名，不是两个独立漏洞。来源：[Flask官方公告](https://github.com/pallets/flask/security/advisories/GHSA-68rp-wp8r-4726)、[PyPI JSON协议](https://docs.pypi.org/api/json/)。扫描只覆盖Python/npm已知公告，OS库和未知漏洞不在覆盖中。

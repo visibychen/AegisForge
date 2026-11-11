@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "mode": "fake",
+  "external_model_calls": 0,
+  "browsers": [
+    "chromium",
+    "firefox"
+  ],
+  "deployment": "Compose API/worker and trusted Docker controller"
+}

@@ -98,7 +98,7 @@ def main():
             ),
         )
     performance = ROOT / "data/m6-performance"
-    for name in ("api", "live"):
+    for name in ("api", "live", "boundary"):
         path = performance / f"{name}.json"
         if path.exists():
             write_json(

@@ -192,7 +192,7 @@ def api_load(directory):
             engine.dispose()
 
 
-def sequential_live(directory):
+def sequential_live(directory, boundary=False):
     from app.core.config import Settings
     from app.core.database import build_engine
     from app.main import create_app
@@ -220,6 +220,12 @@ def sequential_live(directory):
         "from flask import request\ndef page():\n"
         '    return "<p>"+request.args.get("name", "")+"</p>"\n'
     )
+    if boundary:
+        full, tail = divmod(50 * 1024 - len(source.encode()), 100)
+        padding = ("#" + "x" * 98 + "\n") * full
+        padding += ("#" + "x" * (tail - 2) + "\n") if tail >= 2 else "\n" * tail
+        source = padding + source
+        assert len(source.encode()) == 50 * 1024
     rows = []
     try:
         with TestClient(app) as api:
@@ -230,7 +236,7 @@ def sequential_live(directory):
                 "/api/v1/artifacts?filename=timing.py&input_type=source",
                 content=source.encode(),
             )["artifact"]
-            for i in range(5):
+            for i in range(1 if boundary else 5):
                 item = request_json(
                     api,
                     "post",
@@ -254,17 +260,23 @@ def sequential_live(directory):
                         "service_ms": item["result"].get("service_ms"),
                         "wall_ms": (time.perf_counter() - started) * 1000,
                         "call_count": item["call_count"],
+                        "expected_chunks": item["result"].get("expected_chunks"),
+                        "processed_chunks": item["result"].get("processed_chunks"),
                         "error_code": item["error_code"],
                     }
                 )
     finally:
         app.state.engine.dispose()
     return {
-        "mode": "5 sequential actual product API/worker real model tasks; no candidate execution",
+        "mode": (
+            "50KiB actual product API/worker real model boundary task"
+            if boundary
+            else "5 sequential actual product API/worker real model tasks"
+        ),
         "model": settings.deepseek_model,
         "input_bytes": len(source.encode()),
         "rows": rows,
-        "passed": len(rows) == 5
+        "passed": len(rows) == (1 if boundary else 5)
         and all(r["analysis_complete"] and r["service_ms"] <= 120000 for r in rows),
         "budget": budget.summary(),
     }
@@ -276,9 +288,9 @@ def main():
     from evaluation.experiment import write_json
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["api", "live"])
+    parser.add_argument("mode", choices=["api", "live", "boundary"])
     args = parser.parse_args()
-    if args.mode == "live":
+    if args.mode in {"live", "boundary"}:
         os.environ.update(model_environment())
     directory = ROOT / "data" / "m6-performance"
     directory.mkdir(parents=True, exist_ok=True)
@@ -286,7 +298,9 @@ def main():
     if target.exists():
         raise SystemExit("Result exists; refuse silently repeating a measurement or paid task.")
     work = Path(tempfile.mkdtemp(prefix=args.mode + "-", dir=directory))
-    result = api_load(work) if args.mode == "api" else sequential_live(work)
+    result = (
+        api_load(work) if args.mode == "api" else sequential_live(work, args.mode == "boundary")
+    )
     result["platform"] = {
         "os": platform.system(),
         "release": platform.release(),
