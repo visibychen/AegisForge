@@ -1,6 +1,6 @@
 # AegisForge 项目实施与验收计划
 
-版本：1.6 · 基线日期：2026-11-03 · 更新日期：2026-11-10 · 项目：铸盾 AegisForge
+版本：1.7 · 基线日期：2026-11-03 · 更新日期：2026-11-11 · 项目：铸盾 AegisForge
 
 本计划是项目实施、GitHub 任务拆分、测试验收和课程报告的共同依据。目标是交付一个可在本地运行的 Web 系统，完成“输入代码或 HTTP 请求包 → 特征提取 → LLM 漏洞分析 → 结果展示 → 代码修复 → 修复验证 → 报告导出”的完整流程。修复及其验证列为必须完成的加分项。
 
@@ -248,7 +248,7 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 实现及本地验收完成，待 PR 集成 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 实现及开发验收完成，PR #15 待集成；见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
-| M6 全面测试与实验 | 未开始 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
+| M6 全面测试与实验 | 实施中，先冻结基线测试实验，再三轮协作优化 | M4、M5 | 功能/安全/性能/真实模型对比/修复有效性/干净部署验证；缺陷修复；发布测试报告 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |
 
 阶段推进规则：完成条件和证据齐备才勾选完成；仅有代码或模拟结果不算通过。阶段内可交叉完善 UI 与测试，依赖阶段未验收时不得标记后续阶段完成。每阶段更新需求追踪矩阵以及本表状态。
@@ -424,3 +424,5 @@ M4实施补充（1.5，2026-11-08）：三阶段同会话四次Sonnet5.5 high调
 2026-11-10，版本1.6，M5补充：沿原Claude会话Sonnet5.5/high三阶段四次真实调用，最终由Codex优化。实现总览/历史/筛选分页、证据导航、原文候选对比和源代码无关报告；逻辑移出关闭任务/发现/修复入口但保留调用账务和输入，artifact仍可按ID预览，物理擦除及引用回收另行设计（不宣称完整数据删除）。归档候选仍可读但不能新验证，当前与归档计数分开；长源码窗口保留绝对行号。report-2.1内容摘要及离线校验不构成数字签名，MD文字不在摘要覆盖范围。新增干净Compose浏览器CI，实际结果见[M5验证](docs/m5-verification.md)与[Issue6](https://github.com/visibychen/AegisForge/issues/6)。ADR见[0004](docs/decisions/0004-m5-history-and-reports.md)。冻结保留集和M6门槛不变。
 
 M5实际新增接口：GET /api/v1/workspace、/workspace/history，POST /workspace/{id}/delete（逻辑移出），GET /workspace/{id}/report?format=json|markdown，GET /scans/{id}/inputs/{artifact_id}，GET /repairs/{id}/compare；原初接口表是设计基线，运行协议以OpenAPI及阶段设计为准。
+
+2026-11-11，版本1.7，用户恢复M6，要求先测试/实验再与Sonnet5.5 high协作三轮优化，并明确批准全流程最多1000次外部模型调用（包含重试）。执行预登记见[实验协议](docs/m6-protocol.md)。原数据和阈值不改，基线与优化后结果分开；若按保留结果修改检测逻辑，必须标记事后调优偏差。人工标签复核不能由AI运行替代。
