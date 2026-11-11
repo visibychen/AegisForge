@@ -208,19 +208,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: python -m pip install -r backend/requirements-dev.lock
       - run: npm --prefix frontend ci
-      - name: Use the official Ubuntu archive and bound dependency download retries
-        run: |
-          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources /etc/apt/apt-mirrors.txt /etc/apt/mirrors/*.list; do
-            if [ -f "$source" ]; then
-              sudo sed -i -E 's#https?://azure\.archive\.ubuntu\.com/ubuntu#https://archive.ubuntu.com/ubuntu#g' "$source"
-            fi
-          done
-          printf '%s\n' 'Acquire::Retries "2";' 'Acquire::http::Timeout "20";' 'Acquire::https::Timeout "20";' |
-            sudo tee /etc/apt/apt.conf.d/99aegisforge-ci >/dev/null
-      - name: Install Playwright browsers and dependencies
+      - name: Pull verified Playwright image with browsers and OS dependencies
         timeout-minutes: 8
-        run: npx playwright install --with-deps chromium firefox
-        working-directory: frontend
+        run: python scripts/ci_workbench.py --pull-browser-image
       - run: python scripts/ci_workbench.py
       - uses: actions/upload-artifact@v4
         if: always()

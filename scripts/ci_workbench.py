@@ -1,5 +1,6 @@
 """Disposable GitHub Ubuntu Compose acceptance. Never imports model credentials."""
 
+import argparse
 import json
 import os
 import shutil
@@ -13,6 +14,60 @@ import urllib.request
 from _environment import ROOT, require_conda
 
 EVIDENCE = ROOT / "frontend" / "test-results" / "evidence"
+BROWSER_VERSION = "1.64.1"
+BROWSER_IMAGE = (
+    "mcr.microsoft.com/playwright:v1.64.1-noble@"
+    "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"
+)
+
+
+def browser_image():
+    package = json.loads((ROOT / "frontend/package.json").read_text(encoding="utf-8"))
+    if package["devDependencies"]["@playwright/test"] != BROWSER_VERSION:
+        raise ValueError("Update the verified browser image when changing Playwright")
+    return BROWSER_IMAGE
+
+
+def browser_command(browser, report, node, user, *specs):
+    """Trusted CI UI tests only; no model credential or Docker socket enters this container."""
+    if browser not in {"chromium", "firefox"}:
+        raise ValueError("Unsupported browser")
+    return [
+        "docker",
+        "run",
+        "--rm",
+        "--init",
+        "--network=host",
+        "--shm-size=1g",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--user",
+        user,
+        "--volume",
+        f"{ROOT}:{ROOT}",
+        "--workdir",
+        str(ROOT),
+        # Keep the project's Node 24 runtime; the browser image supplies browser OS libraries.
+        "--volume",
+        f"{node}:/usr/local/bin/node:ro",
+        "--env",
+        "HOME=/tmp",
+        "--env",
+        f"PLAYWRIGHT_BROWSER={browser}",
+        "--env",
+        f"PLAYWRIGHT_JSON_REPORT={report}",
+        "--env",
+        "AEGISFORGE_DEEPSEEK_API_KEY=",
+        browser_image(),
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "test:e2e",
+        "--",
+        "--workers=1",
+        *specs,
+    ]
 
 
 def ready(url):
@@ -50,14 +105,13 @@ def playwright(npm, browser, directory, *specs):
     """One real browser run. Returns its (never raw) result entry and the process status."""
     report = directory / f"playwright-{browser}.json"  # ignored data directory, never uploaded
     report.unlink(missing_ok=True)
-    environment = {
-        **os.environ,
-        "PLAYWRIGHT_BROWSER": browser,
-        "PLAYWRIGHT_JSON_REPORT": str(report),
-    }
-    command = [npm, "--prefix", "frontend", "run", "test:e2e", "--", "--workers=1", *specs]
-    status = subprocess.run(command, cwd=ROOT, env=environment, check=False).returncode
+    node = shutil.which("node")
+    if node is None:
+        raise RuntimeError("Node 24 is required")
+    command = browser_command(browser, report, node, f"{os.getuid()}:{os.getgid()}", *specs)
+    status = subprocess.run(command, cwd=ROOT, check=False).returncode
     entry = {"browser": browser, "specs": list(specs) or "all", "exit_code": status}
+    entry["runner"] = {"image": browser_image(), "node": "host Node 24, mounted read-only"}
     stats = entry["stats"] = counts(report)
     entry["passed"] = status == 0 and stats is not None and not stats["unexpected"]
     return entry
@@ -69,6 +123,12 @@ def main():
         raise SystemExit("This launcher is for a disposable GitHub Linux runner only.")
     if os.environ.get("AEGISFORGE_DEEPSEEK_API_KEY") or os.environ.get("AEGISFORGE_E2E_REAL"):
         raise SystemExit("Acceptance requires no model credential and no live model opt-in.")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pull-browser-image", action="store_true")
+    args = parser.parse_args()
+    if args.pull_browser_image:
+        subprocess.run(["docker", "pull", browser_image()], check=True, timeout=360)
+        return
     os.chdir(ROOT)
     sys.path.insert(0, str(ROOT / "backend"))
     from app.core.config import Settings

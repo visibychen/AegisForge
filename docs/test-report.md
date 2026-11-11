@@ -75,3 +75,7 @@ M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issu
 首次源替换只覆盖sources.list/.sources，进一步读原始日志发现该runner实际使用`mirror+file:/etc/apt/apt-mirrors.txt`；最终补充替换这个已知mirrorlist和mirrors/*.list，避免其继续优先Azure。格式依据[APT mirror传输文档](https://manpages.ubuntu.com/manpages/noble/man1/apt-transport-mirror.1.html)。没有更改系统DNS、绕过TLS或放宽软件包验证。
 
 [43037962830](https://github.com/visibychen/AegisForge/actions/runs/43037962830)六个非浏览器作业全部success，浏览器安装8分钟后按上限失败，完整日志确认mirrorlist仍引用Azure；浏览器用例没有运行。[事件记录](../evaluation/results/m6-ci-install-incidents.json)保留该失败，不用其他作业通过掩盖。随后提交真正mirrorlist替换及最后两项审计一致性加固，重新验证。
+
+[43039772538](https://github.com/visibychen/AegisForge/actions/runs/43039772538)修正mirrorlist后，六个非浏览器作业仍全部success，但官方archive.ubuntu.com同样DNS失败、安装8分钟超时。这推翻了“仅Azure镜像问题”的假设。最终不再改runner的apt源，改用[Playwright官方镜像](https://playwright.dev/docs/docker)提供浏览器及系统库，版本1.64.1与项目精确匹配。实际读取Microsoft公共registry核验linux/amd64 manifest digest为`sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`，固定该摘要，变更Playwright版本必须显式更新镜像。测试仍是相同Chromium完整流程/Firefox核心冒烟，报告计数和截图保留；测试失败继续非零，不用continue-on-error。
+
+浏览器容器仅运行受信CI界面用例，使用runner UID/GID，cap-drop ALL/no-new-privileges，host网络只为访问已有回环API/Vite；不挂Docker socket、不传模型key，只读挂载主机Node24保持项目版本。它与执行模型候选的无网络验证容器是不同边界；后者限制未放宽。镜像及命令构建有回归测试，实际容器运行结果见后续CI，不以本机无Docker的命令构建测试替代运行证明。
