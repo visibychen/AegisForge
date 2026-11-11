@@ -69,3 +69,5 @@ M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issu
 第三轮最终修改后，Anaconda AegisForge内实际运行`scripts/check.py`：**377后端passed、1本机symlink skip，54前端passed**；依赖一致性、Ruff/格式、迁移、冻结数据、TypeScript和生产构建均通过。原先两项确定性键盘红测及新增StrictMode版本保持断言并通过。Starlette的httpx弃用提示与Vite约654kB压缩前JS包体提示仍存在，均未阻断检查，不宣称已消除性能风险。
 
 `m6_freeze_guard.py`实际返回0，原samples及baseline相对调优前提交无改动。[最终记录审计](../evaluation/results/m6-records-final.json)23项通过、退出0；[最终严格核心验收](../evaluation/results/m6-acceptance-final.json)退出1、not_accepted，四项未达如上。损坏/非有限/重复键记录、伪造动态passed、缺引擎delta、错误登记/CWE、候选/镜像/测试绑定和子额度并发均有回归测试。密钥只在OS环境及必要子进程内存，发布前按当前真实key字节检查全部待提交文件，未发现泄漏。
+
+浏览器安装基础设施问题：运行43033123844未进入浏览器测试，日志明确`Temporary failure resolving 'azure.archive.ubuntu.com'`，后被新提交工作流取代。为防止安装长时间停滞，CI只在临时Ubuntu runner中把Azure归档URL替换为官方HTTPS archive，保留apt签名校验，连接/数据超时20秒、下载重试2次，浏览器安装步骤8分钟上限；不改应用或模型超时。配置依据[Ubuntu sources.list](https://manpages.ubuntu.com/manpages/noble/man5/sources.list.5.html)、[apt.conf](https://manpages.ubuntu.com/manpages/noble/man5/apt.conf.5.html)及[Playwright CI](https://playwright.dev/docs/ci)。最终是否安装/测试通过以新CI实际结果为准，不把该次取消记为通过。
