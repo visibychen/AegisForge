@@ -101,7 +101,7 @@ def command(image_id, name, case, source, run_id="0" * 32):
         "--memory-swap",
         "512m",
         "--pids-limit",
-        "128" if case == "xss-01" else "64",
+        "128" if case == "xss-01" or case.startswith("h-xss-") else "64",
         "--tmpfs",
         "/tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777",
         "--log-driver",

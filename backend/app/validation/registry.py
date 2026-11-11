@@ -9,6 +9,7 @@ from app.services.receipts import digest
 
 ROOT = Path(__file__).resolve().parents[3]
 REGISTRY = ROOT / "samples" / "controlled" / "dev_cases.json"
+HOLDOUT_REGISTRY = ROOT / "samples" / "controlled" / "m6_cases.json"
 # Everything that defines what the validator image does; also hashed by build_validator.py.
 VALIDATOR_FILES = (
     "Dockerfile",
@@ -17,15 +18,20 @@ VALIDATOR_FILES = (
     "target.py",
     "ping_stub.py",
     "target_guard.py",
+    "holdout_cases.py",
+    "command_stub.py",
 )
 
 
-def load_cases() -> list[dict]:
-    return json.loads(REGISTRY.read_text(encoding="utf-8"))["cases"]
+def load_cases(include_holdout=False) -> list[dict]:
+    cases = json.loads(REGISTRY.read_text(encoding="utf-8"))["cases"]
+    if include_holdout:
+        cases += json.loads(HOLDOUT_REGISTRY.read_text(encoding="utf-8"))["cases"]
+    return cases
 
 
 def match_case(sha256):
-    for case in load_cases():
+    for case in load_cases(include_holdout=True):
         if case["source_sha256"] == sha256:
             return case
     raise DomainError(
@@ -35,7 +41,7 @@ def match_case(sha256):
 
 def registry_digest() -> str:
     """Hash of the registered cases (text mode, so Windows checkouts hash like Linux ones)."""
-    return hashlib.sha256(REGISTRY.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+    return digest({"development": load_cases(), "all_registered": load_cases(include_holdout=True)})
 
 
 def tests_digest(case: dict) -> str:

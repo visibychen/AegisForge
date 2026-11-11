@@ -110,3 +110,23 @@ def test_evaluator_uses_actual_upload_queue_worker_without_paid_calls(tmp_path, 
         tmp_path, {"model": "deepseek-flash"}, budget, record(), source, "rules", 1
     )
     assert again == row
+
+
+def test_m6_runner_registers_exact_frozen_ids_and_cannot_accept_an_unknown_source():
+    import json
+
+    from app.validation.registry import load_cases, match_case
+
+    registered = json.loads((ROOT / "samples/holdout/controlled_repairs.json").read_text())[
+        "samples"
+    ]
+    hashes = json.loads((ROOT / "samples/freeze.json").read_text())["samples"]["test"]
+    cases = [c for c in load_cases(include_holdout=True) if c["id"].startswith("h-")]
+    assert len(cases) == 18
+    assert {c["sample_id"] for c in cases} == {c["id"] for c in registered}
+    for case in cases:
+        assert case["source_sha256"] == hashes[case["sample_id"]]
+        assert match_case(case["source_sha256"]) == case
+        assert case["tests"] == ["business_primary", "business_secondary", "security_regression"]
+    with pytest.raises(DomainError):
+        match_case("0" * 64)

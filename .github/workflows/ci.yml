@@ -79,6 +79,37 @@ jobs:
           name: m4-controlled-summary
           path: data/m4-controls-*/summary.json
 
+  m6-controls:
+    name: M6 registered holdout controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      - run: python scripts/build_validator.py
+      - run: python scripts/m6_validate.py controls
+      - name: Validate all frozen first candidates when available
+        if: hashFiles('evaluation/results/m6-baseline-candidates.json') != ''
+        run: python scripts/m6_validate.py candidates --bundle evaluation/results/m6-baseline-candidates.json --output data/m6-repairs-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-controlled-evidence
+          retention-days: 30
+          path: |
+            data/m6-controls-ci.json
+            data/m6-repairs-ci.json
+
   workbench-e2e:
     name: Workbench Compose E2E
     runs-on: ubuntu-24.04

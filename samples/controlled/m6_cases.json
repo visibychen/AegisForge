@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "scope": "M6 fixed pre-registered holdout IDs only; no arbitrary code execution",
+  "cases": [
+    {
+      "id": "h-xss-09",
+      "sample_id": "SRC-XSS-09-V",
+      "source_sha256": "ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-xss-11",
+      "sample_id": "SRC-XSS-11-V",
+      "source_sha256": "e14e3ea059c338ce379da514c3fd2b4c7c5c47fb8415ab00f12627eec2921b8e",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-xss-13",
+      "sample_id": "SRC-XSS-13-V",
+      "source_sha256": "efdcbad4fec7ef306506ed84b304747c6183fa6d225839ff5e7c62c9e324be05",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-xss-14",
+      "sample_id": "SRC-XSS-14-V",
+      "source_sha256": "bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-xss-17",
+      "sample_id": "SRC-XSS-17-V",
+      "source_sha256": "0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-xss-19",
+      "sample_id": "SRC-XSS-19-V",
+      "source_sha256": "e8ac502c4eb81cc2c4da1e683e9b891c4c3b3f06c42a084bde64a42d4a9861e6",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-09",
+      "sample_id": "SRC-SQLI-09-V",
+      "source_sha256": "529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-10",
+      "sample_id": "SRC-SQLI-10-V",
+      "source_sha256": "ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-12",
+      "sample_id": "SRC-SQLI-12-V",
+      "source_sha256": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-14",
+      "sample_id": "SRC-SQLI-14-V",
+      "source_sha256": "cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-17",
+      "sample_id": "SRC-SQLI-17-V",
+      "source_sha256": "a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-sqli-19",
+      "sample_id": "SRC-SQLI-19-V",
+      "source_sha256": "3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-09",
+      "sample_id": "SRC-CMDI-09-V",
+      "source_sha256": "08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-10",
+      "sample_id": "SRC-CMDI-10-V",
+      "source_sha256": "68acc5b0d5516e3d254e8546a4a051b746a12a504c479f5175876e9db9ff3e42",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-12",
+      "sample_id": "SRC-CMDI-12-V",
+      "source_sha256": "9a3ba76af99dd49c42c21dab9aad07fb29cdce07520c238f076c58accced44ef",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-14",
+      "sample_id": "SRC-CMDI-14-V",
+      "source_sha256": "8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-18",
+      "sample_id": "SRC-CMDI-18-V",
+      "source_sha256": "747c90decbe6d7d7f983897a2292d5710c4c9fdea9c6ddc77f9334c49872e523",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    },
+    {
+      "id": "h-cmdi-20",
+      "sample_id": "SRC-CMDI-20-V",
+      "source_sha256": "12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c",
+      "tests": [
+        "business_primary",
+        "business_secondary",
+        "security_regression"
+      ]
+    }
+  ]
+}
