@@ -69,3 +69,5 @@
 - Flask精确锁3.1.3及45个包的升级后审计已实测；原3.1.2报告不回写。`m6-records`在GitHub已实际通过；严格数值CLI仍返回1，手动严格CI未声称已运行。最终浏览器/全量CI证据见测试报告。
 
 后续可选创新：AST中性static_facts、独立人工复核附件、子额度退役、细化新增风险等级及更广的框架语义，均不在本次已完成声明内。性能100次读API与另10次提交仍分开，未重新付费运行性能实验。
+
+最终浏览器CI因Ubuntu源DNS无法安装系统库，Codex改为实际核验digest的官方Playwright镜像（版本与项目1.64.1精确匹配），保留host Node24、非root UID、cap-drop和无Docker socket/模型key；host网络仅连接本机受信服务。与固定候选隔离容器分开。运行43041838326中七项常规CI全通过，Chromium5通过/1显式skip、Firefox1通过且无波动，10张截图同时留存；严格数值作业仍未运行，本地strict依然not_accepted。详细来源与保留失败见测试报告。

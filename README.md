@@ -133,7 +133,7 @@ npm --prefix frontend run test:e2e
 
 `environment.yml` 管理 conda 运行时，`backend/pyproject.toml` 声明 Python 库范围，`backend/requirements*.lock` 记录精确版本，前端由 `package-lock.json` 锁定。Python 锁文件由同一 conda 环境中的 pip-tools 生成；依赖调整同步声明、锁文件、测试及 PLAN。
 
-**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR 集成状态以 Issue 为准。M3 分支堆叠在仍待审的 M2 PR #12 上，避免重复审查前序改动。M4已交付修复与验证加分项并完成开发验收，完整历史/报告留M5，最终真实模型对比和18例修复实验留M6。
+**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR集成状态以Issue为准。M3分支堆叠在M2 PR #12上，避免重复审查前序改动。M4修复/验证加分项、M5完整历史/报告已实现；M6真实模型对比及18例三轮首次修复实验已完成，数值未全达标，见测试报告。
 
 
 ## M4 修复与受控部署
@@ -189,6 +189,8 @@ conda run --no-capture-output -n AegisForge python scripts/verify_report.py repo
 若Windows禁止默认8000端口，可在启动Vite的终端设非秘密环境变量`AEGISFORGE_DEV_API_PORT=28000`，同时将API用`python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 28000`启动。只允许回环代理，默认配置保持8000。
 
 GitHub `Workbench Compose E2E` 从干净Ubuntu运行迁移、独立服务、隔离探测和完整默认浏览器流程，不传模型key，显式真实模型场景跳过；白名单报告和截图保留为CI artifact。M6新增按浏览器分目录、实际通过/跳过/失败/波动计数，避免Firefox执行清理Chromium证据；实际运行状态见测试报告。M7课程模板报告/查重/最终发布仍待完成。
+
+CI浏览器采用版本匹配、摘要固定的官方Playwright镜像和只读挂载的主机Node24，避免Ubuntu软件源DNS故障阻塞依赖安装。仅受信界面测试使用回环服务的host网络，无模型key/Docker socket；执行候选的无网络隔离容器保持原限制。实际Chromium5通过/1显式skip、Firefox1通过及两浏览器截图保留已验证，来源与固定镜像摘要见测试报告。
 
 ## M6 实验与审计
 

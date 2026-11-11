@@ -66,7 +66,7 @@ M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issu
 
 ## 最终本地检查
 
-第三轮最终修改后，Anaconda AegisForge内实际运行`scripts/check.py`：**377后端passed、1本机symlink skip，54前端passed**；依赖一致性、Ruff/格式、迁移、冻结数据、TypeScript和生产构建均通过。原先两项确定性键盘红测及新增StrictMode版本保持断言并通过。Starlette的httpx弃用提示与Vite约654kB压缩前JS包体提示仍存在，均未阻断检查，不宣称已消除性能风险。
+第三轮最终修改及浏览器runner加固后，Anaconda AegisForge内实际运行`scripts/check.py`：**379后端passed、1本机symlink skip，54前端passed**；依赖一致性、Ruff/格式、迁移、冻结数据、TypeScript和生产构建均通过。原先两项确定性键盘红测及新增StrictMode版本保持断言并通过。Starlette的httpx弃用提示与Vite约654kB压缩前JS包体提示仍存在，均未阻断检查，不宣称已消除性能风险。
 
 `m6_freeze_guard.py`实际返回0，原samples及baseline相对调优前提交无改动。[最终记录审计](../evaluation/results/m6-records-final.json)23项通过、退出0；[最终严格核心验收](../evaluation/results/m6-acceptance-final.json)退出1、not_accepted，四项未达如上。损坏/非有限/重复键记录、伪造动态passed、缺引擎delta、错误登记/CWE、候选/镜像/测试绑定和子额度并发均有回归测试。密钥只在OS环境及必要子进程内存，发布前按当前真实key字节检查全部待提交文件，未发现泄漏。
 
@@ -79,3 +79,13 @@ M7课程模板报告、查重与最终发布仍未开始；M6正式验收与Issu
 [43039772538](https://github.com/visibychen/AegisForge/actions/runs/43039772538)修正mirrorlist后，六个非浏览器作业仍全部success，但官方archive.ubuntu.com同样DNS失败、安装8分钟超时。这推翻了“仅Azure镜像问题”的假设。最终不再改runner的apt源，改用[Playwright官方镜像](https://playwright.dev/docs/docker)提供浏览器及系统库，版本1.64.1与项目精确匹配。实际读取Microsoft公共registry核验linux/amd64 manifest digest为`sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`，固定该摘要，变更Playwright版本必须显式更新镜像。测试仍是相同Chromium完整流程/Firefox核心冒烟，报告计数和截图保留；测试失败继续非零，不用continue-on-error。
 
 浏览器容器仅运行受信CI界面用例，使用runner UID/GID，cap-drop ALL/no-new-privileges，host网络只为访问已有回环API/Vite；不挂Docker socket、不传模型key，只读挂载主机Node24保持项目版本。它与执行模型候选的无网络验证容器是不同边界；后者限制未放宽。镜像及命令构建有回归测试，实际容器运行结果见后续CI，不以本机无Docker的命令构建测试替代运行证明。
+
+## 最终远端实测与截图归档
+
+[运行43041838326](https://github.com/visibychen/AegisForge/actions/runs/43041838326)，head `dbe75fb34d1354b2e1a6a529985d2cef85fa603c`：**七个常规作业全部success**（Windows/Ubuntu后端、前端、M4控制、M6控制/资源/54次重放/18次诊断、记录审计、Compose浏览器），严格数值作业因非手动触发明确skipped，未称它通过。此CI不消费模型调用。
+
+[浏览器原始白名单摘要](../evaluation/results/m6-browsers-final.json)：Chromium完整默认流程5通过/1个真实模型显式场景跳过，Firefox核心1通过；unexpected=0、flaky=0，外部模型调用0。摘要的commit `add1a8570166645bdee6aa7e7bb11b534c1db202`是GitHub的PR合并测试提交，不混称head。官方浏览器镜像已实际执行成功，host Node24/Compose隔离与报告校验均通过。
+
+artifact `13865188061` 的ZIP SHA256 `d61da65293e1b63930124a905f29a4a61b9b1a882f6ee8d6c43d501d2ce8127d`与GitHub声明一致，归档含10张按浏览器前缀区分的PNG（Chromium8、Firefox2）；保留6张关键图及摘要，未上传/提取原始Playwright错误报告。已检查[Chromium工作台桌面](screenshots/m6-final-chromium-workbench-desktop.png)、[手机](screenshots/m6-final-chromium-workbench-mobile.png)及[Firefox手机](screenshots/m6-final-firefox-foundation-mobile.png)，没有密钥明文。Chromium证据不再被Firefox清理，原丢失证据问题已实际闭环。
+
+后续仅文档/证据提交的PR最终CI以GitHub状态为准；正式数值结论仍是not_accepted，与这七项工程回归通过并存。

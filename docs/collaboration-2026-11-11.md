@@ -49,3 +49,5 @@ Claude指出候选动态状态缺少固定测试核对、静态checks未与候�
 实际追加开发回归12例：三个残余安全误报、对应V样例、每类两个额外V守卫。经真实API/worker，12调用全部完成，TP9/FP1/FN0，P=0.9/R=1；选样已知结局，不能称独立验收，不能与48例A/B直接作总体比较。证据m6-postdev-final.json。剩余误报未靠反复付费选择最好结果消除。最终同一账本942/1000次，输入1277786/输出149765 token；预算不是金额账单，停止进一步付费保留集调优。
 
 后续18个候选真实Docker完整运行，15/18综合通过（XSS6、SQLi4、CMDi5）；SQLI-12业务两项失败，SQLI-17和CMDI-20安全回归失败，与Claude基于摘要的推断一致，Codex读取对应行确认。原首次36/54不变。原第二轮首次13/18与后续15/18只能作已暴露条件下的诊断，不能折算45/54。结果m6-posthoc-repairs.json；GitHub运行43033123844、artifact13863165495，ZIP SHA256 `3f90df00a1f8385b4a1e63c0b5ad21fd835c0753122e297629b8552e208ea172`核验后提取。所有失败保留。
+
+协作完成后的最终工程闭环：本机统一检查379后端通过/1平台skip、54前端通过；GitHub43041838326七个常规作业全部success。浏览器安装经历Azure及官方Ubuntu归档DNS故障，首次mirrorlist处理不完整的错误及后续反证均保留在测试报告；Codex最终改用实际核验digest的官方Playwright1.64.1镜像，仍挂载主机Node24执行同一套用例，不给浏览器模型key/Docker socket，不放宽候选runner限制。实测Chromium5通过/1显式skip、Firefox1通过，unexpected/flaky均0；两浏览器10张截图均保留在artifact，6张关键图永久入库。没有新增Claude轮次，最后工程修复仍由Codex完成。人工复核状态同时绑定冻结manifest，容器验证命令与审计共用控制有效性重算。
