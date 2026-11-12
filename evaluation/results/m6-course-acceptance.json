@@ -1,0 +1,612 @@
+{
+  "verdict": "course_delivery_accepted_with_limitations",
+  "integrity_ok": true,
+  "profile": "course-delivery-v1",
+  "checks": [
+    {
+      "id": "explicit_user_authorized_profile",
+      "met": true
+    },
+    {
+      "id": "original_full_three_round_records_intact",
+      "met": true
+    },
+    {
+      "id": "all_reference_controls",
+      "met": true
+    },
+    {
+      "id": "partial_fix_probes_rejected",
+      "met": true
+    },
+    {
+      "id": "three_real_repair_categories",
+      "met": true
+    },
+    {
+      "id": "human_review_and_classification_resolution",
+      "met": true
+    },
+    {
+      "id": "regression_runtime_bound",
+      "met": true
+    },
+    {
+      "id": "three_regression_rounds_recorded",
+      "met": true
+    },
+    {
+      "id": "api_measurement_complete",
+      "met": true
+    },
+    {
+      "id": "model_performance_evidence",
+      "met": true
+    },
+    {
+      "id": "boundary_evidence",
+      "met": true
+    },
+    {
+      "id": "resources_evidence",
+      "met": true
+    },
+    {
+      "id": "browsers_evidence",
+      "met": true
+    },
+    {
+      "id": "python_audit_evidence",
+      "met": true
+    },
+    {
+      "id": "model_performance_complete",
+      "met": true
+    },
+    {
+      "id": "boundary_complete",
+      "met": true
+    },
+    {
+      "id": "resource_boundaries_observed",
+      "met": true
+    },
+    {
+      "id": "two_browsers_observed",
+      "met": true
+    },
+    {
+      "id": "lock_backend/requirements.lock",
+      "met": true
+    },
+    {
+      "id": "lock_backend/requirements-dev.lock",
+      "met": true
+    },
+    {
+      "id": "lock_deploy/validator/requirements.lock",
+      "met": true
+    },
+    {
+      "id": "npm_audit_recorded",
+      "met": true
+    },
+    {
+      "id": "validation_and_browser_ci_provenance",
+      "met": true
+    },
+    {
+      "id": "ordinary_ci_passed",
+      "met": true
+    },
+    {
+      "id": "ci_code_bindings_present",
+      "met": true
+    },
+    {
+      "id": "coverage_measurement_present",
+      "met": true
+    },
+    {
+      "id": "recorded_budget_within_authorization",
+      "met": true
+    }
+  ],
+  "numeric_targets_enforced": false,
+  "human_review_disposition": {
+    "Q1": "SSTI root cause and XSS impact annotated; historical scoring preserved",
+    "Q2_Q3_Q4": "bound safe and partial-fix controls verified"
+  },
+  "repairs": {
+    "denominator": 18,
+    "successes": 18,
+    "by_cwe": {
+      "CWE-79": 6,
+      "CWE-89": 6,
+      "CWE-78": 6
+    },
+    "controls_valid": true,
+    "partial_fixes_rejected": true,
+    "three_categories_demonstrated": true
+  },
+  "regression": {
+    "baseline/hybrid/1": {
+      "source": {
+        "micro": {
+          "tp": 36,
+          "fp": 6,
+          "fn": 0,
+          "safe": 36,
+          "safe_flagged": 6,
+          "tasks": 72,
+          "failed": 3,
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "f1": 0.9230769230769231,
+          "safe_false_alarm_rate": 0.16666666666666666,
+          "task_failure_rate": 0.041666666666666664
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 12,
+            "fp": 1,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.9230769230769231,
+            "recall": 1.0,
+            "f1": 0.96,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 12,
+            "fp": 2,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1": 0.9230769230769231,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 12,
+            "fp": 3,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1": 0.8888888888888888,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 0.8600732600732601,
+          "recall": 1.0,
+          "f1": 0.9239886039886039
+        }
+      },
+      "http": {
+        "micro": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 0,
+          "safe": 18,
+          "safe_flagged": 0,
+          "tasks": 36,
+          "failed": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "safe_false_alarm_rate": 0.0,
+          "task_failure_rate": 0.0
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      }
+    },
+    "baseline/hybrid/2": {
+      "source": {
+        "micro": {
+          "tp": 36,
+          "fp": 6,
+          "fn": 0,
+          "safe": 36,
+          "safe_flagged": 5,
+          "tasks": 72,
+          "failed": 2,
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "f1": 0.9230769230769231,
+          "safe_false_alarm_rate": 0.1388888888888889,
+          "task_failure_rate": 0.027777777777777776
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 12,
+            "fp": 1,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.9230769230769231,
+            "recall": 1.0,
+            "f1": 0.96,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 12,
+            "fp": 3,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1": 0.8888888888888888,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 12,
+            "fp": 2,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1": 0.9230769230769231,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 0.8600732600732601,
+          "recall": 1.0,
+          "f1": 0.9239886039886039
+        }
+      },
+      "http": {
+        "micro": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 0,
+          "safe": 18,
+          "safe_flagged": 0,
+          "tasks": 36,
+          "failed": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "safe_false_alarm_rate": 0.0,
+          "task_failure_rate": 0.0
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      }
+    },
+    "baseline/hybrid/3": {
+      "source": {
+        "micro": {
+          "tp": 36,
+          "fp": 7,
+          "fn": 0,
+          "safe": 36,
+          "safe_flagged": 6,
+          "tasks": 72,
+          "failed": 3,
+          "precision": 0.8372093023255814,
+          "recall": 1.0,
+          "f1": 0.9113924050632911,
+          "safe_false_alarm_rate": 0.16666666666666666,
+          "task_failure_rate": 0.041666666666666664
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 12,
+            "fp": 2,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1": 0.9230769230769231,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 12,
+            "fp": 2,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8571428571428571,
+            "recall": 1.0,
+            "f1": 0.9230769230769231,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 12,
+            "fp": 3,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1": 0.8888888888888888,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 0.8380952380952381,
+          "recall": 1.0,
+          "f1": 0.9116809116809117
+        }
+      },
+      "http": {
+        "micro": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 0,
+          "safe": 18,
+          "safe_flagged": 0,
+          "tasks": 36,
+          "failed": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "safe_false_alarm_rate": 0.0,
+          "task_failure_rate": 0.0
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      }
+    }
+  },
+  "original_reference_requirements": [
+    {
+      "id": "detection.source_precision",
+      "required": ">= 0.85 (mean)",
+      "observed": 0.5921845574387947,
+      "met": false
+    },
+    {
+      "id": "detection.source_recall",
+      "required": ">= 0.85 (mean)",
+      "observed": 0.9814814814814815,
+      "met": true
+    },
+    {
+      "id": "detection.http_f1",
+      "required": ">= 0.85 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-79",
+      "required": ">= 0.80 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-89",
+      "required": ">= 0.80 (mean)",
+      "observed": 0.9444444444444444,
+      "met": true
+    },
+    {
+      "id": "detection.recall.CWE-78",
+      "required": ">= 0.80 (mean)",
+      "observed": 1.0,
+      "met": true
+    },
+    {
+      "id": "detection.rounds_complete",
+      "required": "every scheduled row present",
+      "observed": true,
+      "met": true
+    },
+    {
+      "id": "repairs.total",
+      "required": ">= 45/54",
+      "observed": 36,
+      "met": false
+    },
+    {
+      "id": "repairs.CWE-79",
+      "required": ">= 12/18",
+      "observed": 16,
+      "met": true
+    },
+    {
+      "id": "repairs.CWE-89",
+      "required": ">= 12/18",
+      "observed": 8,
+      "met": false
+    },
+    {
+      "id": "repairs.CWE-78",
+      "required": ">= 12/18",
+      "observed": 12,
+      "met": true
+    },
+    {
+      "id": "labels.human_review",
+      "required": "human review completed",
+      "observed": "pending",
+      "met": false
+    }
+  ],
+  "original_strict_profile_passed": false,
+  "limitations": [
+    "exposed samples, not independent generalization evidence",
+    "later attempts, not the original first-candidate repair rate",
+    "archived model intervals lack raw contributor ranges/prose",
+    "single human reviewer; no second human signature",
+    "M7 report formatting, plagiarism check and release remain separate"
+  ]
+}

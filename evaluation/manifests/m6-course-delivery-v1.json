@@ -1,0 +1,62 @@
+{
+  "schema_version": "m6-course-manifest-1.0",
+  "profile": "course-delivery-v1",
+  "files": {
+    "protocol": {
+      "path": "evaluation/protocols/m6-course-delivery-v1.json",
+      "sha256": "68f2bc386a69ea0142f1d7243f0d9db2f405099cc5da19ed0387af02482830b9"
+    },
+    "review": {
+      "path": "evaluation/results/m6-review-validation.json",
+      "sha256": "8524bf3fd0ea4bc2478eed3f99f097bd6f5a92b5461c18ae84ee5679389fc22f"
+    },
+    "human": {
+      "path": "evaluation/results/m6-human-review-20261112.json",
+      "sha256": "68ff3aaf0d7c2d13eba25981a421cd51bf1c063b7a0e2142f0114732b015f9fc"
+    },
+    "resolutions": {
+      "path": "evaluation/annotations/m6-human-review-resolutions.json",
+      "sha256": "125f78fdc236683c4e023ea424908714cfc6cabac3c120e885b4fb54f7ce04dc"
+    },
+    "regression": {
+      "path": "evaluation/results/m6-flow-replay.json",
+      "sha256": "950f30fcaf6aeb71613c5a989c5f6d9978dd3445c3ce45927e92f507dabdba60"
+    },
+    "coverage": {
+      "path": "evaluation/results/m6-coverage-current.json",
+      "sha256": "2e64aa002f980fd41e096945bca0516fc7ede59b0680e85220b5001b8bff8802"
+    },
+    "api_performance": {
+      "path": "evaluation/results/m6-performance-api.json",
+      "sha256": "22fc3df03dea9db468a520faf2579f1c28bf1f909c51f992e748908f5db7e20f"
+    },
+    "model_performance": {
+      "path": "evaluation/results/m6-performance-live.json",
+      "sha256": "81067691b63e26bfeb956f5165c90b196104226d081f86f41741975e35a01ce0"
+    },
+    "boundary": {
+      "path": "evaluation/results/m6-performance-boundary.json",
+      "sha256": "e9e8754ffbbd29fa45856651644a695c39805fadff88c69e786df625d701b53c"
+    },
+    "resources": {
+      "path": "evaluation/results/m6-course-resources.json",
+      "sha256": "b75ecea94ad3acb189163f7966b1a9774cf518e8faa76eb687b5e7dbfb56ae89"
+    },
+    "browsers": {
+      "path": "evaluation/results/m6-course-browsers.json",
+      "sha256": "8b98142c7b3e9cdbbea29dd31ce3c88b6bdc2440d479999fab47c855d687d561"
+    },
+    "python_audit": {
+      "path": "evaluation/results/m6-python-audit-final.json",
+      "sha256": "c8343fdc8604515a203657642769c364f34e691d90705f447666f21c90a629db"
+    },
+    "npm_audit": {
+      "path": "evaluation/results/m6-npm-audit-baseline.json",
+      "sha256": "bafb684f57e4b74cf986f4a7b05f1fbaf3a02432f768ca30db0fca7bd4a1bf91"
+    },
+    "ci": {
+      "path": "evaluation/results/m6-closure-ci.json",
+      "sha256": "11d7ae1e8ee3dea978859f05e02421969bdfbceb11270642bc11a0cdc7ee8a14"
+    }
+  }
+}

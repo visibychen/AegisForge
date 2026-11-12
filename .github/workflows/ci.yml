@@ -103,7 +103,7 @@ jobs:
       # The committed candidate bundle is required (a deleted file fails here, it is never skipped).
       # Real containers re-execute all 54 frozen candidates. Exit 2 = incomplete or environment
       # error, 3 = a verdict differs from the committed record, 1 only with --require-threshold.
-      # Whether the course threshold is met is the separate, strict m6-acceptance job.
+      # Current course closure is m6-course-delivery; historical numeric targets are optional.
       - name: Re-execute all 54 frozen candidates and compare with the committed record
         run: >
           python scripts/m6_validate.py candidates
@@ -177,8 +177,37 @@ jobs:
           retention-days: 30
           path: data/m6-records-ci.json
 
+  m6-course-delivery:
+    name: M6 course delivery (explicit authorized profile)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      - run: >
+          python scripts/acceptance.py --profile course-delivery-v1
+          --output data/m6-course-acceptance-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-course-delivery
+          retention-days: 30
+          path: data/m6-course-acceptance-ci.json
+
   m6-acceptance:
-    name: M6 strict numeric acceptance (manual; fails until the thresholds are met)
+    name: M6 historical numeric reference audit (manual)
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

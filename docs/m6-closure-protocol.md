@@ -27,4 +27,4 @@ Q2追加script元素提前终止的浏览器标记载荷；Q3保留display_name�
 
 模型预算仍为原1000次，当前992次。本轮优先零模型调用，只有后续确有必要且预先记录定向协议时才可用剩8次；没有追加额度。参考/故意部分修复/模型候选都只能在固定隔离容器内执行。
 
-机器协议见[course-delivery-v1](../evaluation/protocols/m6-course-delivery-v1.json)。新增容器结果和最终验收逐项核对通过前，M6保持进行中。
+机器协议见[course-delivery-v1](../evaluation/protocols/m6-course-delivery-v1.json)。本轮已经取得真实容器结果并逐项核对通过，当前完成状态、验证命令和全部限制见[M6完成记录](m6-completion.md)。
