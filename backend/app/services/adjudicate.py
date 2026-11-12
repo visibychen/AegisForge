@@ -1,4 +1,4 @@
-"""Static semantic adjudication of merged findings (adjudication-1.2).
+"""Static semantic adjudication of merged findings (adjudication-1.3).
 
 Every source finding, whatever its origin (rules, model or both), is checked the same way: its
 location must map to exactly one structural sink of its CWE (or to assignments feeding exactly one
@@ -12,7 +12,7 @@ Not used: confidence, source/engine, sample IDs, labels or any learned threshold
 
 Criteria:
 * ``sql_text_has_no_untrusted_part``: the SQL text argument is built only from constants, values
-  under a recognised guard, trusted casts or comprehension-generated fixed tokens (rules-1.2
+  under a recognised guard, trusted casts or comprehension-generated fixed tokens (rules-1.3
   shape); bound parameters may carry untrusted values, known mutations invalidate this proof.
 * ``shell_command_has_no_untrusted_part``: a constant shell command string.
 * ``quoted_or_validated_shell_operands``: a restricted known data program with independently
@@ -59,7 +59,7 @@ from app.rules.semantics import (
     percent_pieces,
 )
 
-ADJUDICATION_VERSION = "adjudication-1.2"
+ADJUDICATION_VERSION = "adjudication-1.3"
 CRITERIA = frozenset(
     {
         "sql_text_has_no_untrusted_part",
@@ -482,6 +482,18 @@ def _prove_json_script(node, sem):
     if parsed is None:
         return None
     pieces, holes = parsed
+    # JSON escaping proves data serialization, not JavaScript program interpretation. Limit
+    # the whole inline script to direct variable initializers; eval/Function, comments, regex
+    # literals, concatenation and later eval(variable) are deliberately outside this criterion.
+    template = "AEGIS_JSON_VALUE".join(pieces)
+    scripts = list(re.finditer(r"<script\s*>(.*?)</script\s*>", template, re.I | re.S))
+    if not scripts or template.lower().count("<script") != len(scripts):
+        return None
+    assignment = (
+        r"\s*(?:(?:var|let|const)\s+[A-Za-z_$][A-Za-z0-9_$]*\s*=\s*AEGIS_JSON_VALUE\s*;\s*)+"
+    )
+    if any(re.fullmatch(assignment, script.group(1)) is None for script in scripts):
+        return None
     contexts = hole_contexts(pieces)
     used = False
     for context, hole in zip(contexts, holes, strict=True):

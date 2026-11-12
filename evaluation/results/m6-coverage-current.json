@@ -7,7 +7,7 @@
     "app/services",
     "app/worker"
   ],
-  "method": "full suite 434 passed / 1 Windows symlink skip, then --cov-append for 53 new boundary cases; same runtime code, no module excluded",
+  "method": "fresh full suite 494 passed / 1 Windows symlink skip, no append; all six selected packages included",
   "runtime_files": {
     "backend/app/core/__init__.py": "93fc55892854d3c3a40c5514c363b770d04a22f3de819dc05b3d27abbd0d46f8",
     "backend/app/core/config.py": "346bf35e969ead6247e54dbf6bdc990b8e630557f084e2239a4be7850097bcdb",
@@ -28,7 +28,7 @@
     "backend/app/llm/repair.py": "044c6eb7eb702b21a0683505a3a6e297dbfca5b687cba890e7da62fd04435741",
     "backend/app/llm/wire.py": "b61205393a68bc7501dd23346fa4dfe8293192665e9206d9d4f738c85382b6b5",
     "backend/app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "backend/app/services/adjudicate.py": "d72a10986d3e62167cdf568bc025afe3441acb2e8d43d4a419b31e0bcd27f560",
+    "backend/app/services/adjudicate.py": "375c76338135c91ef863eab3175c032b922bf6f71e47c8b469f2182cb826c32b",
     "backend/app/services/artifacts.py": "d3392664bbc369fe4c2ba72d25e3c09ba8b4369793fe494870a3f4c6186f3da1",
     "backend/app/services/merge.py": "6aa1c0206b62f0eccf8cfc6c5505557abb4bb1008b81feea453d92fa9a51a6c5",
     "backend/app/services/patch_review.py": "3d0ea2c8e16fab6be627c7a9aa36e88209529dd5a90174e86d770ebdfde3de28",
@@ -55,19 +55,19 @@
     "backend/app/api/workspace.py": "35c6b07e9de17a2cb19c0531d101664ba8cc030e984d57333b0043b2a408a1df"
   },
   "totals": {
-    "covered_lines": 3603,
-    "num_statements": 4041,
-    "percent_covered": 86.37062339880444,
+    "covered_lines": 3614,
+    "num_statements": 4048,
+    "percent_covered": 86.49846573474258,
     "percent_covered_display": "86",
-    "missing_lines": 438,
+    "missing_lines": 434,
     "excluded_lines": 6,
-    "percent_statements_covered": 89.16109873793616,
+    "percent_statements_covered": 89.27865612648222,
     "percent_statements_covered_display": "89",
-    "num_branches": 1814,
-    "num_partial_branches": 252,
-    "covered_branches": 1454,
-    "missing_branches": 360,
-    "percent_branches_covered": 80.15435501653803,
+    "num_branches": 1818,
+    "num_partial_branches": 254,
+    "covered_branches": 1460,
+    "missing_branches": 358,
+    "percent_branches_covered": 80.30803080308031,
     "percent_branches_covered_display": "80"
   },
   "files": {
@@ -376,20 +376,20 @@
       "percent_branches_covered_display": "100"
     },
     "app/services/adjudicate.py": {
-      "covered_lines": 314,
-      "num_statements": 386,
-      "percent_covered": 78.1150159744409,
-      "percent_covered_display": "78",
-      "missing_lines": 72,
+      "covered_lines": 325,
+      "num_statements": 393,
+      "percent_covered": 79.4348508634223,
+      "percent_covered_display": "79",
+      "missing_lines": 68,
       "excluded_lines": 0,
-      "percent_statements_covered": 81.34715025906736,
-      "percent_statements_covered_display": "81",
-      "num_branches": 240,
-      "num_partial_branches": 47,
-      "covered_branches": 175,
-      "missing_branches": 65,
-      "percent_branches_covered": 72.91666666666667,
-      "percent_branches_covered_display": "73"
+      "percent_statements_covered": 82.69720101781171,
+      "percent_statements_covered_display": "83",
+      "num_branches": 244,
+      "num_partial_branches": 49,
+      "covered_branches": 181,
+      "missing_branches": 63,
+      "percent_branches_covered": 74.18032786885246,
+      "percent_branches_covered_display": "74"
     },
     "app/services/artifacts.py": {
       "covered_lines": 85,
@@ -638,9 +638,9 @@
     "app/rules"
   ],
   "core_branches": {
-    "covered": 1257,
-    "total": 1570,
-    "percent": 80.06369426751593
+    "covered": 1263,
+    "total": 1574,
+    "percent": 80.24142312579416
   },
   "passed": true,
   "note": "Coverage is auxiliary, not proof of security or formal model acceptance."

@@ -97,3 +97,25 @@ def test_weak_or_unparseable_validation_is_not_a_command_proof(pattern):
     )
     _, (kept, _) = pipeline(source, "CWE-78")
     assert kept
+
+
+@pytest.mark.parametrize(
+    "template,safe",
+    [
+        ("<script>var initial = %s;</script>", True),
+        ("<script>eval(%s);</script>", False),
+        ("<script>var initial = %s;eval(initial);</script>", False),
+        ("<script>new Function(%s)();</script>", False),
+        ("<script>var pattern = /%s/;</script>", False),
+        ("<script>/* %s */</script>", False),
+        ("<script>var initial = %s + userCode;</script>", False),
+    ],
+)
+def test_json_serialization_is_data_and_cannot_prove_javascript_code_sinks(template, safe):
+    source = (
+        "import json\nfrom flask import request\ndef f():\n"
+        '    value = json.dumps(request.args["q"]).replace("<", "\\\\u003c")\n'
+        f"    return {template!r} % value"
+    )
+    _, (kept, _) = pipeline(source, "CWE-79")
+    assert (not kept) is safe

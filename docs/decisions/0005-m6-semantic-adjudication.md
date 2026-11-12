@@ -12,7 +12,7 @@
 
 规则与模型首先按唯一可追踪的汇点合并，保留原contributors；不能证明唯一汇点的分叉不合并。随后两种引擎的线索使用相同的静态判据复核，不读取样例ID、标签、置信度。只在位置明确、API来源可信、所支持上下文成立时排除，未知则保留。复核记录对用户可见，源码无关报告只导出固定判据与整数摘要。版本及输入继续绑定检测凭证，旧版本任务不能直接申请新版本修复。
 
-当前规则rules-1.3、合并flow-merge-1.1、复核adjudication-1.2、修复提示repair-1.3。POSIX quoting只用于受限已知数据程序，动态可执行文件、解释器程序参数、stdin脚本、未知参数语义、shell控制结构都不能借此排除。`Markup`/自动转义仅限所分析的HTML文本和普通带引号属性；JS字符串、URL/事件属性、未知`__html__`、未知`str()`对象及`get(type=...)`不算普通字符串。脚本JSON必须编码并转义小于号，HTML转义不能替代JS上下文处理。
+当前规则rules-1.3、合并flow-merge-1.1、复核adjudication-1.3、修复提示repair-1.3。POSIX quoting只用于受限已知数据程序，动态可执行文件、解释器程序参数、stdin脚本、未知参数语义、shell控制结构都不能借此排除。`Markup`/自动转义仅限所分析的HTML文本和普通带引号属性；JS字符串、URL/事件属性、未知`__html__`、未知`str()`对象及`get(type=...)`不算普通字符串。脚本JSON必须编码并转义小于号，内联脚本只允许受限的直接变量初始化；eval/Function、后续eval变量、正则、注释及拼接均保留线索。HTML转义不能替代JS上下文处理。
 
 所有判断仍是启发式局部分析，不是完整类型、跨函数、堆别名或整个程序安全性证明。自定义框架/运行时钩子、未知外部函数的副作用与未建模语法可能产生误判；固定测试通过也不证明无其他漏洞。安全上下文要求参考[MarkupSafe官方文档](https://markupsafe.palletsprojects.com/en/stable/escaping/)、[Werkzeug类型转换](https://werkzeug.palletsprojects.com/en/stable/datastructures/#werkzeug.datastructures.MultiDict.get)；POSIX范围参考[Python shlex](https://docs.python.org/3.13/library/shlex.html#shlex.quote)。这些是项目支持范围的依据，不是框架在任意配置下安全的声明。
 
