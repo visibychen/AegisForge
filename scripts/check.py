@@ -30,6 +30,7 @@ def main() -> None:
             "scripts",
             "evaluation",
             "deploy/validator",
+            "deploy/review-validator",
         ]
     )
     run(
@@ -45,6 +46,7 @@ def main() -> None:
             "scripts",
             "evaluation",
             "deploy/validator",
+            "deploy/review-validator",
         ]
     )
     run([sys.executable, "-m", "pytest"], cwd=ROOT / "backend")

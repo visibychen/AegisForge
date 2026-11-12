@@ -56,6 +56,16 @@ def validator_fingerprint() -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def review_validator_fingerprint() -> str:
+    """Additive review-v1 image binds the unchanged legacy image and all overlay inputs."""
+    context = ROOT / "deploy/review-validator"
+    payload = validator_fingerprint().encode() + b"".join(
+        (context / name).read_bytes().replace(b"\r\n", b"\n")
+        for name in ("Dockerfile", "review_harness.py", "review_cases.py", ".dockerignore")
+    )
+    return hashlib.sha256(payload).hexdigest()
+
+
 def seal(record: dict) -> dict:
     """Attach an integrity digest. It detects accidental or casual edits; it is not a signature."""
     body = {k: v for k, v in record.items() if k != "digest"}

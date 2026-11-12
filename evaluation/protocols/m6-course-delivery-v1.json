@@ -1,0 +1,52 @@
+{
+  "schema_version": "m6-course-delivery-1.0",
+  "authorized_on": "2026-11-12",
+  "authority": "User requested completion of M6 and explicitly clarified that no course numeric quality targets are mandatory; PLAN metrics were self-imposed",
+  "registration": "Post-hoc course delivery criteria; not an independent preregistered quality test",
+  "purpose": "Complete the course's engineering and experiment delivery with explicit limitations",
+  "changes_from_original": [
+    "Retain the completed full three-round real baseline as the comparison experiment; no second full paid three-round run is required",
+    "Accept exposed-dataset final-runtime regression evidence; a new unexposed holdout is a future research improvement",
+    "Evaluate all 18 latest scheduled repair attempts with known prior attempts disclosed; do not call this the original first-candidate success rate"
+  ],
+  "preserved": [
+    "All historical samples, labels, raw baseline records and legacy validator files stay unchanged",
+    "Every failed or missing attempt stays in its declared denominator",
+    "No fake model, syntax-only check or static no-warning result counts as real dynamic success",
+    "Budget ceiling remains 1000 requests including retries; 992 were used before this closure",
+    "Human review provenance, post-hoc bias and unsupported contexts must be visible"
+  ],
+  "regression_thresholds": {
+    "enforced": false,
+    "source_precision_mean": 0.85,
+    "source_recall_mean": 0.85,
+    "source_cwe_recall_mean": 0.8,
+    "http_f1_mean": 0.85,
+    "note": "Reference targets only, never completion gates. Report exposed-case regression honestly using archived responses plus current static processing; no independent quality inference"
+  },
+  "repair_thresholds": {
+    "numeric_success_targets_enforced": false,
+    "denominator": 18,
+    "reference_successes": 15,
+    "per_cwe_denominator": 6,
+    "per_cwe_reference_successes": 4,
+    "required_evidence": "Complete all 18 observations and disclose every failure; retain actual end-to-end detection/repair/safety/business demonstrations of all three course categories",
+    "selection_priority": [
+      "evaluation/results/m6-mutation-candidates.json",
+      "evaluation/results/m6-targeted-candidates.json",
+      "evaluation/results/m6-posthoc-candidates.json"
+    ],
+    "selection_rule": "First scheduled row for each registered sample in this newest-to-oldest priority, regardless of status; fallback only if the sample was not scheduled in that bundle",
+    "review_profile": "review-v1",
+    "all_36_reference_controls_required": true,
+    "all_3_partial_fix_negative_controls_required": true
+  },
+  "engineering_thresholds": {
+    "reference_core_branch_coverage": 0.8,
+    "ordinary_ci_all_passed": true,
+    "reference_read_api_p95_ms": 500,
+    "blocking_security_or_business_failures": 0
+  },
+  "original_strict_profile": "scripts/acceptance.py default behavior remains unchanged as an optional historical research-target audit, not the current course completion gate",
+  "new_profile_verdict": "course_delivery_accepted_with_limitations"
+}

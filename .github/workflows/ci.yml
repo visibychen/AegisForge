@@ -127,6 +127,10 @@ jobs:
           --bundle evaluation/results/m6-mutation-candidates.json
           --compare evaluation/results/m6-mutation-repairs.json
           --output data/m6-mutation-repairs-ci.json
+      - name: Build additive human-reviewed validation profile
+        run: python scripts/build_validator.py --review
+      - name: Run human-review controls, partial-fix probes and all 18 later attempts
+        run: python scripts/m6_review_validate.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -139,6 +143,7 @@ jobs:
             data/m6-posthoc-repairs-ci.json
             data/m6-targeted-repairs-ci.json
             data/m6-mutation-repairs-ci.json
+            data/m6-review-validation-ci.json
 
   m6-records:
     name: M6 record integrity (recomputed, no thresholds)
