@@ -32,6 +32,35 @@ def pipeline(source, cwe, lines=None):
 
 
 @pytest.mark.parametrize(
+    "mutation",
+    [
+        "parts.append(user)",
+        "other = parts\nother.append(user)",
+        "parts.extend([user])",
+        "parts[0] = user",
+    ],
+)
+def test_mutable_query_fragments_are_not_frozen_at_the_initializer(mutation):
+    source = (
+        'parts = ["fixed"]\n' + mutation + "\n"
+        'db.execute("UPDATE t SET " + ", ".join(parts) + " WHERE id = ?", (1,))'
+    )
+    parsed = parse_input("source", source)
+    assert any(f.cwe == "CWE-89" for f in detect(uuid4(), "source", parsed).findings)
+    _, (kept, audit) = pipeline(source, "CWE-89")
+    assert len(kept) == 1 and audit["refuted"] == 0
+
+
+def test_mutated_argv_cannot_be_proved_constant_through_an_alias():
+    source = (
+        'import subprocess\nargs = ["bash", "-c", "echo safe"]\n'
+        "alias = args\nalias[2] = user\nsubprocess.run(args)"
+    )
+    _, (kept, audit) = pipeline(source, "CWE-78")
+    assert len(kept) == 1 and audit["refuted"] == 0
+
+
+@pytest.mark.parametrize(
     "source,cwe",
     [
         ("import subprocess\nsubprocess.run(['awk', request.args['code'], 'data.txt'])", "CWE-78"),

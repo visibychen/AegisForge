@@ -58,7 +58,7 @@ from app.rules.semantics import (
     percent_pieces,
 )
 
-ADJUDICATION_VERSION = "adjudication-1.0"
+ADJUDICATION_VERSION = "adjudication-1.1"
 CRITERIA = frozenset(
     {
         "sql_text_has_no_untrusted_part",

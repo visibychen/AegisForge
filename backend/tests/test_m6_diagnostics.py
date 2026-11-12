@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT)]
 
@@ -85,6 +87,31 @@ def test_diagnostics_are_conditional_even_when_every_container_verdict_passes(
     formal = m6_validate.candidates(None, bundle, controls)
     assert formal["denominator"] == 54 and formal["execution_complete"] is False
     assert formal["missing_candidates"] == 36 and formal["passed"] is False
+    selected = [row["sample_id"] for row in rows[:3]]
+    subset = {
+        "protocol": {
+            "schema_version": "m6-targeted-1.0",
+            "course_acceptance_evaluated": False,
+            "case_ids": selected,
+        },
+        "rows": rows[:2],
+    }  # the third missing row must still count in the denominator
+    bundle.write_text(json.dumps(subset), encoding="utf-8")
+    targeted = m6_validate.candidates(None, bundle, controls, posthoc=True, targeted=True)
+    assert targeted["denominator"] == 3 and targeted["successes"] == 2
+    assert targeted["missing_candidates"] == 1 and targeted["execution_complete"] is False
+    assert targeted["passed"] is None and targeted["course_acceptance_evaluated"] is False
+    with pytest.raises(ValueError, match="diagnostic only"):
+        m6_validate.candidates(None, bundle, controls, targeted=True)
+    subset["rows"].append(rows[3])
+    bundle.write_text(json.dumps(subset), encoding="utf-8")
+    with pytest.raises(ValueError, match="outside"):
+        m6_validate.candidates(None, bundle, controls, posthoc=True, targeted=True)
+    subset["protocol"]["case_ids"].append(selected[0])
+    bundle.write_text(json.dumps(subset), encoding="utf-8")
+    with pytest.raises(ValueError, match="schedule"):
+        m6_validate.candidates(None, bundle, controls, posthoc=True, targeted=True)
+    bundle.write_text(json.dumps({"rows": rows}), encoding="utf-8")
     forged = json.loads(controls.read_text(encoding="utf-8"))
     for row in forged["rows"]:
         row["tests"] = []  # an accepted flag alone is not evidence of a valid control

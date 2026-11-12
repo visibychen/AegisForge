@@ -133,6 +133,22 @@ class Semantics:
         self.state_entries = 0
         self.exhausted = False
         self._index()
+        # A mutation through either side of a simple alias invalidates constant-value claims.
+        # Scope-insensitive here deliberately errs toward retaining findings.
+        aliases = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Name):
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        aliases.setdefault(target.id, set()).add(node.value.id)
+                        aliases.setdefault(node.value.id, set()).add(target.id)
+        pending = list(self.mutated)
+        while pending:
+            name = pending.pop()
+            for alias in aliases.get(name, ()):
+                if alias not in self.mutated:
+                    self.mutated.add(alias)
+                    pending.append(alias)
         self._block(tree.body, {}, None)
         for owner in list(self.params):
             if isinstance(owner, ast.Lambda):
@@ -468,6 +484,12 @@ class Semantics:
 
     def defs(self, name: str, node: ast.AST) -> frozenset:
         """Definitions of ``name`` that can reach the use ``node``."""
+        found = self._defs(name, node)
+        # A list/dict may have changed after its initializer, including through an alias.
+        # Keep the old structure for sink detection, but never prove it constant/safe.
+        return found | {UNKNOWN} if name in self.mutated else found
+
+    def _defs(self, name: str, node: ast.AST) -> frozenset:
         if self.exhausted:
             return frozenset({UNKNOWN})
         owner = self.owner.get(node)

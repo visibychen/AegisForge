@@ -64,7 +64,7 @@ def controls(settings):
     }
 
 
-def candidates(settings, path, baseline, *, posthoc=False):
+def candidates(settings, path, baseline, *, posthoc=False, targeted=False):
     from app.validation.registry import load_cases
     from app.validation.runner import run_container
 
@@ -76,6 +76,22 @@ def candidates(settings, path, baseline, *, posthoc=False):
     cases = {
         c["sample_id"]: c for c in load_cases(include_holdout=True) if c["id"].startswith("h-")
     }
+    if targeted:
+        if not posthoc:
+            raise ValueError("A targeted subset is diagnostic only")
+        protocol = bundle.get("protocol") or {}
+        selected = protocol.get("case_ids")
+        if (
+            protocol.get("schema_version") != "m6-targeted-1.0"
+            or protocol.get("course_acceptance_evaluated") is not False
+            or not isinstance(selected, list)
+            or not selected
+            or any(not isinstance(s, str) for s in selected)
+            or len(set(selected)) != len(selected)
+            or not set(selected) <= set(cases)
+        ):
+            raise ValueError("Invalid predeclared targeted schedule")
+        cases = {sample: cases[sample] for sample in selected}
     observed_controls = control_validity(baseline_result)
     valid_controls = {sample: observed_controls.get(sample, False) for sample in cases}
     inputs = {(row["sample_id"], row["repeat"]): row for row in bundle["rows"]}
@@ -83,7 +99,9 @@ def candidates(settings, path, baseline, *, posthoc=False):
         raise ValueError("Duplicate candidate identity")
     rows = []
     repeats = (1,) if posthoc else (1, 2, 3)
-    denominator = 18 * len(repeats)
+    if not set(inputs) <= {(sample, repeat) for sample in cases for repeat in repeats}:
+        raise ValueError("Candidate identity outside the selected schedule")
+    denominator = len(cases) * len(repeats)
     for repeat in repeats:
         for sample, case in cases.items():
             row = dict(
@@ -135,7 +153,9 @@ def candidates(settings, path, baseline, *, posthoc=False):
     missing = [r for r in rows if r.get("error_code") == "CANDIDATE_MISSING"]
     return {
         "scope": (
-            "post-hoc conditional repair diagnosis; not independent acceptance"
+            "post-hoc targeted repair diagnosis; not independent acceptance"
+            if targeted
+            else "post-hoc conditional repair diagnosis; not independent acceptance"
             if posthoc
             else "all 54 pre-registered first-candidate repair attempts"
         ),
@@ -152,7 +172,7 @@ def candidates(settings, path, baseline, *, posthoc=False):
             {
                 "repeat": i,
                 "successes": sum(r["success"] for r in rows if r["repeat"] == i),
-                "denominator": 18,
+                "denominator": len(cases),
             }
             for i in repeats
         ],
@@ -187,6 +207,11 @@ def main():
     parser.add_argument("command", choices=["controls", "candidates", "diagnostics"])
     parser.add_argument("--bundle", type=lambda p: ROOT / p)
     parser.add_argument(
+        "--targeted",
+        action="store_true",
+        help="diagnostics only: use the bundle's predeclared registered subset",
+    )
+    parser.add_argument(
         "--compare",
         type=lambda p: ROOT / p,
         help="committed result to replay against; any changed verdict exits 3",
@@ -208,10 +233,18 @@ def main():
         parser.error("--bundle required")
     if args.command == "diagnostics" and args.require_threshold:
         parser.error("Post-hoc diagnostics cannot evaluate the formal course threshold")
+    if args.targeted and args.command != "diagnostics":
+        parser.error("--targeted is allowed only for diagnostics")
     result = (
         controls(settings)
         if args.command == "controls"
-        else candidates(settings, args.bundle, args.baseline, posthoc=args.command == "diagnostics")
+        else candidates(
+            settings,
+            args.bundle,
+            args.baseline,
+            posthoc=args.command == "diagnostics",
+            targeted=args.targeted,
+        )
     )
     write_json(args.output, result)
     print(

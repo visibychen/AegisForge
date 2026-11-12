@@ -40,7 +40,15 @@ def main():
     require_conda()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute-real", action="store_true")
+    parser.add_argument(
+        "--mutation-followup",
+        action="store_true",
+        help="separate 2-task/1-candidate replay after the mutable-container fix",
+    )
     args = parser.parse_args()
+    selected_cases = ("SRC-SQLI-12-V",) if args.mutation_followup else SELECTED
+    directory = ROOT / "data/m6-targeted-mutation-20261112" if args.mutation_followup else RUN
+    initial_usage = 988 if args.mutation_followup else 942
     sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
     from evaluation.experiment import (
         BUDGET_PATH,
@@ -55,7 +63,7 @@ def main():
     from evaluation.metrics import evaluate
 
     manifest, contents = load_data()
-    ids = [ident[:-1] + label for ident in SELECTED for label in ("V", "S")]
+    ids = [ident[:-1] + label for ident in selected_cases for label in ("V", "S")]
     records = {r["id"]: r for r in manifest["samples"]}
     selected = [records[ident] for ident in ids]
     protocol = {
@@ -64,19 +72,20 @@ def main():
         "course_acceptance_evaluated": False,
         "human_review": "pending",
         "sample_ids": ids,
-        "case_ids": list(SELECTED),
+        "case_ids": list(selected_cases),
         "selection_reason": (
             "all six registered SQLi contracts; XSS script-data/HTML boundaries; "
             "command quoting, guarded host and cwd failures identified in the old run"
         ),
         "rounds": 1,
-        "detection_tasks": 24,
-        "repair_denominator": 12,
+        "detection_tasks": len(ids),
+        "repair_denominator": len(selected_cases),
         "first_candidate": "first in this new versioned diagnostic only; cases previously exposed",
-        "maximum_additional_reservations": 58,
+        "maximum_additional_reservations": 1000 - initial_usage,
         "global_ceiling": 1000,
-        "starting_reservations": 942,
-        "minimum_calls_if_all_targets_found": 48,
+        "starting_reservations": initial_usage,
+        "minimum_calls_if_all_targets_found": 4 * len(selected_cases),
+        "mutation_followup": args.mutation_followup,
         "runtime_files": detection_fingerprint(),
         "orchestrator_files": {
             name: file_hash(ROOT / name)
@@ -103,7 +112,7 @@ def main():
     if not settings.deepseek_api_key or not settings.deepseek_api_key.get_secret_value():
         raise ValueError("A model key in the OS environment is required")
     protocol |= {"model": settings.deepseek_model, "temperature": 0, "thinking": "disabled"}
-    saved = RUN / "protocol.json"
+    saved = directory / "protocol.json"
     if saved.exists():
         previous = json.loads(saved.read_text(encoding="utf-8"))
         if any(previous.get(k) != v for k, v in protocol.items()):
@@ -113,11 +122,11 @@ def main():
         if not BUDGET_PATH.is_file():
             raise ValueError("The original budget ledger must already exist")
         original = ExperimentBudget(BUDGET_PATH)
-        if original.summary()["reservations"] != 942:
-            raise ValueError("Expected the original 942 used reservations before first start")
-        RUN.mkdir(parents=True, exist_ok=True)
+        if original.summary()["reservations"] != initial_usage:
+            raise ValueError("Unexpected original ledger usage before first start")
+        directory.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(BUDGET_PATH)) as source:
-            with closing(sqlite3.connect(RUN / "budget-before.sqlite")) as backup:
+            with closing(sqlite3.connect(directory / "budget-before.sqlite")) as backup:
                 source.backup(backup)
         protocol |= {
             "created_at": datetime.now(UTC).isoformat(),
@@ -138,7 +147,7 @@ def main():
     config = {"model": settings.deepseek_model, "rounds": 1, "split": "test"}
 
     def detect(record):
-        row = run_detection(RUN, config, budget, record, contents[record["id"]], "hybrid", 1)
+        row = run_detection(directory, config, budget, record, contents[record["id"]], "hybrid", 1)
         print(
             json.dumps(
                 {
@@ -161,12 +170,12 @@ def main():
         "budget": budget.summary(),
         "course_acceptance_evaluated": False,
     }
-    write_json(RUN / "detection-summary.json", detection)
-    rows = generate_repairs(RUN, config, budget, selected=SELECTED)
+    write_json(directory / "detection-summary.json", detection)
+    rows = generate_repairs(directory, config, budget, selected=selected_cases)
     candidates = []
     for row in rows:
         row = dict(row)
-        path = job_directory(RUN, "hybrid", 1, row["sample_id"]) / "candidate.txt"
+        path = job_directory(directory, "hybrid", 1, row["sample_id"]) / "candidate.txt"
         if row.get("status") == "candidate":
             source = path.read_text(encoding="utf-8")
             if hashlib.sha256(source.encode()).hexdigest() != row["candidate_sha256"]:
@@ -175,13 +184,13 @@ def main():
         candidates.append(row)
     bundle = {
         "protocol": protocol,
-        "denominator": 12,
+        "denominator": len(selected_cases),
         "rows": candidates,
         "budget": budget.summary(),
         "dynamic_pending": True,
         "course_acceptance_evaluated": False,
     }
-    write_json(RUN / "candidates.json", bundle)
+    write_json(directory / "candidates.json", bundle)
     print(
         json.dumps(
             {

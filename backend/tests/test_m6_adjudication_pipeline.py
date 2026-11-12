@@ -58,7 +58,7 @@ def test_refuted_model_clue_is_visible_but_does_not_leak_prose_in_reports(api, m
 
 def test_report_proof_summary_rejects_unknown_names_and_noninteger_counts():
     value = {
-        "version": "adjudication-1.0",
+        "version": "adjudication-1.1",
         "examined": True,
         "kept": 10001,
         "refuted": "secret",

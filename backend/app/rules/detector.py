@@ -33,7 +33,7 @@ from app.rules.semantics import (
 )
 from app.schemas.contracts import Finding, HttpLocation, SourceLocation
 
-RULE_VERSION = "rules-1.2"
+RULE_VERSION = "rules-1.3"
 MAX_RULE_FINDINGS = 100
 MAX_HOPS = 8
 WORK_LIMIT = 5000  # bounded effort per expression; exhausted analysis is reported as tainted
