@@ -1,0 +1,1557 @@
+{
+  "protocol": {
+    "schema_version": "m6-targeted-1.0",
+    "scope": "post-hoc exposed-case targeted diagnostic; not independent acceptance",
+    "course_acceptance_evaluated": false,
+    "human_review": "pending",
+    "sample_ids": [
+      "SRC-XSS-09-V",
+      "SRC-XSS-09-S",
+      "SRC-XSS-14-V",
+      "SRC-XSS-14-S",
+      "SRC-XSS-17-V",
+      "SRC-XSS-17-S",
+      "SRC-SQLI-09-V",
+      "SRC-SQLI-09-S",
+      "SRC-SQLI-10-V",
+      "SRC-SQLI-10-S",
+      "SRC-SQLI-12-V",
+      "SRC-SQLI-12-S",
+      "SRC-SQLI-14-V",
+      "SRC-SQLI-14-S",
+      "SRC-SQLI-17-V",
+      "SRC-SQLI-17-S",
+      "SRC-SQLI-19-V",
+      "SRC-SQLI-19-S",
+      "SRC-CMDI-09-V",
+      "SRC-CMDI-09-S",
+      "SRC-CMDI-14-V",
+      "SRC-CMDI-14-S",
+      "SRC-CMDI-20-V",
+      "SRC-CMDI-20-S"
+    ],
+    "case_ids": [
+      "SRC-XSS-09-V",
+      "SRC-XSS-14-V",
+      "SRC-XSS-17-V",
+      "SRC-SQLI-09-V",
+      "SRC-SQLI-10-V",
+      "SRC-SQLI-12-V",
+      "SRC-SQLI-14-V",
+      "SRC-SQLI-17-V",
+      "SRC-SQLI-19-V",
+      "SRC-CMDI-09-V",
+      "SRC-CMDI-14-V",
+      "SRC-CMDI-20-V"
+    ],
+    "selection_reason": "all six registered SQLi contracts; XSS script-data/HTML boundaries; command quoting, guarded host and cwd failures identified in the old run",
+    "rounds": 1,
+    "detection_tasks": 24,
+    "repair_denominator": 12,
+    "first_candidate": "first in this new versioned diagnostic only; cases previously exposed",
+    "maximum_additional_reservations": 58,
+    "global_ceiling": 1000,
+    "starting_reservations": 942,
+    "minimum_calls_if_all_targets_found": 48,
+    "runtime_files": {
+      "backend/app/core/__init__.py": "93fc55892854d3c3a40c5514c363b770d04a22f3de819dc05b3d27abbd0d46f8",
+      "backend/app/core/config.py": "346bf35e969ead6247e54dbf6bdc990b8e630557f084e2239a4be7850097bcdb",
+      "backend/app/core/credentials.py": "09a2c2c11635419e85f70ffa729040e52dcef560ea784e8ed96ea462cd35f3d2",
+      "backend/app/core/database.py": "d4990312e48f92de403457fe6de0f42d64a0cdcf99963f00f07b390af316bfc6",
+      "backend/app/core/errors.py": "543b067a0b9d43808c8093ee7b90ea9cae62da83adc82dc2936e4b3f1af7e249",
+      "backend/app/core/redaction.py": "54afb24df4f3ff30607983b810517df008ee78bc7a9e45cd7215fbb79a997a6e",
+      "backend/app/parsers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/parsers/inputs.py": "0f60a60c7488b590fbabef1a1e5c16ae4e6867459c26fbbee433a2d07fd18d50",
+      "backend/app/rules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/rules/detector.py": "179fca086ca49302bcd6b5257ece8719a8bf2e7395f0efdb49c3cf425d17b258",
+      "backend/app/rules/flow.py": "0e5adbadb2b79ff78f94abd25f3b68ca313dbd74c5a1a822ff46cbe596e615e2",
+      "backend/app/rules/semantics.py": "e3b70832829bdd58d1d2f04e1550e8046eb5ebe955f7a433f422905e6faacdd9",
+      "backend/app/llm/__init__.py": "77be26817ead4989b6832eaf42c5e0bf0d21aaef61e9df6840fcbc6f79648690",
+      "backend/app/llm/deepseek.py": "cfe0bb175d2bc767a16d9ae7f949e6b6b3719fdec56a8f62b49bd15903b7c53d",
+      "backend/app/llm/prompts.py": "ebe27ac67a78669c80c0eff2842398bd50e7626b7fd480826c30b039614498ff",
+      "backend/app/llm/provider.py": "841a25e2855a68185f7e8cd132f7ae455bd28d5786148373a206203ac4a543eb",
+      "backend/app/llm/repair.py": "044c6eb7eb702b21a0683505a3a6e297dbfca5b687cba890e7da62fd04435741",
+      "backend/app/llm/wire.py": "b61205393a68bc7501dd23346fa4dfe8293192665e9206d9d4f738c85382b6b5",
+      "backend/app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/services/adjudicate.py": "90f26f17ce121583e5bb023428904a4209bfb42451a523b77dfdc7c2947fac5f",
+      "backend/app/services/artifacts.py": "d3392664bbc369fe4c2ba72d25e3c09ba8b4369793fe494870a3f4c6186f3da1",
+      "backend/app/services/merge.py": "6aa1c0206b62f0eccf8cfc6c5505557abb4bb1008b81feea453d92fa9a51a6c5",
+      "backend/app/services/patch_review.py": "3d0ea2c8e16fab6be627c7a9aa36e88209529dd5a90174e86d770ebdfde3de28",
+      "backend/app/services/patches.py": "469c951ddaa11f8a99dff2de191c669e972d2d320a73bdb921161747904182c8",
+      "backend/app/services/queue.py": "43d6e6fcf46a694db69b1ba454397bf66357b1ac98445b86ff5fe45494d9e070",
+      "backend/app/services/receipts.py": "a232f244ca0bdc4503b795f086b1b6168ed8bdbf26d2454bd2a6b2827e1278b5",
+      "backend/app/services/repair_contract.py": "adcb4c45b908daebbe35d1115e8702f2e11e687e2487381628bca8aa30095348",
+      "backend/app/services/repairs.py": "ba1abff4e5b01739476fdc9ad5d3f9f3210d1f7616a4312d46e1778b0e81af09",
+      "backend/app/services/report_integrity.py": "1eff887da6ce0e0d1b0588e9601ddf63608223863d60b86dbbb03f3c185ceaae",
+      "backend/app/services/reports.py": "5f09badb52a599bdcebde265615ba8b73ac062881dc894c89f26bcfbac93904c",
+      "backend/app/services/scans.py": "a7e14eaf55444afe5d26e96c589fc0ca08463fe274f25048028cbc29f3af5405",
+      "backend/app/services/workspace.py": "23e70ab13230087d88ce8aee745f68671b8fcf3adab650223dbd01f07c971a1e",
+      "backend/app/worker/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/worker/__main__.py": "7cf0bd8cf08a2b48456ec576043e8e2116e577b6da2dd94ccea322762d038457",
+      "backend/app/worker/runner.py": "5f94a89b62556ad8b458c099dfa8987661ce44fc223dab9cac34fb1468d3b678",
+      "backend/app/schemas/__init__.py": "7febd78a690a2832459ee8a0b36777eb0697ecf7244aa8733d5d9bcf1b433a28",
+      "backend/app/schemas/contracts.py": "ebb67ea600a1688672673e5249b4101b36f7dd7936f593aa2dbd41edbd48f808",
+      "backend/app/models/__init__.py": "a3ced5fcbdef94493b70404f9db04e9cbb49cc2580ae5690e78af4cedd2ec69d",
+      "backend/app/models/foundation.py": "1e107a2fb29fc800b94890fb3f6a2f6f9cfae44b5dd817db67fdcb5a0e496d09",
+      "backend/app/api/__init__.py": "0160b8a4e431219d621343e7e9e9b644e506a868ea698bdc85cb6dec5383836d",
+      "backend/app/api/artifacts.py": "e836ae738b886a6dcd27952839c0078d8ea97efbf189e703de1935aae1726c4d",
+      "backend/app/api/repairs.py": "f16130e25b03dca3ff6758f68f24a0bd4340077de16de359ce5254bc641a42ae",
+      "backend/app/api/scans.py": "7c41555f3b0c53de35c2ab8754728664e160b739776b4abf4875723473c218d6",
+      "backend/app/api/workspace.py": "35c6b07e9de17a2cb19c0531d101664ba8cc030e984d57333b0043b2a408a1df"
+    },
+    "orchestrator_files": {
+      "scripts/m6_targeted.py": "ceecef44f5a5d1988696748655768a5c9805c837f1d5334f69dd5f602c8aa27c",
+      "evaluation/experiment.py": "fb867bb275044340ffef414e156c192fde77ee9ae320085dd48534f862e26833",
+      "evaluation/budget.py": "7be92118a3a4316a93dca58bbbb74e86d72900dc46e8accb66eee1e48a282b8f"
+    },
+    "dataset_sha256": "0998f8c12acbd69d61adb3f9b96377267e9a2327e5b594fe39e78bd6b87cc061",
+    "sample_hashes": {
+      "SRC-XSS-09-V": "ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6",
+      "SRC-XSS-09-S": "7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261",
+      "SRC-XSS-14-V": "bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8",
+      "SRC-XSS-14-S": "b1c779650f778dba9ab6ad30f3dd8af5db426fa9dbb8ed70177b8669b64782a9",
+      "SRC-XSS-17-V": "0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791",
+      "SRC-XSS-17-S": "134dc8bc11e83eeb9e22d8aaf664a6cf922a58057baae5c0c792f09a80e7a9cc",
+      "SRC-SQLI-09-V": "529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514",
+      "SRC-SQLI-09-S": "4be52e62ab98dd91c5834cb689fce076ad515445ddb3984dd331f9435670b485",
+      "SRC-SQLI-10-V": "ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee",
+      "SRC-SQLI-10-S": "7f9e5d7711b09bff410842dca0fb831e49a1c10e5ba99bf1f86da3ea8b0225cf",
+      "SRC-SQLI-12-V": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+      "SRC-SQLI-12-S": "0d43945ee13c9373ebc388f81a9a568f04fac0509860aa0534fa8dbb219fee5a",
+      "SRC-SQLI-14-V": "cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c",
+      "SRC-SQLI-14-S": "ea448b5488fecb53c2b4f9734bd93d3fe3276d5e39cdfa2314b973a46d168e76",
+      "SRC-SQLI-17-V": "a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d",
+      "SRC-SQLI-17-S": "a8d96b6af3b5683a84f6b03f81a0a6c8845235d7a49f0cf170b911886455e370",
+      "SRC-SQLI-19-V": "3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a",
+      "SRC-SQLI-19-S": "f72bfa0a70efa9a9ebf41d2b7d63b50cf712277481b5402255f960bf7813b0b3",
+      "SRC-CMDI-09-V": "08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288",
+      "SRC-CMDI-09-S": "20595550594293fcaa8a3c7ebca21077b5536ef36cf660b50759233144067ffd",
+      "SRC-CMDI-14-V": "8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef",
+      "SRC-CMDI-14-S": "d220e0f0a2f0a3f76667366e1c80ff4358a4c5995af3122fe6567ead447f2c27",
+      "SRC-CMDI-20-V": "12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c",
+      "SRC-CMDI-20-S": "05116a5358e4652b682edb4bb4f893b8bca0c6c5048d980bcbcd95c28f5c9ff8"
+    },
+    "model": "deepseek-flash",
+    "temperature": 0,
+    "thinking": "disabled",
+    "created_at": "2026-11-12T07:06:28.535177+00:00",
+    "code_sha": "ab663f881301b14bb55c93bdd8a2736860c31843"
+  },
+  "records": [
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "a8ff3147-48cb-47a6-b5fa-464220206417",
+          "cwe": "CWE-79",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "f87accb2-f641-4ac2-b7c0-ad5ce91aa889",
+            "start_line": 8,
+            "end_line": 8
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 21.411999994597863,
+      "scan_id": "bc5d5a0b-1d24-48ee-8a23-1b597dc10367",
+      "artifact_id": "f87accb2-f641-4ac2-b7c0-ad5ce91aa889",
+      "source_sha256": "ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2783,
+      "coverage": [
+        {
+          "artifact_id": "f87accb2-f641-4ac2-b7c0-ad5ce91aa889",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 8,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "6371262d707db6b07b9138496906f00a4f5f1cc2c355278b96784d59e735be5f",
+      "calls": [
+        {
+          "id": "3c3b9265-31bd-445e-9bff-859988fa3143",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2588,
+          "input_chars": 170,
+          "output_bytes": 1306,
+          "input_tokens": 1953,
+          "output_tokens": 221,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2958.2683999979054
+    },
+    {
+      "sample_id": "SRC-XSS-09-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 21.05259999370901,
+      "scan_id": "14cf3b08-6dc7-4e80-8782-14051940ff92",
+      "artifact_id": "a3dbce59-7b79-4f8c-b38f-0faa675426ab",
+      "source_sha256": "7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2837,
+      "coverage": [
+        {
+          "artifact_id": "a3dbce59-7b79-4f8c-b38f-0faa675426ab",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 9,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "80107dd39f48d6fec190b197bde2b3c9cf392cbbd10a7185aaedd66b799547ac",
+      "calls": [
+        {
+          "id": "a544c917-1693-4b71-acca-e72cda96674b",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2614,
+          "input_chars": 208,
+          "output_bytes": 529,
+          "input_tokens": 1902,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3018.375299994659
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "ed184002-ef8a-4477-92db-70dae71a6c4b",
+          "cwe": "CWE-79",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "0c51bd26-48f6-4caa-b934-9f172064328f",
+            "start_line": 9,
+            "end_line": 9
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 13.146999997843523,
+      "scan_id": "c23aada4-35dd-42f5-955b-a3e1f9d26928",
+      "artifact_id": "0c51bd26-48f6-4caa-b934-9f172064328f",
+      "source_sha256": "bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 4023,
+      "coverage": [
+        {
+          "artifact_id": "0c51bd26-48f6-4caa-b934-9f172064328f",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 9,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "40dd8ee55993848be63d8e697e677e34444a6cc359582d5e3dd50bc94c275bf6",
+      "calls": [
+        {
+          "id": "aaeb8cb0-fbf0-4585-994e-67d624913c73",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3969,
+          "input_chars": 221,
+          "output_bytes": 1414,
+          "input_tokens": 1980,
+          "output_tokens": 249,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 4112.459800002398
+    },
+    {
+      "sample_id": "SRC-XSS-14-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 17.205500000272878,
+      "scan_id": "3d1c03c9-7dbd-41e6-b19a-c5ea41a2b786",
+      "artifact_id": "67598135-c818-40e6-855a-4d43239639e5",
+      "source_sha256": "b1c779650f778dba9ab6ad30f3dd8af5db426fa9dbb8ed70177b8669b64782a9",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3029,
+      "coverage": [
+        {
+          "artifact_id": "67598135-c818-40e6-855a-4d43239639e5",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 11,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "4d98f783cd5488f92ae8122f343747ec412282365701fd8b33ad00448b24ef08",
+      "calls": [
+        {
+          "id": "adc32d40-99b2-4271-a2e3-20ab1c184c1b",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2976,
+          "input_chars": 268,
+          "output_bytes": 1570,
+          "input_tokens": 2017,
+          "output_tokens": 284,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3111.077399997157
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "dadb3efb-f7c5-47c0-95f2-b466df0e9c1d",
+          "cwe": "CWE-79",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "9bf67612-276c-4ef9-803d-a5869bc54dbe",
+            "start_line": 8,
+            "end_line": 8
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 9.785900001588743,
+      "scan_id": "f348ec61-7cab-4245-be36-e444a6ad9554",
+      "artifact_id": "9bf67612-276c-4ef9-803d-a5869bc54dbe",
+      "source_sha256": "0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2526,
+      "coverage": [
+        {
+          "artifact_id": "9bf67612-276c-4ef9-803d-a5869bc54dbe",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 8,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "ea0911601fa6d0019d3367a482d2912594008b79f4bbdd338b7f935818918712",
+      "calls": [
+        {
+          "id": "1995692e-90a9-4be0-8ac6-5fe0ef4ae112",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2485,
+          "input_chars": 183,
+          "output_bytes": 1246,
+          "input_tokens": 1958,
+          "output_tokens": 204,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2589.6610999989207
+    },
+    {
+      "sample_id": "SRC-XSS-17-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 14.028600002347957,
+      "scan_id": "6c17786b-d15c-49c1-8c06-ffde28c9fd37",
+      "artifact_id": "76033813-f736-4c53-b616-295b5c4239b3",
+      "source_sha256": "134dc8bc11e83eeb9e22d8aaf664a6cf922a58057baae5c0c792f09a80e7a9cc",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 1950,
+      "coverage": [
+        {
+          "artifact_id": "76033813-f736-4c53-b616-295b5c4239b3",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 9,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "fb0220ac5a7c5d27459994b4466c074b7d8ab652ab47a679fefe899179cadd5d",
+      "calls": [
+        {
+          "id": "6d9e1d10-0d86-42d1-9b6b-6641232ce094",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 1903,
+          "input_chars": 221,
+          "output_bytes": 529,
+          "input_tokens": 1904,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2025.16679999826
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "d116396e-3e0a-4ffc-8357-c6ecce9b7732",
+          "cwe": "CWE-89",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "b5279052-36a6-4f2b-8f1d-110cd29a5c27",
+            "start_line": 13,
+            "end_line": 13
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 12.431700000888668,
+      "scan_id": "b3bd6115-6686-437f-84e7-6da02c844db1",
+      "artifact_id": "b5279052-36a6-4f2b-8f1d-110cd29a5c27",
+      "source_sha256": "529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3240,
+      "coverage": [
+        {
+          "artifact_id": "b5279052-36a6-4f2b-8f1d-110cd29a5c27",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 13,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "52f47f96b00d12e5a078b9ef80041e7455664e77b9c8ccbd2863aadc7545355c",
+      "calls": [
+        {
+          "id": "878c562d-4ef2-4102-8929-eab90cf245d1",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3197,
+          "input_chars": 318,
+          "output_bytes": 1453,
+          "input_tokens": 2044,
+          "output_tokens": 250,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3307.0633000024827
+    },
+    {
+      "sample_id": "SRC-SQLI-09-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 11.258900005486794,
+      "scan_id": "e70dda4b-9b4a-4160-aa65-8eec34f1e022",
+      "artifact_id": "5a567346-3608-4e50-bec7-cf6ccddb3b9f",
+      "source_sha256": "4be52e62ab98dd91c5834cb689fce076ad515445ddb3984dd331f9435670b485",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3001,
+      "coverage": [
+        {
+          "artifact_id": "5a567346-3608-4e50-bec7-cf6ccddb3b9f",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 14,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "6b2875c1aa152e9beb438c2e1aed6c856f4c55870229879aa2756be34f8c7980",
+      "calls": [
+        {
+          "id": "c003c331-97a8-4e91-9bef-1d96c3eb077b",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2946,
+          "input_chars": 354,
+          "output_bytes": 529,
+          "input_tokens": 2007,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3076.911800002563
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "9cbbd87f-bf18-42ee-990b-3466eb755fca",
+          "cwe": "CWE-89",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "f9cc7919-fccb-4835-9b6e-ae81b687cf4c",
+            "start_line": 11,
+            "end_line": 11
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 14.243199999327771,
+      "scan_id": "745407ed-b5bc-4847-a4a4-742b5795ca74",
+      "artifact_id": "f9cc7919-fccb-4835-9b6e-ae81b687cf4c",
+      "source_sha256": "ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2179,
+      "coverage": [
+        {
+          "artifact_id": "f9cc7919-fccb-4835-9b6e-ae81b687cf4c",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "4d3ea91ba10989ef4a07100182e4cc34d344d6b0596b5eefda17dd8940fee3eb",
+      "calls": [
+        {
+          "id": "2de67088-67f5-43b9-b6e1-064af24a39b7",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2119,
+          "input_chars": 287,
+          "output_bytes": 1195,
+          "input_tokens": 2023,
+          "output_tokens": 191,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2256.392399998731
+    },
+    {
+      "sample_id": "SRC-SQLI-10-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 12.706499997875653,
+      "scan_id": "3f18e294-7173-4aa8-b8e8-285825960d43",
+      "artifact_id": "e15b1e2e-1375-4b07-a9a3-3fbdadcbff2b",
+      "source_sha256": "7f9e5d7711b09bff410842dca0fb831e49a1c10e5ba99bf1f86da3ea8b0225cf",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2488,
+      "coverage": [
+        {
+          "artifact_id": "e15b1e2e-1375-4b07-a9a3-3fbdadcbff2b",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "770fa9449c2a0fc1c9c67f2be099a4c3e41573755b9f272914c090c289c6ca03",
+      "calls": [
+        {
+          "id": "88765385-1b50-4f55-bbba-1af812608bd8",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2438,
+          "input_chars": 297,
+          "output_bytes": 668,
+          "input_tokens": 1957,
+          "output_tokens": 47,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2565.687499998603
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 17.782999995688442,
+      "scan_id": "c0407ff9-b1d9-49ad-a2f3-386bb4e8ffb0",
+      "artifact_id": "b61c3920-36cc-4789-b730-2909754bf6d1",
+      "source_sha256": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 4277,
+      "coverage": [
+        {
+          "artifact_id": "b61c3920-36cc-4789-b730-2909754bf6d1",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 17,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "4b704223984fbbfcaba8f7702d1b5aacef0d4ef8bd00b952b13370684b04e7bc",
+      "calls": [
+        {
+          "id": "6e3311ae-2b24-4b35-8210-95087ca48ce7",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 4230,
+          "input_chars": 461,
+          "output_bytes": 1655,
+          "input_tokens": 2057,
+          "output_tokens": 302,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 4416.032200002519
+    },
+    {
+      "sample_id": "SRC-SQLI-12-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 12.824000004911795,
+      "scan_id": "23b2dbe5-abcd-421e-b01a-5000ae1cf017",
+      "artifact_id": "6f1f54ed-23c1-4b8b-b45d-f50fa1ab8b5f",
+      "source_sha256": "0d43945ee13c9373ebc388f81a9a568f04fac0509860aa0534fa8dbb219fee5a",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 1931,
+      "coverage": [
+        {
+          "artifact_id": "6f1f54ed-23c1-4b8b-b45d-f50fa1ab8b5f",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 19,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "5dad0a38b964bbd14f33b92b1062eead637f816d849e54f970df07cd82a899c2",
+      "calls": [
+        {
+          "id": "1cc8e5f3-0f2c-4d46-b06e-bf4071633760",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 1882,
+          "input_chars": 617,
+          "output_bytes": 529,
+          "input_tokens": 2129,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2003.8633000003756
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "b949deb7-2d2f-4841-9b56-2ce9c3f51565",
+          "cwe": "CWE-89",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "328c2f2e-2a2b-47ce-ab74-0a3f5f192f4d",
+            "start_line": 11,
+            "end_line": 11
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 11.148899997351691,
+      "scan_id": "9ad5f3e4-1cd9-4bff-a8e4-3cc6ccbe4f1c",
+      "artifact_id": "328c2f2e-2a2b-47ce-ab74-0a3f5f192f4d",
+      "source_sha256": "cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3135,
+      "coverage": [
+        {
+          "artifact_id": "328c2f2e-2a2b-47ce-ab74-0a3f5f192f4d",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "1698a0c67ca5d4e871b3a58aa776cfcf94021d3ea39011456f75fa3358c7d5d2",
+      "calls": [
+        {
+          "id": "91cec5cd-9154-4f06-b4c9-97a4b12c09c4",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3091,
+          "input_chars": 306,
+          "output_bytes": 1236,
+          "input_tokens": 2033,
+          "output_tokens": 198,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3211.6929999974673
+    },
+    {
+      "sample_id": "SRC-SQLI-14-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 14.917099993908778,
+      "scan_id": "3704f8e9-ba75-4088-9a43-b3239646f737",
+      "artifact_id": "2779e3f0-5b09-487a-9cfd-2faa249e7398",
+      "source_sha256": "ea448b5488fecb53c2b4f9734bd93d3fe3276d5e39cdfa2314b973a46d168e76",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2819,
+      "coverage": [
+        {
+          "artifact_id": "2779e3f0-5b09-487a-9cfd-2faa249e7398",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "452c3cb8ed14dee698bc31177b8a416109e2823930661274683c8d04adae89d9",
+      "calls": [
+        {
+          "id": "f285b80f-e904-4767-b4eb-27e31aaa14e1",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2776,
+          "input_chars": 307,
+          "output_bytes": 529,
+          "input_tokens": 1962,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2892.454600005294
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "b312be35-cb00-421b-b9d2-e1c7bc1cafc6",
+          "cwe": "CWE-89",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "2328b0a7-f6d1-4c2d-81d6-f74d60b2b511",
+            "start_line": 14,
+            "end_line": 14
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 15.561200001684483,
+      "scan_id": "97536e3f-7459-4949-9c27-b628164737c9",
+      "artifact_id": "2328b0a7-f6d1-4c2d-81d6-f74d60b2b511",
+      "source_sha256": "a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2796,
+      "coverage": [
+        {
+          "artifact_id": "2328b0a7-f6d1-4c2d-81d6-f74d60b2b511",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 14,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "b01344d6ae40ed20b07e29369c9f091a7c1c351b96ab76c4a00e2a03f57c23f9",
+      "calls": [
+        {
+          "id": "a184b6aa-1f55-4aea-a626-881accf9e327",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2743,
+          "input_chars": 374,
+          "output_bytes": 1416,
+          "input_tokens": 2070,
+          "output_tokens": 240,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2885.4969999956666
+    },
+    {
+      "sample_id": "SRC-SQLI-17-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 11.353999994753394,
+      "scan_id": "5e8bae82-a084-43dd-95fe-a001a983a68d",
+      "artifact_id": "7dd417fc-bdc4-49a3-8f69-9ce727f520d4",
+      "source_sha256": "a8d96b6af3b5683a84f6b03f81a0a6c8845235d7a49f0cf170b911886455e370",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2616,
+      "coverage": [
+        {
+          "artifact_id": "7dd417fc-bdc4-49a3-8f69-9ce727f520d4",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 14,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "1cfe003a896158079d28d345c0f14edb9f1e05e023ef324cbd905ceb6d425f61",
+      "calls": [
+        {
+          "id": "1de0eb2c-3496-431a-acd5-1956a8488d61",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2572,
+          "input_chars": 407,
+          "output_bytes": 529,
+          "input_tokens": 2025,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2679.8409999973956
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "174a7fe1-68f3-420c-bd77-808eb8f8d404",
+          "cwe": "CWE-89",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "f584e59d-146a-4d00-88bf-acf3df9029bd",
+            "start_line": 16,
+            "end_line": 16
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 14.374800004588906,
+      "scan_id": "d86cef62-1967-426e-a23b-bcf88543cf25",
+      "artifact_id": "f584e59d-146a-4d00-88bf-acf3df9029bd",
+      "source_sha256": "3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2733,
+      "coverage": [
+        {
+          "artifact_id": "f584e59d-146a-4d00-88bf-acf3df9029bd",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 16,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 2
+        }
+      ],
+      "receipt_digest": "97a522d2cf15076626986494541e847783dfea17f16c7f56bbeee465a1132d15",
+      "calls": [
+        {
+          "id": "f9125d1f-4ac6-4224-8f9d-1682531b3b38",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2677,
+          "input_chars": 429,
+          "output_bytes": 1912,
+          "input_tokens": 2114,
+          "output_tokens": 373,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2820.2025999999023
+    },
+    {
+      "sample_id": "SRC-SQLI-19-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 13.554600001953077,
+      "scan_id": "b8ffb3c9-5a54-4698-8c7b-14271967fd43",
+      "artifact_id": "4521a37e-010d-4657-8357-31a58eef59c6",
+      "source_sha256": "f72bfa0a70efa9a9ebf41d2b7d63b50cf712277481b5402255f960bf7813b0b3",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2768,
+      "coverage": [
+        {
+          "artifact_id": "4521a37e-010d-4657-8357-31a58eef59c6",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 18,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "6ff7e56494f4ca14cae678ada1700a5e4cbd3f4d9e221ac726a48549b1579298",
+      "calls": [
+        {
+          "id": "092d8463-450f-40fd-aa99-4aba7029c961",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2714,
+          "input_chars": 479,
+          "output_bytes": 529,
+          "input_tokens": 2079,
+          "output_tokens": 20,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2845.069200004218
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "4190fa07-c62c-4caa-adf3-a5f983fd188d",
+          "cwe": "CWE-78",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "ee27ceab-acf5-4ae9-92e5-5fa8956a7222",
+            "start_line": 12,
+            "end_line": 12
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 13.581100000010338,
+      "scan_id": "e82d2698-a48d-4703-aa90-fdfaaed59f2f",
+      "artifact_id": "ee27ceab-acf5-4ae9-92e5-5fa8956a7222",
+      "source_sha256": "08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3028,
+      "coverage": [
+        {
+          "artifact_id": "ee27ceab-acf5-4ae9-92e5-5fa8956a7222",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 12,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "33e6cc5f71ab01eaa69090135cc4687dddabade4ed0394f4c62d8960ac0d762c",
+      "calls": [
+        {
+          "id": "1a7072b7-14a6-475a-9927-38beb179a83e",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2979,
+          "input_chars": 249,
+          "output_bytes": 1411,
+          "input_tokens": 2000,
+          "output_tokens": 245,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3104.8620000001392
+    },
+    {
+      "sample_id": "SRC-CMDI-09-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 10.87790000019595,
+      "scan_id": "887953c5-198c-45d4-a975-791f8021cb18",
+      "artifact_id": "c2d6e93c-2adb-4714-91ef-e863b4f69ead",
+      "source_sha256": "20595550594293fcaa8a3c7ebca21077b5536ef36cf660b50759233144067ffd",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3477,
+      "coverage": [
+        {
+          "artifact_id": "c2d6e93c-2adb-4714-91ef-e863b4f69ead",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 13,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "b69ec6aee306a9d7e1a88342cbad1103a3efe4fc7b32f9337355811367769494",
+      "calls": [
+        {
+          "id": "a83a7f26-2049-42d4-b39d-938108206ba7",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3433,
+          "input_chars": 275,
+          "output_bytes": 1502,
+          "input_tokens": 1965,
+          "output_tokens": 259,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3543.581099998846
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "555b752a-ed67-4c7d-bf19-d20f5bfcb617",
+          "cwe": "CWE-78",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "b43e0d1a-b26a-49a0-a6b0-a6de3b2b6a91",
+            "start_line": 10,
+            "end_line": 10
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 15.00050000322517,
+      "scan_id": "75d96d21-a7c2-4cd8-b817-85e7d60062cd",
+      "artifact_id": "b43e0d1a-b26a-49a0-a6b0-a6de3b2b6a91",
+      "source_sha256": "8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 2766,
+      "coverage": [
+        {
+          "artifact_id": "b43e0d1a-b26a-49a0-a6b0-a6de3b2b6a91",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 11,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "6ef803368c47169bcbb3e14ffc8bb73903a229c2d266fa1f2b29ffd49e3c1a65",
+      "calls": [
+        {
+          "id": "09972047-c3d5-49d0-8009-c54c08188ccf",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 2718,
+          "input_chars": 227,
+          "output_bytes": 1327,
+          "input_tokens": 2011,
+          "output_tokens": 229,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 2854.258599996683
+    },
+    {
+      "sample_id": "SRC-CMDI-14-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 14.052999998966698,
+      "scan_id": "2edb9c14-96e4-44b8-bc00-e40a2a406fbe",
+      "artifact_id": "fea6ade1-73b7-4ca1-9f8c-2dec1b79b98f",
+      "source_sha256": "d220e0f0a2f0a3f76667366e1c80ff4358a4c5995af3122fe6567ead447f2c27",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3416,
+      "coverage": [
+        {
+          "artifact_id": "fea6ade1-73b7-4ca1-9f8c-2dec1b79b98f",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 16,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "f10467712f84723b25199a692d36a3331a9f1ce74748c0f72af2e179e474c4a3",
+      "calls": [
+        {
+          "id": "abcd7af6-d6f3-45fe-9a18-ffdf84cca824",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3356,
+          "input_chars": 352,
+          "output_bytes": 1436,
+          "input_tokens": 2033,
+          "output_tokens": 270,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3495.9065999937593
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [
+        {
+          "id": "ee9392ba-e388-496d-8639-481eb3ae2b2e",
+          "cwe": "CWE-78",
+          "severity": "high",
+          "location": {
+            "kind": "source",
+            "artifact_id": "b515ca1a-3b47-4af0-b963-f4ce06973854",
+            "start_line": 12,
+            "end_line": 12
+          },
+          "sources": [
+            "rule",
+            "llm"
+          ],
+          "evidence_status": "potential"
+        }
+      ],
+      "analysis_complete": true,
+      "upload_ms": 14.254599998821504,
+      "scan_id": "f392cfbe-d92a-4ae5-bfe4-0b1d13c79d96",
+      "artifact_id": "b515ca1a-3b47-4af0-b963-f4ce06973854",
+      "source_sha256": "12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 3625,
+      "coverage": [
+        {
+          "artifact_id": "b515ca1a-3b47-4af0-b963-f4ce06973854",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 13,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 1
+        }
+      ],
+      "receipt_digest": "9e3020f92ccca671f7007f33ba1e12d55ee37be51b90a763ba603309c84e9187",
+      "calls": [
+        {
+          "id": "3cc1a808-4e02-48ef-803a-1d4709d7794c",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 3570,
+          "input_chars": 294,
+          "output_bytes": 1366,
+          "input_tokens": 2025,
+          "output_tokens": 237,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 3714.5960999987437
+    },
+    {
+      "sample_id": "SRC-CMDI-20-S",
+      "strategy": "hybrid",
+      "repeat": 1,
+      "findings": [],
+      "analysis_complete": true,
+      "upload_ms": 12.490799999795854,
+      "scan_id": "0d0f8174-5194-448b-b7c0-3f31507abb8f",
+      "artifact_id": "990e13d2-d067-48b5-a210-584f8a57e201",
+      "source_sha256": "05116a5358e4652b682edb4bb4f893b8bca0c6c5048d980bcbcd95c28f5c9ff8",
+      "status": "completed",
+      "error_code": null,
+      "service_ms": 4935,
+      "coverage": [
+        {
+          "artifact_id": "990e13d2-d067-48b5-a210-584f8a57e201",
+          "display_name": "sample.py",
+          "input_type": "source",
+          "chunk": 0,
+          "start_line": 1,
+          "end_line": 16,
+          "rules": "ran",
+          "model": "succeeded",
+          "model_error": null,
+          "failure_category": null,
+          "llm_findings": 0
+        }
+      ],
+      "receipt_digest": "40a5b8c08c623d42cf3e8032136d641b8703406ff27e107e79f0775f9d16355f",
+      "calls": [
+        {
+          "id": "b8cfa8e8-4f62-4f7d-bb69-bc1d578d4a25",
+          "model": "deepseek-flash",
+          "status": "succeeded",
+          "duration_ms": 4886,
+          "input_chars": 384,
+          "output_bytes": 695,
+          "input_tokens": 2025,
+          "output_tokens": 54,
+          "failure_category": null
+        }
+      ],
+      "wall_ms": 5003.948699995817
+    }
+  ],
+  "evaluation": {
+    "metrics": {
+      "source": {
+        "micro": {
+          "tp": 11,
+          "fp": 0,
+          "fn": 1,
+          "safe": 12,
+          "safe_flagged": 0,
+          "tasks": 24,
+          "failed": 0,
+          "precision": 1.0,
+          "recall": 0.9166666666666666,
+          "f1": 0.9565217391304348,
+          "safe_false_alarm_rate": 0.0,
+          "task_failure_rate": 0.0
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 1,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 0.8333333333333334,
+            "f1": 0.9090909090909091,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": 1.0,
+          "recall": 0.9444444444444444,
+          "f1": 0.9696969696969697
+        }
+      },
+      "http": {
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "safe": 0,
+          "safe_flagged": 0,
+          "tasks": 0,
+          "failed": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "safe_false_alarm_rate": null,
+          "task_failure_rate": null
+        },
+        "per_cwe": {
+          "CWE-79": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-89": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          },
+          "CWE-78": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "safe": 0,
+            "safe_flagged": 0,
+            "tasks": 0,
+            "failed": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null,
+            "safe_false_alarm_rate": null,
+            "task_failure_rate": null
+          }
+        },
+        "macro": {
+          "precision": null,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    "errors": [
+      {
+        "sample_id": "SRC-SQLI-12-V",
+        "complete": true,
+        "matched": false,
+        "finding_count": 0,
+        "error_code": null
+      }
+    ],
+    "complete": true
+  },
+  "budget": {
+    "ceiling": 1000,
+    "reservations": 966,
+    "input_tokens": 1326059,
+    "output_tokens": 153758,
+    "statuses": {
+      "MODEL_INVALID_OUTPUT": 68,
+      "MODEL_TRANSPORT": 6,
+      "succeeded": 892
+    },
+    "scopes": {
+      "postdev-ab-20261111": {
+        "allowance": 130,
+        "used": 130
+      },
+      "posthoc-repairs-20261111": {
+        "allowance": 70,
+        "used": 41
+      },
+      "targeted-20261112": {
+        "allowance": 5,
+        "used": 0
+      }
+    },
+    "fees": null,
+    "fees_note": "N/A: no provider invoice/rate receipt; tokens are not currency"
+  },
+  "course_acceptance_evaluated": false
+}

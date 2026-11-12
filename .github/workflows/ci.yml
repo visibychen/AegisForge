@@ -115,6 +115,16 @@ jobs:
           python scripts/m6_validate.py diagnostics
           --bundle evaluation/results/m6-posthoc-candidates.json
           --output data/m6-posthoc-repairs-ci.json
+      - name: Validate predeclared targeted candidates without changing formal denominators
+        run: >
+          python scripts/m6_validate.py diagnostics --targeted
+          --bundle evaluation/results/m6-targeted-candidates.json
+          --output data/m6-targeted-repairs-ci.json
+      - name: Validate the separate mutable-container follow-up
+        run: >
+          python scripts/m6_validate.py diagnostics --targeted
+          --bundle evaluation/results/m6-mutation-candidates.json
+          --output data/m6-mutation-repairs-ci.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -125,6 +135,8 @@ jobs:
             data/m6-resources-ci.json
             data/m6-repairs-ci.json
             data/m6-posthoc-repairs-ci.json
+            data/m6-targeted-repairs-ci.json
+            data/m6-mutation-repairs-ci.json
 
   m6-records:
     name: M6 record integrity (recomputed, no thresholds)
