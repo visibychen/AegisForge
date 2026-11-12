@@ -1,0 +1,62 @@
+AegisForge 人工复核证据 01：复核范围、冻结摘要与编号对应
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+
+一、材料版本与冻结状态
+- samples/freeze.json 的 algorithm 字段：sha256 over UTF-8 text with LF line endings; samples as split by read_bundle。
+- freeze.json 记录 13 个文件摘要，其中与本次复核直接相关的 8 个 bundle/manifest 摘要如下
+  （原样抄录，未重算；本次按任务要求只阅读、不运行项目命令）：
+  samples/dev/source/xss.bundle.txt    1df1ce6cfbee29a530e4a42ee6343891f3667caa1baffe8288aaf350b349d96a
+  samples/dev/source/sqli.bundle.txt   6840256e322819e94474a12e9b4b3ceafb9c478c2a166518be4e049246885301
+  samples/dev/source/cmdi.bundle.txt   eb0f3e8c1bd81aef40b6f3de356e638ed4243bf404c95fdf6663a0e8981d8697
+  samples/dev/http/requests.bundle.txt 97e6609ab6af5bda7197a0a9b76b0a8b2211be071d36039da7b3921990236936
+  samples/holdout/source/xss.bundle.txt    05aa2cba8c9c6830ca9e1b8272f42b18d80cc1c9932c4b00e18e2c4642425be1
+  samples/holdout/source/sqli.bundle.txt   c385fc8887db1969c466093f5919f451994d67127a7a4e72313785e388a33f42
+  samples/holdout/source/cmdi.bundle.txt   cc9263be719ffcaab0ce940a470d7873b25deedebdf223450d75737f9f87682c
+  samples/holdout/http/requests.bundle.txt 6efecf295ab6270d9615b2b64373cfe3c840087ba0445050a85df8357c54b647
+- 样例级摘要（samples.freeze."dev"/"test"）共 180 条：dev 72 条、test 108 条；
+  本次主审的 180 条样例 ID 全部能在其中找到同名摘要，逐条抄入《样例复核记录.txt》
+  对应记录的"样例 SHA256"字段，没有缺失、没有重名、没有改动原文件。
+
+二、数量核对
+数据部分        源码样例（V/S）         HTTP 样例（A/N）      合计
+开发集          48（24 V / 24 S）       24（12 A / 12 N）     72
+原保留集        72（36 V / 36 S）       36（18 A / 18 N）     108
+总计            120（60 V / 60 S）      60（30 A / 30 N）     180
+说明：
+- 源码 V/S 各 60；HTTP A/N 各 30。与任务给出的分工表（每方向源码 40、HTTP 20、
+  动态 6）逐方向一致：XSS 8+12=20 族 → 40 源码、4+6=10 族 → 20 HTTP、6 动态；
+  SQLI 同；CMDI 同。
+- 18 个动态修复样例全部来自源码 V 样例，不额外增加检测数据（controlled_repairs.json
+  的 purpose 字段也如此声明）。
+- HTTP 正常样例的 cwe 字段为 null，本次按 ID 中的方向归类，未用 cwe 过滤。
+
+三、18 个动态样例的编号对应与哈希核对
+（m6_cases.json 的 sample_id/source_sha256 与 freeze.json 的 test 段逐一比对，全部一致；
+  holdout_cases.py 的 IDS、TEST_NAMES 与 m6_cases.json 的 18 个 case 一一对应）
+h-xss-09  SRC-XSS-09-V   ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6
+h-xss-11  SRC-XSS-11-V   e14e3ea059c338ce379da514c3fd2b4c7c5c47fb8415ab00f12627eec2921b8e
+h-xss-13  SRC-XSS-13-V   efdcbad4fec7ef306506ed84b304747c6183fa6d225839ff5e7c62c9e324be05
+h-xss-14  SRC-XSS-14-V   bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8
+h-xss-17  SRC-XSS-17-V   0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791
+h-xss-19  SRC-XSS-19-V   e8ac502c4eb81cc2c4da1e683e9b891c4c3b3f06c42a084bde64a42d4a9861e6
+h-sqli-09 SRC-SQLI-09-V  529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514
+h-sqli-10 SRC-SQLI-10-V  ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee
+h-sqli-12 SRC-SQLI-12-V  4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24
+h-sqli-14 SRC-SQLI-14-V  cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c
+h-sqli-17 SRC-SQLI-17-V  a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d
+h-sqli-19 SRC-SQLI-19-V  3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a
+h-cmdi-09 SRC-CMDI-09-V  08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288
+h-cmdi-10 SRC-CMDI-10-V  68acc5b0d5516e3d254e8546a4a051b746a12a504c479f5175876e9db9ff3e42
+h-cmdi-12 SRC-CMDI-12-V  9a3ba76af99dd49c42c21dab9aad07fb29cdce07520c238f076c58accced44ef
+h-cmdi-14 SRC-CMDI-14-V  8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef
+h-cmdi-18 SRC-CMDI-18-V  747c90decbe6d7d7f983897a2292d5710c4c9fdea9c6ddc77f9334c49872e523
+h-cmdi-20 SRC-CMDI-20-V  12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c
+
+四、复核顺序
+按任务要求先原保留集、后开发集；三类方向均独立复核：
+XSS 保留集（09-20）→ XSS 开发集（01-08）→ SQLI 保留集（09-20）→ SQLI 开发集（01-08）
+→ CMDI 保留集（09-20）→ CMDI 开发集（01-08）→ HTTP 保留集（05-10）→ HTTP 开发集（01-04）
+→ 18 个动态样例。
+每一方向都先读源码、自建数据流，再对照 manifest 的 label/cwe/lines/anchor；
+HTTP 先解码、再判断，未访问样例地址、未发送请求。

@@ -1,0 +1,132 @@
+AegisForge 人工复核问题清单
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+说明：本清单共 4 条，对应《样例复核记录.txt》1 条 disagree 与《动态测试审查.txt》3 条
+disagree（无 uncertain）。每条都给出可复核的文件、行号或判据位置；"当前是否已解决"均为否，
+本轮不修改任何原文件、标签、冻结哈希、测试代码或 human_review 状态。
+第 4 条之后另列"未列为分歧的建议项"和"数据集级说明"，它们不计入 agree/disagree/uncertain 统计。
+
+--------------------------------------------------------------------
+问题编号：Q1
+样例 ID：SRC-XSS-03-V（同族 SRC-XSS-03-S 的 cwe 字段需同步考虑）
+问题属于：CWE
+问题描述：用户输入 title 被拼进 Jinja 模板源后再 render_template_string，根因是服务端模板注入
+（SSTI），XSS 只是其直接后果；manifest 与 families.json 都只标 CWE-79，会低估风险，
+并使报告 CWE-1336 的检测结果在评分时被判错。
+证据：
+- samples/dev/source/xss.bundle.txt 第 62-63 行（样例第 9-10 行）：
+  template = "<h2>" + title + "</h2><p>{{ note }}</p>"；
+  render_template_string(template, note="draft")。
+- samples/dev/families.json 第 18 行 FAM-SRC-XSS-03 的 basis 已写明
+  "bypasses autoescape (and enables SSTI)"，与只标 CWE-79 不一致。
+- 可复现判断（纯静态）：title="{{7*7}}" 会渲染出 49；title="{{config}}" 可读配置；
+  title="<script>alert(1)</script>" 同时构成 XSS。
+建议处理方式：保持 label=vulnerable、lines=[9,10] 不变；cwe 改为 CWE-1336（主），
+并把 CWE-79 作为影响类别同时记录；SRC-XSS-03-S 的族类别同步，或在文档中说明"族以 CWE-1336 计"。
+若评分脚本只接受一个 CWE，建议在 manifest 增加 cwe_secondary 字段而不是删掉 CWE-79。
+当前是否已解决：否
+需要组长确认的事项：是否接受把该族改标 CWE-1336；若改，M6 已记录的检测/修复统计是否需要
+按新类别重算（不得回写旧结果，只能另记）。
+
+--------------------------------------------------------------------
+问题编号：Q2
+样例 ID：h-xss-14（源码 SRC-XSS-14-V）
+问题属于：测试判据
+问题描述：安全回归只使用 "';window.__aegis_xss=1;//" 这一种"单引号闭合 JS 字符串"载荷。
+一个只把单引号转义为 \' 的部分修复可以通过全部三项测试，但源码仍位于 <script> 内，
+"</script>" 提前结束脚本块的路径未被测试，漏洞没有真正修好。
+证据：
+- deploy/validator/holdout_cases.py 第 198-201 行：number==14 时把 payload 覆盖为
+  "';window.__aegis_xss=1;//"，随后只检查 window.__aegis_xss 未定义。
+- 源码 samples/holdout/source/xss.bundle.txt 第 131 行（样例第 9 行）：
+  return "<script>var initialQuery = '%s';</script>..." % query。
+- 可复现判断：修复 query.replace("'", "\\'") 时，
+  business_secondary（O'Reilly）读回原值、security（单引号载荷）不执行，三条全过；
+  但 q="</script><svg onload=window.__aegis_xss=1>" 仍会执行。
+- S 参考对照（json.dumps + replace("<","\\u003c")）三项全过，说明完整修复可被现有判据接受，
+  问题在判据对"部分修复"过宽。
+建议处理方式：在 security_regression 追加 "</script><svg onload=window.__aegis_xss=1>"
+（或带转义的 "</script><svg ...>"）作为第二个载荷，仍以 window.__aegis_xss 未定义为通过；
+business_secondary 保持。若担心改变冻结测试，可新增一个独立测试名而不是改写旧断言。
+当前是否已解决：否
+需要组长确认的事项：是否更新已冻结的 holdout_cases.py；更新会使 M6 旧对照结果不再可比，
+需要按版本化方式另记，不得回填旧结果。
+
+--------------------------------------------------------------------
+问题编号：Q3
+样例 ID：h-sqli-12（源码 SRC-SQLI-12-V）
+问题属于：业务要求
+问题描述：源码/S 参考实现的可编辑列白名单有三个（display_name、email、timezone），
+但两个业务用例都只更新 display_name。一个把白名单收窄成 ("display_name",) 的修复会静默丢弃
+email/timezone 的合法更新，却仍能通过全部三项测试；这正是"编造字段白名单、导致合法更新被忽略"
+的反模式。
+证据：
+- samples/holdout/source/sqli.bundle.txt 第 119 行（S 参考实现的 EDITABLE，样例第 6 行）
+  与第 128-130 行（clause/execute，样例第 15-17 行）；
+  EDITABLE = ("display_name", "email", "timezone")，测试只用到第一个。
+- deploy/validator/holdout_cases.py 第 234-245 行：两个业务用例都只发送
+  {"display_name": ...}，安全用例也只发 display_name；没有任何 email/timezone 断言。
+- docs/m6-quality-2026-11-12.md 第 9 行把"不静默丢弃合法更新"列为修复业务约束，
+  测试未覆盖该约束。
+建议处理方式：增加 business 用例 PATCH {"email":"a2@example.invalid"}（断言数据库值），
+以及 PATCH {"timezone":"Europe/Paris"}；再加一个"未知字段 + 合法字段"的混合请求，
+断言 400 且合法字段未被静默丢弃（或按 S 参考实现的行为断言）。
+当前是否已解决：否
+需要组长确认的事项：email/timezone 是否属于该样例必须保留的业务契约；若不属于，
+应把 S 参考实现的 EDITABLE 收窄并在文档中声明，避免测试与参考实现互相矛盾。
+
+--------------------------------------------------------------------
+问题编号：Q4
+样例 ID：h-cmdi-09（源码 SRC-CMDI-09-V）
+问题属于：业务要求 / 测试判据
+问题描述：原命令 "pg_dump %s > /var/backups/latest.sql" 的重定向是业务的一部分（把备份写到文件），
+但业务断言只检查 {"status": 0} 与命令桩 argv，从不检查备份文件。一个把 os.system 改成
+subprocess.run(["pg_dump", database]) 的修复会丢掉重定向：退出码仍 0、argv 仍含 demo、
+security 仍无标记，三项全过，但备份不再生成。
+证据：
+- samples/holdout/source/cmdi.bundle.txt 第 15-16 行（样例第 11-12 行）：
+  command = "pg_dump %s > /var/backups/latest.sql" % database；os.system(command)。
+- deploy/validator/command_stub.py 第 13-14 行：pg_dump 桩打印 "dump:<最后一个参数>"，
+  重定向在 Dockerfile 第 17-18 行被指向 /var/backups/latest.sql → /tmp/m6-backup.sql。
+- deploy/validator/holdout_cases.py 第 309-337 行：business 只断言 {"status": 0} 与 argv 含值，
+  没有任何文件读取。
+- 结果对照：S 参考实现（shlex.quote 保留重定向）可过，但它不是唯一能过的实现；判据不区分
+  "保留重定向"与"丢弃重定向"。
+建议处理方式：business_primary 之后读取 /tmp/m6-backup.sql，断言内容以 "dump:demo" 开头；
+secondary 断言 "dump:other"。注意 /var/backups/latest.sql 是符号链接，driver 的 bounded_file
+使用 O_NOFOLLOW，必须直接读 /tmp 目标而不能读链接本身。
+当前是否已解决：否
+需要组长确认的事项：是否把"备份文件被写入"纳入冻结业务断言；若担心容器内文件权限/符号链接
+差异，可改为让命令桩记录 stdout 被重定向到的目标，并由 driver 检查日志。
+
+====================================================================
+五、未列为分歧但建议记录（不计入 agree/disagree/uncertain）
+====================================================================
+1. h-xss-11：business_secondary 只用 "dark"，security 载荷依赖 ">" 才能闭合标签；
+   建议补 "dark-mode" 之类的合法主题名，并补 "' autofocus onfocus='..." 载荷。
+   我判定该样例整体 agree（载荷确实打到属性上下文），故不单列分歧。
+2. h-cmdi-18 / h-cmdi-14：业务主机名用 "demo"/"other"，不是完整域名或 IP；
+   若修复加入更严格的域名校验（合理加固），业务会被判失败。建议改成 demo.example.test 等；
+   S 参考实现当前可通过，故不单列分歧。
+3. SQLi 安全回归的状态码白名单只收 {400,422}（h-sqli-10/17 另收 500），
+   未收 403/404；合理修复若选择 403 会被判失败。建议统一为 {400,403,404,422} 或在契约中固定 400。
+4. h-cmdi-20：安全载荷含 "/"（标记文件路径），S 参考实现因父目录检查返回 400；
+   若载荷不含斜杠，同一实现会抛 FileNotFoundError 返回 500，被安全回归判失败。
+   建议在修复契约中明确"无效 cwd/OSError 必须映射为 400/422"，或让判据区分"500 但无执行"。
+5. SRC-XSS-20-S / SRC-XSS-08-S 等安全对照把缺失字段默认成空串或改变返回形态，
+   属安全修复带来的业务语义变化，建议在样例说明中标注，避免修复模型照抄后改变接口契约。
+
+====================================================================
+六、数据集级说明（非样例判定，供组长参考）
+====================================================================
+1. 旧保留集已在 M6 调优中暴露（README.md 第 13、132 行；docs/m6-quality-2026-11-12.md 也说明
+   属于暴露集事后诊断）。本次复核只针对现有 180 条，不把它们重新表述为未暴露的独立测试集；
+   新的独立测试集需另行安排。
+2. 180 条的 label/行号/请求位置没有发现除 Q1 之外的类别或位置错误；60 个 V 样例的 anchor
+   全部落在 manifest.lines 内（证据 02）。行号区间的语义（有的只标 sink、有的覆盖 source→sink）
+   在 manifest 的 provenance.note 中未说明这种差异，建议补一句说明，减少复核歧义。
+3. HTTP 正常对照中有 3 组与攻击样本不在同一端点/参数（HTTP-SQLI-05、HTTP-CMDI-05、
+   HTTP-CMDI-10）。请求级检测只看内容，不影响这些 N 样本的标签；但若未来做"同端点误报率"，
+   需要同端点配对。
+4. 18 个动态样例的编号、源码 ID、SHA256 与 freeze.json/m6_cases.json/holdout_cases.py 全部一致；
+   已有 36 次 V/S 对照均符合预期（V 的 security 全失败、S 三项全过）。

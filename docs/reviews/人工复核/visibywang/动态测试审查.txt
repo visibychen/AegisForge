@@ -1,0 +1,592 @@
+AegisForge 人工复核：动态测试审查
+
+审查说明
+- 审查人：visibywang；审查日期：2026-11-12；材料版本：69cf069。
+- 依据：samples/holdout/controlled_repairs.json（18 个登记样例）、samples/controlled/m6_cases.json
+  （编号↔源码↔SHA256）、deploy/validator/holdout_cases.py（输入与判据）、deploy/validator/harness.py
+  （target/browser/结果通道）、deploy/validator/Dockerfile 与 command_stub.py（命令桩与目录）。
+- 辅助结果：evaluation/results/m6-targeted-controls.json（18 个 V 原始版本 + 18 个 S 参考对照的固定
+  测试结果）。这些是已有运行记录，我只把它们当作旁证；每条仍按源码与判据独立判断，未亲自运行。
+- 结论口径同前：agree / disagree / uncertain。本文件 18 条：agree 15、disagree 3（h-xss-14、
+  h-sqli-12、h-cmdi-09）、uncertain 0。
+- 未运行说明统一填"否"。本轮没有启动 Docker、没有调用模型、没有发送任何 HTTP 请求。
+- 对照结果读法：三个测试名固定为 business_primary / business_secondary / security_regression；
+  "V 失败"表示原始漏洞版本被测试识别，"S 通过"表示参考安全实现能通过同一组断言。
+
+====================================================================
+一、XSS 动态样例（h-xss-09/11/13/14/17/19）
+====================================================================
+
+【动态测试审查】
+
+动态测试 ID：h-xss-09
+对应源码样例 ID：SRC-XSS-09-V
+
+主要业务输入与预期结果：GET /welcome?user=Alice → 200，浏览器渲染文本含 "Alice"。
+边界业务输入与预期结果：user="Alice & Bob" → 200，页面 inner_text 保留 "Alice & Bob"。
+安全测试输入及其验证目标：user="<svg onload=window.__aegis_xss=1>" → 状态 200/400/422，
+且 window.__aegis_xss 保持 undefined（未执行脚本）。
+
+源码与测试是否对应：对应。源码路由 /welcome、参数 user、返回 text/html 与测试一致；
+m6_cases 记录的源码 SHA256 与 freeze 一致。
+安全断言是否合理：合理。执行标记只有在脚本真正运行时才被置位；状态码限制排除 500/崩溃；
+业务断言要求 Alice 与特殊字符文本仍可见。
+正常业务是否得到充分检查：是。primary 检查正常名字，secondary 检查含 & 的名字，均要求文本保留。
+是否可能出现"功能被破坏但测试通过"：若修复把接口删除或只返回静态页，primary/secondary 会失败；
+若修复转义正确，文本仍是 "Alice & Bob"，通过。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：无。浏览器渲染 400 响应也能执行脚本，判据覆盖了这一点。
+审查结论：agree
+具体理由：输入直达 str.format 的 HTML 文本节点，测试用浏览器观测 script 执行，能区分"转义正确"
+与"仍可执行"；S 参考对照三项全过、V 版本仅 security 失败，符合预期。判据与源码一一对应。
+建议补充的验证：可加一个属性上下文无关的对照（如用户名含引号）确认转义不只处理尖括号；
+本轮不强制。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（run_id 30524f79…/a01648ab…）；
+deploy/validator/holdout_cases.py 第 97-108、142-202 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-xss-11
+对应源码样例 ID：SRC-XSS-11-V
+
+主要业务输入与预期结果：Cookie theme=Alice → 200，body 含 "Alice" 与 "Preferences"。
+边界业务输入与预期结果：Cookie theme=dark → 200，body 含 "dark"。
+安全测试输入及其验证目标：Cookie theme="'><script>window.__aegis_xss=1</script>" →
+状态 200/400/422，且未执行脚本（单引号属性上下文）。
+
+源码与测试是否对应：对应。源码 /theme 读取 Cookie theme 并拼进单引号 class 属性；测试用 Cookie 头
+注入，与源码一致。
+安全断言是否合理：基本合理。载荷针对单引号属性闭合，能抓住"完全不转义"的原始漏洞；
+状态码与执行标记组合排除了崩溃。
+正常业务是否得到充分检查：偏弱。secondary 只用 "dark"（纯字母），没有测试含连字符/空格/引号的
+合法主题名，无法发现"只保留字母数字、破坏主题名"的过度清洗。
+是否可能出现"功能被破坏但测试通过"：有可能。若修复把主题名清洗成纯字母（如 dark-mode→darkmode），
+primary/secondary 仍通过；若修复只转义尖括号、不转义单引号，测试载荷也不会执行，
+但 "' autofocus onfocus='window.__aegis_xss=1" 这类属性注入仍可行。
+是否存在错误码要求不一致或其他问题：无硬性矛盾；S 参考对照三项全过。
+审查结论：agree
+具体理由：测试确实打到属性上下文，且能识别原始漏洞；上述两点属于覆盖不足而非判据错误，
+不改变"该动态测试可用"的结论，但建议补强。
+建议补充的验证：(1) business_secondary 改用 "dark-mode" 或 "high contrast" 这类带符号的合法主题；
+(2) security 增加 "' autofocus onfocus='window.__aegis_xss=1" 载荷；
+(3) 修复实现应使用会转义引号的 escape，而不是只处理 <>。这些改动不消耗模型额度。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（3538eed4…/b99e5553…）；
+holdout_cases.py 第 101、153-158、195-199 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-xss-13
+对应源码样例 ID：SRC-XSS-13-V
+
+主要业务输入与预期结果：POST JSON {"code":"Alice"} → 200，JSON 等于 {"redeemed":"Alice"}。
+边界业务输入与预期结果：{"code":"Alice-42"} → 400，响应体含 "Alice-42"（非 alnum 走 HTML 错误页）。
+安全测试输入及其验证目标：{"code":"<svg onload=window.__aegis_xss=1>"} → 状态 200/400/422，
+且未执行脚本。
+
+源码与测试是否对应：对应。源码 /api/coupons/redeem、JSON code、isalnum 分支、
+HTML 错误页 400 与测试的三组输入完全匹配。
+安全断言是否合理：合理。攻击载荷必然非 alnum，因此一定进入错误页；浏览器观测执行标记，
+400 也会被渲染，判据没有遗漏。
+正常业务是否得到充分检查：是。primary 检查成功 JSON，secondary 检查错误分支仍回显原值（业务提示）。
+是否可能出现"功能被破坏但测试通过"：若修复把错误页改成通用 400 且不回显 code，secondary 会失败；
+这与 S 参考实现（JSON 中回显 code）一致，属合理的业务约束。
+是否存在错误码要求不一致或其他问题：无。primary 要求 200、secondary 要求 400，均与源码一致。
+审查结论：agree
+具体理由：该样例的漏洞只在错误分支，测试正好覆盖该分支；载荷非 alnum 必然触发 HTML 拼接，
+再加上浏览器执行标记，能区分转义与未转义。S 参考对照三项全过。
+建议补充的验证：可加一个"alnum 但含 Unicode 字母"的输入（如全角字符），确认 isalnum 语义；
+与漏洞判定无关，可选。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（8015e708…/d1d0176c…）；
+holdout_cases.py 第 102、144-151、194-202 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-xss-14
+对应源码样例 ID：SRC-XSS-14-V
+
+主要业务输入与预期结果：GET /search-widget?q=Alice → 200，体含 "initialQuery" 与 "Alice"。
+边界业务输入与预期结果：q="O'Reilly & friends" → 页面加载后 window.initialQuery 精确等于原值
+（验证 JS 字符串编码与业务值往返）。
+安全测试输入及其验证目标：q="';window.__aegis_xss=1;//" → 状态 200/400/422，
+且 window.__aegis_xss 未被执行。
+
+源码与测试是否对应：对应。源码把 q 用 % 放进单引号 JS 字符串；测试读 window.initialQuery 并观测
+执行标记。
+安全断言是否合理：不充分。载荷只覆盖"单引号闭合 JS 字符串"这一种突破；源码位于 <script> 内，
+还有"</script> 提前结束脚本块"的路径未被测试。
+正常业务是否得到充分检查：是。secondary 用带单引号和 & 的值，要求 JS 读回原值，能识别 HTML 实体
+误用（例如用 html.escape 会读回 "O&#39;Reilly..."）。
+是否可能出现"功能被破坏但测试通过"：有可能。若候选修复只把单引号转义成 \'（例如
+query.replace("'", "\\'")），三条测试都会通过：security 中引号被转义、不执行；secondary 读回原值；
+但 q="</script><svg onload=window.__aegis_xss=1>" 仍会跳出脚本块执行，漏洞并未真正修好。
+是否存在错误码要求不一致或其他问题：无状态码矛盾；V 对照的 business_secondary 失败（原始代码
+被单引号破坏），这是漏洞本身的后果，不是独立业务缺陷，已在结论中区分。
+审查结论：disagree
+具体理由：安全回归只有一种 JS 字符串突破载荷，无法区分"完整 JSON 编码"与"只转义单引号"的部分修复。
+S 参考实现（json.dumps + \u003c）三项全过，说明完整修复可通过；但测试对部分修复过宽。
+建议补充的验证：在 security_regression 中追加
+q="</script><svg onload=window.__aegis_xss=1>"（或 "<\\/script><svg onload=...>"），
+仍以 window.__aegis_xss 未定义为通过；business_secondary 保持不变。该补证只需改固定测试，
+不调用模型。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（f2c43f39…/4cc73204…）；
+holdout_cases.py 第 159-176、199-200 行；问题清单 Q2。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-xss-17
+对应源码样例 ID：SRC-XSS-17-V
+
+主要业务输入与预期结果：GET /u/Alice → 200，文本含 "Alice"。
+边界业务输入与预期结果：GET /u/Alice%20%26%20Bob → 200，文本保留 "Alice & Bob"。
+安全测试输入及其验证目标：GET /u/<svg onload=window.__aegis_xss=1>（URL 编码）→
+200/400/422 且不执行脚本。
+
+源码与测试是否对应：对应。源码路由 /u/<username> 与测试的路径变量一致；测试对 value 做 safe=""
+的 URL 编码，防止斜杠影响路由。
+安全断言是否合理：合理。路径反射在 HTML 文本节点，浏览器观测执行标记；业务文本检查保留原值。
+正常业务是否得到充分检查：是。primary/secondary 覆盖普通与含 & 的名字。
+是否可能出现"功能被破坏但测试通过"：若修复拒绝所有含特殊字符的路径并 400，secondary 会失败
+（要求 200 且保留文本）；若只做 HTML 转义，文本仍正确。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：无。
+审查结论：agree
+具体理由：输入、路由、sink 与判据一致；浏览器执行标记能区分修复是否有效；S 参考对照三项全过。
+建议补充的验证：可加含引号的用户名，验证文本转义在引号上同样有效；可选。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（0c63faaa…/c2f4a179…）；
+holdout_cases.py 第 106-107、177-193 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-xss-19
+对应源码样例 ID：SRC-XSS-19-V
+
+主要业务输入与预期结果：GET /find?term=Alice → 200，文本含 "Alice"。
+边界业务输入与预期结果：term="Alice & Bob" → 200，文本保留原值。
+安全测试输入及其验证目标：term="<svg onload=window.__aegis_xss=1>" → 200/400/422 且不执行。
+
+源码与测试是否对应：对应。MethodView 的 get() 读取 /find?term=；测试走同一路由与参数。
+安全断言是否合理：合理。与 h-xss-09 同构，浏览器执行标记 + 业务文本保留。
+正常业务是否得到充分检查：是。两个业务用例覆盖普通值与特殊字符值。
+是否可能出现"功能被破坏但测试通过"：若修复只对某些字符做白名单并丢弃 &，secondary 会失败；
+若删除路由，primary 失败。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：无。
+审查结论：agree
+具体理由：类方法封装不改变 sink，测试确实覆盖该 sink；S 参考对照三项全过。
+建议补充的验证：无（与 h-xss-09 的判据同构，可复用其补充用例）。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（eb46a6c7…/45da679b…）；
+holdout_cases.py 第 107-108、177-193 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+====================================================================
+二、SQL 注入动态样例（h-sqli-09/10/12/14/17/19）
+====================================================================
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-09
+对应源码样例 ID：SRC-SQLI-09-V
+
+主要业务输入与预期结果：GET /compare?id=1 → 200，JSON items 等于 [[1,"Alpha",10]]。
+边界业务输入与预期结果：GET /compare?id=2&id=1（顺序 2,1）→ 200，排序后 items 等于
+[[1,"Alpha",10],[2,"Beta",20]]。
+安全测试输入及其验证目标：id=0%29%20OR%201%3D1%20--（"0) OR 1=1 --"）→ 400/422，或 200 且
+items 为空数组；用于确认拼接被消除、IN 列表不能被恒真条件改写。
+
+源码与测试是否对应：对应。源码 /compare 用 getlist("id") 拼 IN 列表；测试发重复 id 参数，
+正好覆盖逗号拼接的路径。
+安全断言是否合理：基本合理。200 空数组是参数绑定后的自然结果；恒真结果（返回 2 行）会失败；
+400/422 允许"先校验再拒绝"的修法。
+正常业务是否得到充分检查：是。primary 检查单值精确行，secondary 检查多值与顺序（排序后比较，
+避免依赖返回顺序）。
+是否可能出现"功能被破坏但测试通过"：若修复总是返回空数组，primary 会失败；若修复删除接口，
+三项都会失败；未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：安全回归只接受 400/422 或 200 空数组，未接受 403/404。
+若修复选择"非法 id 一律 403"，会被判失败。这不是样例语义矛盾，但建议放宽到
+{400,403,404,422} 或明确要求 400。
+审查结论：agree
+具体理由：输入与判据覆盖 IN 拼接的关键形态（括号闭合 + 注释），业务用例能阻止"一律空数组"的假修复；
+S 参考对照三项全过、V 仅 security 失败。安全状态码白名单可在实现时再放宽，不影响本样例可用性。
+建议补充的验证：增加 id=1&id=0%29%20OR%201%3D1%20-- 的组合，确认单元素与多元素路径都被覆盖；
+状态码白名单考虑接受 403/404。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（591b8730…/a38c6f02…）；
+holdout_cases.py 第 205-218 行；setup 第 57-62 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-10
+对应源码样例 ID：SRC-SQLI-10-V
+
+主要业务输入与预期结果：GET /invoice/1 → 200，JSON invoice 等于 [100,"paid"]。
+边界业务输入与预期结果：GET /invoice/2 → 200，invoice 等于 [200,"open"]。
+安全测试输入及其验证目标：GET /invoice/0%20OR%201%3D1 → 400/422/500，或 200 且 invoice 为 null；
+用于确认未加引号的数值上下文不能被 OR 恒真改写。
+
+源码与测试是否对应：对应。源码路由 /invoice/<invoice_id>（字符串）、拼接未加引号的 id，
+测试直接投递含空格与 OR 的路径值。
+安全断言是否合理：合理。500 被接受，是因为参考修法 str(int(...)) 会对非数字抛 ValueError；
+绑定参数则会返回 null。两种合法修法都能通过。
+正常业务是否得到充分检查：是。1/2 两个 ID 分别断言精确行。
+是否可能出现"功能被破坏但测试通过"：若修复把非法 id 静默改成 0 并返回 null，也会通过。
+这与"绑定参数后查不到"的结果相同，测试无法区分；属可接受的行为等价，但应在修复说明中
+要求"非法输入不要静默改写"。
+是否存在错误码要求不一致或其他问题：无硬性矛盾；500 仅在此样例被接受，与 int() 的异常语义一致。
+审查结论：agree
+具体理由：数值上下文注入的关键是"OR 恒真会返回首行"，测试的 V 对照 security 失败、S 对照通过，
+说明判据能区分；业务用例精确到行。
+建议补充的验证：可加 /invoice/999（不存在）→ 200 且 invoice 为 null，区分"查无此单"与"非法输入"；
+不强制。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（98050189…/d0d88a69…）；
+holdout_cases.py 第 219-233 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-12
+对应源码样例 ID：SRC-SQLI-12-V
+
+主要业务输入与预期结果：PATCH /users/1 JSON {"display_name":"Alicia"} → 200，
+随后数据库 users.id=1 的 display_name 等于 "Alicia"。
+边界业务输入与预期结果：PATCH 同一路由 {"display_name":"O'Reilly"} → 200，数据库同样保存
+"O'Reilly"（验证单引号不再破坏 SQL）。
+安全测试输入及其验证目标：{"display_name":"owned' WHERE id = ? OR 1=1 --"} →
+200/400/422，且 users.id=2 的 display_name 仍为 "Bob"；用于确认 SET 子句不能被改写。
+
+源码与测试是否对应：部分对应。源码 PATCH /users/<int:user_id>、JSON changes、循环拼 SET、
+WHERE id=? 与测试一致；但源码 S 参考实现的 EDITABLE 白名单有三个字段
+（display_name、email、timezone），测试只用了 display_name。
+安全断言是否合理：合理。攻击串专门针对 SET 值闭合与 WHERE 追加，测试检查 id=2 未被改写，
+能识别原漏洞；400/422 允许白名单拒绝的修法。
+正常业务是否得到充分检查：不充分。两个业务用例都只更新 display_name，没有覆盖 email 或 timezone。
+是否可能出现"功能被破坏但测试通过"：有可能。若修复把 EDITABLE 收窄成 ("display_name",)，
+email/timezone 的合法更新会被 400 丢弃或静默忽略，但三条测试仍然全过——这正是"编造字段白名单、
+导致合法更新被忽略"的反模式。M6 质量修复文档也把"不静默丢弃合法更新"列为约束，测试应覆盖到。
+是否存在错误码要求不一致或其他问题：无状态码矛盾；V 的 business_secondary 失败（单引号拼进 SQL
+导致语法错误）是漏洞直接后果，与"独立业务缺陷"不同，已在结论中区分。
+审查结论：disagree
+具体理由：安全回归能识别原始注入，但业务覆盖只到三个可编辑列中的一个，无法阻止"只允许
+display_name"的窄白名单修复通过；这与 S 参考实现的契约不一致。
+建议补充的验证：增加 PATCH {"email":"a2@example.invalid"} 与 {"timezone":"Europe/Paris"}
+两个业务用例，并断言数据库值；同时增加"含未知字段的混合请求"（如 display_name+role）→ 400，
+确认白名单确实按设计拒绝而不是静默丢弃。不消耗模型额度。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（e177d2c2…/98992d81…）；
+holdout_cases.py 第 234-245 行；setup 第 68-73 行；问题清单 Q3。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-14
+对应源码样例 ID：SRC-SQLI-14-V
+
+主要业务输入与预期结果：GET /reports，X-Tenant: tenant-a → 200，JSON reports 等于 [["Report A"]]。
+边界业务输入与预期结果：X-Tenant: O'Reilly → 200，reports 等于 [["Report Q"]]（单引号商户名）。
+安全测试输入及其验证目标：X-Tenant: ' OR 1=1 -- → 400/422，或 200 且 reports 为空；
+确认租户条件不能被恒真改写。
+
+源码与测试是否对应：对应。源码从 X-Tenant 头取值并拼进 WHERE；测试用同一头投递三个值。
+安全断言是否合理：合理。恒真会返回全部三个租户的记录（含 Report Q），空数组/400 都能排除；
+业务断言要求 O'Reilly 能查到，防止"过滤所有引号"的过度清洗。
+正常业务是否得到充分检查：是。primary 与 secondary 分别覆盖普通租户与带单引号租户，且检查精确行。
+是否可能出现"功能被破坏但测试通过"：若修复把引号删掉，O'Reilly 会被改成 OReilly 而查不到，
+secondary 失败；若修复允许所有值但用绑定，三项通过。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：无。
+审查结论：agree
+具体理由：三个输入覆盖首跳与二阶语义的关键分界；V 对照 security 与 secondary 失败
+（后者因单引号语法错误），S 对照三项全过，说明判据与源码一致。
+建议补充的验证：可加 X-Tenant 为空串（默认租户）的边界，确认空值不会返回全部；可选。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（faf75912…/de345c19…）；
+holdout_cases.py 第 246-258 行；setup 第 73-77 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-17
+对应源码样例 ID：SRC-SQLI-17-V
+
+主要业务输入与预期结果：GET /feed?limit=1&offset=0 → 200，posts 等于 [[3,"Three"]]。
+边界业务输入与预期结果：GET /feed?limit=2&offset=1 → 200，posts 等于
+[[2,"Two"],[1,"One"]]（按 id DESC 的第二页）。
+安全测试输入及其验证目标：limit=1%2B1（"1+1"）→ 400/422/500；用于确认 LIMIT/OFFSET
+不接受表达式。
+
+源码与测试是否对应：对应。源码用 % 把两个参数拼进 LIMIT/OFFSET；测试同时覆盖合法分页与表达式。
+安全断言是否合理：合理。SQLite 接受 LIMIT 表达式，"1+1" 在原始代码下会返回 2 行（200），
+因此 400/422/500 是修复后才可能出现的结果；int() 抛错给 500 被接受。
+正常业务是否得到充分检查：是。两页结果精确到行与顺序。
+是否可能出现"功能被破坏但测试通过"：若修复把非法值夹取成默认 20 并返回 200，security 会失败
+（200 不在白名单）——判据正好拦截"非法输入改成默认值"的反模式；若修复删除分页，业务失败。
+未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：无。
+审查结论：agree
+具体理由：输入直接命中 LIMIT 表达式注入，判据同时要求业务分页正确与非法表达式被拒绝，
+S 参考对照（int + 夹取 + 绑定）三项全过，V 仅 security 失败。
+建议补充的验证：增加 limit=0、limit=-1、offset=-5 的业务边界，确认夹取策略与业务约定一致；
+这与安全判定无关，属修复契约完善。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（349b7acf…/4ac42bf8…）；
+holdout_cases.py 第 259-269 行；setup 第 78-82 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-sqli-19
+对应源码样例 ID：SRC-SQLI-19-V
+
+主要业务输入与预期结果：GET /jobs?city=Paris&level=senior → 200，jobs 等于 [[1,"Engineer"]]。
+边界业务输入与预期结果：GET /jobs?city=London（不带 level）→ 200，jobs 等于 [[2,"Designer"]]。
+安全测试输入及其验证目标：GET /jobs?city=%27%20OR%201%3D1%20-- → 400/422，或 200 且
+jobs 为空；确认动态追加的 WHERE 片段不能被改写。
+
+源码与测试是否对应：对应。源码有两个可选 if 分支，分别 += city/level 条件；测试的主用例走两分支、
+边界用例只走 city 分支。
+安全断言是否合理：合理。恒真会返回两行，空数组/400 才能通过；业务用例要求单行精确结果。
+正常业务是否得到充分检查：是。只带 city 的用例专门检查参数列表与占位符顺序是否对齐
+（若修复总是追加两个参数，会绑定错误而失败）。
+是否可能出现"功能被破坏但测试通过"：若修复对 city 做城市白名单，Paris/London 仍通过，
+而其他合法城市会被拒；测试无法发现。这是可接受的收紧，但应在修复契约中说明。
+是否存在错误码要求不一致或其他问题：无。
+审查结论：agree
+具体理由：跨分支拼接是"初始 SQL 安全、追加后不安全"的代表；测试用缺省 level 的用例覆盖
+参数对齐，S 参考对照三项全过，V 仅 security 失败。
+建议补充的验证：增加只带 level（不带 city）的用例，确认另一分支也被覆盖；可选。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（e7a35be6…/1510d05b…）；
+holdout_cases.py 第 270-282 行；setup 第 83-87 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+====================================================================
+三、命令注入动态样例（h-cmdi-09/10/12/14/18/20）
+====================================================================
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-09
+对应源码样例 ID：SRC-CMDI-09-V
+
+主要业务输入与预期结果：POST /backup 表单 database=demo → 200，JSON 等于 {"status": 0}；
+同时命令桩日志中出现含 "demo" 的 argv。
+边界业务输入与预期结果：database=other → 200，{"status": 0}，日志含 "other"。
+安全测试输入及其验证目标：database="demo; touch /tmp/aegis-command-marker #" →
+200/400/422 且标记文件不存在；确认分号后的命令没有执行。
+
+源码与测试是否对应：对应。源码 /backup、表单 database、pg_dump 命令与测试一致；
+Dockerfile 为 pg_dump/du/wc/varnishadm/curl/make 建了命令桩，并把 /var/backups/latest.sql 指向
+/tmp/m6-backup.sql，因此原样例的重定向在本环境可执行。
+安全断言是否合理：合理。标记文件是"额外命令是否执行"的直接证据；状态码限制排除崩溃；
+observed 检查确保命令真的被调用而不是硬编码返回。
+正常业务是否得到充分检查：不充分。源码的业务语义是"把 pg_dump 输出写入 /var/backups/latest.sql"，
+但两个业务用例只检查 {"status": 0} 和参数日志，从未检查备份文件是否被写入/内容是否正确。
+是否可能出现"功能被破坏但测试通过"：有可能。若候选把 os.system("pg_dump %s > 文件") 改成
+subprocess.run(["pg_dump", database])（argv 化但丢掉重定向），退出码仍为 0、argv 仍含 demo、
+security 仍无标记，三项测试全过，但备份文件不再生成——这是静默功能丢失。
+是否存在错误码要求不一致或其他问题：无状态码矛盾；命令桩对 pg_dump 打印 "dump:<最后一个参数>"，
+重定向写入 /tmp/m6-backup.sql，环境支持检查。
+审查结论：disagree
+具体理由：测试只验证"命令被执行"和"没有注入"，没有验证"输出被写到正确位置"；而重定向是原命令的
+业务组成部分，最容易被 argv 化修复顺手丢掉。S 参考实现用 shlex.quote 保留了重定向，但测试并不强制
+候选也保留，因此无法区分完整修复与功能退化。
+建议补充的验证：在 business_primary 之后读取 /tmp/m6-backup.sql（注意 /var/backups/latest.sql 是符号
+链接，driver 的 bounded_file 使用 O_NOFOLLOW，需直接读 /tmp 目标），断言内容以 "dump:demo" 开头；
+secondary 同样检查 "dump:other"。若不希望依赖文件，可让命令桩把重定向目标记录到日志并检查。
+该补证不调用模型，只跑固定 validator。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（a01d56de…/4af0cbd6…）；
+holdout_cases.py 第 309-337 行；deploy/validator/command_stub.py 第 13-14 行；
+deploy/validator/Dockerfile 第 13-18 行；问题清单 Q4。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-10
+对应源码样例 ID：SRC-CMDI-10-V
+
+主要业务输入与预期结果：POST /api/disk-usage JSON {"path":"demo"} → 200，
+{"usage":"du:demo\n"}（命令桩输出）；日志 argv 含 "demo"。
+边界业务输入与预期结果：{"path":"other"} → 200，{"usage":"du:other\n"}。
+安全测试输入及其验证目标：{"path":"demo; touch /tmp/aegis-command-marker #"} →
+200/400/422 且无标记文件；确认 os.popen 的 shell 解释被消除。
+
+源码与测试是否对应：对应。源码读取 JSON path 并 os.popen("du -sh ...")；测试用同一字段，
+命令桩对 du 打印 "du:<最后一个参数>"，与期望字符串一致。
+安全断言是否合理：合理。输出精确匹配能防止"返回固定字符串"的假修复；observed 检查 argv；
+标记文件检查注入。
+正常业务是否得到充分检查：基本充分。两个不同 path 覆盖了参数传递；但 path 值是相对名 "demo"，
+若候选修复要求路径必须是绝对路径（一种合理加固），业务会失败。S 参考实现没有该限制，故当前
+判据可通过，但这属于"更严格的修复反而被判失败"的风险。
+是否可能出现"功能被破坏但测试通过"：若修复把 du 换成常量输出，observed 会失败；若修复丢弃
+stderr/返回空串，业务精确匹配会失败。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：安全回归只接受 200/400/422；若修复对非法路径返回 403，
+会被判失败。建议放宽或在契约中固定为 400。
+审查结论：agree
+具体理由：os.popen 是"没有 shell=True 仍然注入"的代表，测试用输出 + argv + 标记三重检查，
+能区分修复与禁用；S 参考对照三项全过。
+建议补充的验证：把业务路径改成更真实的绝对路径（如 /srv/data）并同步期望输出；同时明确非法路径
+的状态码约定（400 或 403）。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（9de4d39c…/62c853ca…）；
+holdout_cases.py 第 299-337 行；command_stub.py 第 11-12 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-12
+对应源码样例 ID：SRC-CMDI-12-V
+
+主要业务输入与预期结果：GET /count-lines?file=app.log → 200，
+{"result":"wc:/var/log/app.log\n"}；日志 argv 含 "app.log"。
+边界业务输入与预期结果：file=audit.log → 200，{"result":"wc:/var/log/audit.log\n"}。
+安全测试输入及其验证目标：file="app.log; touch /tmp/aegis-command-marker #" →
+200/400/422 且无标记文件；确认 bash -c 的脚本解释被移除。
+
+源码与测试是否对应：对应。源码用 ["bash","-c","wc -l /var/log/"+target]；测试用 file 查询参数，
+期望输出与命令桩的 "wc:<路径>" 格式一致。
+安全断言是否合理：合理。字符串精确匹配 + argv 检查 + 标记文件，能区分"改成 argv"与"仍然 bash -c"。
+正常业务是否得到充分检查：是。两个日志文件覆盖了正常路径。
+是否可能出现"功能被破坏但测试通过"：若修复把 file 限制为固定两个文件名，两个业务用例仍通过，
+其他合法日志名会被拒；测试无法发现。这是白名单收紧，属可接受但应写明的契约。
+是否存在错误码要求不一致或其他问题：无。源码本身没有 shell=True，测试没有误判这一点。
+审查结论：agree
+具体理由：这是"显式调用解释器"的关键负例，测试确实打到 bash -c 的脚本参数；S 参考实现
+（wc argv + 去斜杠）三项全过，V 仅 security 失败。
+建议补充的验证：增加一个含子目录的 file（如 sub/app.log）确认路径处理策略；可选。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（b54aee85…/5ab2af19…）；
+holdout_cases.py 第 300-302、309-337 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-14
+对应源码样例 ID：SRC-CMDI-14-V
+
+主要业务输入与预期结果：POST /cache/purge，X-Purge-Host: demo → 200，{"purged": true}；
+日志 argv 含 "demo"。
+边界业务输入与预期结果：X-Purge-Host: other → 200，{"purged": true}；日志含 "other"。
+安全测试输入及其验证目标：X-Purge-Host="demo; touch /tmp/aegis-command-marker #" →
+200/400/422 且无标记文件；确认头部拼接不执行额外命令。
+
+源码与测试是否对应：对应。源码读取该头并 os.system("varnishadm ban ...")；测试用同一头，
+命令桩记录 argv 并返回 0。
+安全断言是否合理：合理。响应固定为 {"purged": true}，因此判据主要靠 argv 日志与标记文件；
+正则白名单修法返回 400 被接受。
+正常业务是否得到充分检查：基本充分。两个主机名覆盖正常值；但 "demo"/"other" 不是完整域名，
+若修复要求必须含点（更严格的域名校验），业务会失败。S 参考实现的正则允许单标签，故可通过。
+是否可能出现"功能被破坏但测试通过"：若修复只返回 {"purged": true} 而不调用 varnishadm，
+observed 会失败；若修复删除接口，业务失败。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：安全回归只接受 200/400/422，未接受 403。
+审查结论：agree
+具体理由：头部注入 + 命令白名单的关键点都被覆盖；S 参考对照三项全过、V 仅 security 失败。
+建议补充的验证：business 使用 demo.example.test/other.example.test，避免严格域名校验的合法修复
+被判失败；安全状态码允许 403 或固定为 400。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（b1ac7b9c…/832f6f63…）；
+holdout_cases.py 第 303、309-337 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-18
+对应源码样例 ID：SRC-CMDI-18-V
+
+主要业务输入与预期结果：POST /healthcheck JSON {"hosts":["demo"]} → 200，{"demo": 0}；
+日志 argv 含 "demo"。
+边界业务输入与预期结果：{"hosts":["other"]} → 200，{"other": 0}；日志含 "other"。
+安全测试输入及其验证目标：hosts=["demo; touch /tmp/aegis-command-marker #"] →
+200/400/422 且无标记文件；确认循环内的拼接不执行命令。
+
+源码与测试是否对应：对应。源码遍历 JSON hosts 并 os.system("curl http://{host}/health")；
+测试用同一结构，期望字典键为 host、值为退出码。
+安全断言是否合理：合理。响应键值与 argv 日志能防止"固定返回 0"的假修复；标记文件检查注入。
+正常业务是否得到充分检查：偏弱。"demo"/"other" 不是合法主机名（没有域名后缀或 IP 形式），
+若修复增加主机名/IP 校验（一种合理加固），业务会失败。S 参考实现不做校验，故当前可通过。
+是否可能出现"功能被破坏但测试通过"：若修复只对第一个 host 执行、其余硬编码 0，测试每次都只传
+一个 host，无法发现；建议至少一个业务用例传两个 host。
+是否存在错误码要求不一致或其他问题：无；安全回归只接受 200/400/422。
+审查结论：agree
+具体理由：循环拼接 + os.system 是明确的注入路径，测试的响应/日志/标记三重检查能识别原漏洞；
+S 参考对照三项全过。业务输入真实性与多元素覆盖是可以改进的点，但不是判据错误。
+建议补充的验证：业务值改为 demo.example.test/other.example.test；
+business_secondary 传 ["demo.example.test","other.example.test"] 并断言两个键；
+状态码考虑接受 403。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（548a91d1…/035f16ef…）；
+holdout_cases.py 第 304-305、309-337 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+【动态测试审查】
+
+动态测试 ID：h-cmdi-20
+对应源码样例 ID：SRC-CMDI-20-V
+
+主要业务输入与预期结果：POST /build 表单 project=demo → 200，{"exit": 0}；
+命令桩日志的 cwd 等于 /srv/projects/demo。
+边界业务输入与预期结果：project=other → 200，{"exit": 0}；日志 cwd 等于 /srv/projects/other。
+安全测试输入及其验证目标：project="demo; touch /tmp/aegis-command-marker #" →
+200/400/422 且无标记文件；确认 "cd && make" 的 shell 组合不再执行额外命令。
+
+源码与测试是否对应：对应。源码用 "cd /srv/projects/" + project + " && make release" 并 shell=True；
+测试用同一表单字段，Dockerfile 预建 demo/other 两个目录与 make 命令桩。
+安全断言是否合理：合理。cwd 检查能区分"真的在项目目录执行"与"固定返回 0"；标记文件检查注入；
+响应退出码要求 0。
+正常业务是否得到充分检查：是。两个项目目录分别检查 cwd 与退出码。
+是否可能出现"功能被破坏但测试通过"：若修复把 cwd 写死成 /srv/projects/demo，secondary 的 cwd 检查
+会失败；若修复不执行 make，退出码/cwd 检查会失败。未发现明显漏洞。
+是否存在错误码要求不一致或其他问题：有一处值得记录：安全载荷包含 "/"（来自标记路径），
+S 参考实现的父目录检查会因多段路径返回 400；若标记路径不含斜杠，S 实现会因 cwd 不存在抛
+FileNotFoundError 而返回 500，安全回归会判失败（判据只接受 200/400/422）。当前载荷恰好绕开了
+这一点，所以 S 对照通过；但"cwd= 修复必须同时处理 OSError 并映射为 400"这一隐含要求应写进
+修复契约（项目 M6 质量文档已把"处理非法数值、路径和 OSError"列为约束）。
+审查结论：agree
+具体理由：测试确实覆盖了 "cd dir && cmd" 的注入面，且 cwd 观测是区分真实执行与硬编码的有效手段；
+S 参考对照三项全过。上述 500 风险属于判据状态码白名单与参考实现的边界交互，不影响当前样例
+的判定，但建议明确契约。
+建议补充的验证：在修复契约中写明"无效 cwd/OSError 必须返回 400/422 而不是 500"；或把 security
+状态码放宽到 {200,400,403,422,500} 并按"无标记 + 无额外 argv"判定（不推荐，500 会掩盖错误处理）。
+是否亲自运行：否
+已有证据或结果文件：evaluation/results/m6-targeted-controls.json（5cda87aa…/774ee764…）；
+holdout_cases.py 第 306、309-337 行；Dockerfile 第 17 行；docs/m6-quality-2026-11-12.md 第 9 行。
+主审人及日期：visibywang，2026-11-12
+交叉复核人及意见：未安排（本次单人复核）
+
+====================================================================
+四、本文件统计
+====================================================================
+- 18 条：agree 15、disagree 3（h-xss-14、h-sqli-12、h-cmdi-09）、uncertain 0。
+- 编号↔源码↔SHA256 全部一致；18 个 case 的测试名集合均为
+  business_primary/business_secondary/security_regression。
+- 已有 36 次 V/S 对照（m6-targeted-controls.json）：18 个 V 全部在 security_regression 失败
+  （其中 h-xss-14、h-sqli-12、h-sqli-14 的 business_secondary 也失败，原因是漏洞直接破坏
+  单引号数据），18 个 S 全部三项通过。该结果支持"判据能识别原漏洞、参考修复能通过"，
+  但不能替代对判据充分性的审查——上述 3 条 disagree 正是对照结果无法暴露的覆盖缺口。
+- 三条 disagree 的补证都只需修改固定测试或增加断言，不需要重新调用模型；是否执行由组长决定。
+

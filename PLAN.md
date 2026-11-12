@@ -244,11 +244,11 @@ Provider 接口支持真实模式与 fake 模式。模型地址和密钥只由�
 | --- | --- | --- | --- | --- | --- |
 | M0 计划与管理基线 | 已完成 | 无 | PLAN、需求评分映射、协作规范、任务拆分；首个 Git 提交与远端同步 | 本次 | [#1](https://github.com/visibychen/AegisForge/issues/1) |
 | M1 工程骨架与协议 | 已完成 | M0 | Anaconda AegisForge 环境、前后端最小启动、依赖锁定、迁移、健康检查、任务/输出 schema、界面骨架、fake provider、基础 CI；提交设计初稿 | 2–3 日 | [#2](https://github.com/visibychen/AegisForge/issues/2) |
-| M2 输入与特征提取 | 实现及本地验收完成，待 PR 集成/标注人工复核 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
+| M2 输入与特征提取 | 实现及本地验收完成，待PR集成；人工复核已完成，1项分类分歧待处置 | M1 | 上传/HTTP/Python 解析、快照存储、三类规则、脱敏与限制；开发样例与保留集冻结；详见 M2 验证记录 | 2–3 日 | [#3](https://github.com/visibychen/AegisForge/issues/3) |
 | M3 智能检测闭环 | 实现及本地验收完成，待 PR 集成 | M2 | DeepSeek/fake provider、独立 worker、schema 校验、合并与部分失败、结果接口与最小结果页、覆盖账本/检测凭证；三类真实模型开发演示已通过 | 3–4 日 | [#4](https://github.com/visibychen/AegisForge/issues/4) |
 | M4 修复与验证闭环 | 实现及本地验收完成，待 PR 集成 | M3 | 候选补丁、diff、静态与 LLM 复检、受控 runner；三类各至少一个漏洞从检测到安全/业务回归通过的完整演示 | 4–6 日 | [#5](https://github.com/visibychen/AegisForge/issues/5) |
 | M5 完整 Web 集成 | 实现及开发验收完成，PR #15 待集成；见 M5 记录与 Issue #6 | M3，修复页依赖 M4 | 所有页面、筛选统计、历史、导出、异常体验；核心浏览器 E2E 全通过 | 2–3 日 | [#6](https://github.com/visibychen/AegisForge/issues/6) |
-| M6 全面测试与实验 | 全量实验及三轮优化完成，数值门槛/人工复核未通过，PR #16待审 | M4、M5 | 756检测任务、54次首次修复、性能/资源/兼容及事后开发诊断；详见测试报告，不回填失败 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
+| M6 全面测试与实验 | 全量实验及三轮优化完成，正式数值门槛未过；人工复核完成、4项分歧待处置，PR #16待审 | M4、M5 | 756检测任务、54次首次修复、性能/资源/兼容及事后开发诊断；详见测试报告，不回填失败 | 3–5 日 | [#7](https://github.com/visibychen/AegisForge/issues/7) |
 | M7 报告与发布验收 | 未开始 | M6 | 详细设计及实现报告、截图、使用说明、查重报告、发布包、v1.0.0；满足第 10 节 | 2–3 日 | [#8](https://github.com/visibychen/AegisForge/issues/8) |
 
 阶段推进规则：完成条件和证据齐备才勾选完成；仅有代码或模拟结果不算通过。阶段内可交叉完善 UI 与测试，依赖阶段未验收时不得标记后续阶段完成。每阶段更新需求追踪矩阵以及本表状态。
@@ -434,3 +434,5 @@ M5实际新增接口：GET /api/v1/workspace、/workspace/history，POST /worksp
 2026-11-12，版本1.10：Claude账户验证导致第二次新调用部分编辑后失败；用户明确暂停使用Claude，后续由Codex独立完成本轮修复和定向验证。保留原会话，不自动重试或新建替代会话。定向协议固定24个hybrid检测、12个本版本首候选，仍使用942/1000之后的最多58次（含重试），不代替三轮正式验收。
 
 1.10实施结果：新增可达定义、同流合并、可见静态复核、业务修复约束及版本化manifest审计。首批真实定向检测11TP/0FP/1FN，固定动态11/12；新复核的可变列表缺陷已修正，另记2个检测和1个候选复验，动态1/1，不回填首批。累计992/1000调用，剩8次未用；正式baseline仍36/54、P约0.592，人工复核pending。新的core分支覆盖80%以上，原固定driver和门槛不改。[本轮证据](docs/m6-quality-2026-11-12.md)；新未暴露材料及完整新三轮仍待后续授权/人工参与。
+
+2026-11-12，版本1.11：用户提供visibywang针对69cf069的9份人工复核原件，180条检测及18条动态记录完整、ID/源码哈希与冻结版本一致。检测179agree/1disagree，动态15agree/3disagree，无uncertain；单人复核完成，Q1–Q4未最终处置。当前不再记“尚未人工复核”，而记“复核已完成、分类/判据4项分歧待处置”。旧pending仅表示原实验历史状态，不修改冻结manifest/baseline/driver/计分。后续以新版本处理SSTI分类、script终止载荷、email/timezone更新及备份落盘检查，尚未实施/运行；原始材料与接收核对见[复核记录](docs/reviews/README.md)。本轮无模型调用，992/1000不变；没有新未暴露数据，完整新三轮及M6验收仍待完成。
