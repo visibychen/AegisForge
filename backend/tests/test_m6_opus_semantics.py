@@ -34,8 +34,10 @@ def test_unconditional_overwrite_still_kills_the_previous_tainted_definition():
     "source",
     [
         "def render(html, value):\n    return '<p>' + html.escape(value) + '</p>'\n",
-        "def lookup(int, value):\n    db.execute('SELECT * FROM records WHERE id=' + str(int(value)))\n",
-        "def render(value):\n    def escape(x):\n        return x\n    return '<p>' + escape(value)\n",
+        "def lookup(int, value):\n"
+        "    db.execute('SELECT * FROM records WHERE id=' + str(int(value)))\n",
+        "def render(value):\n    def escape(x):\n        return x\n"
+        "    return '<p>' + escape(value)\n",
     ],
 )
 def test_shadowed_sanitizer_names_are_not_trusted(source):

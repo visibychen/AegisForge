@@ -16,8 +16,10 @@ from app.llm.repair import REPAIR_PROMPT_VERSION, RepairProvider
 from app.models import Artifact, FindingRecord, Job, ModelCall, Repair, ScanTask
 from app.parsers.inputs import parse_input
 from app.rules.detector import detect
-from app.schemas.contracts import AnalysisRequest
+from app.schemas.contracts import AnalysisRequest, Finding
+from app.services.adjudicate import adjudicate
 from app.services.artifacts import load_artifact, store_artifact
+from app.services.merge import merge_findings
 from app.services.patch_review import (
     PatchScopeError,
     build_gates,
@@ -503,11 +505,17 @@ async def execute_repair(engine, settings, lease, factory=None):
         if reviewed is not None and not (reviewed.analysis_complete and reviewed.mode == "real"):
             review_error = "MODEL_INCOMPLETE"
         if review_error is None and reviewed is not None:
+            candidate_parsed = parse_input("source", candidate)
+            entries, checks["adjudication"] = adjudicate(
+                merge_findings(reviewed.findings, {str(source_id): candidate_parsed}),
+                {str(source_id): candidate_parsed},
+            )
+            active_findings = [Finding.model_validate(e["finding"]) for e in entries]
             checks["review"] = {"status": "complete", "error": None}
             checks["delta"]["model"] = finding_delta(
                 known,
                 target_loc,
-                locations(reviewed.findings, "llm"),
+                locations(active_findings, "llm"),
                 line_map,
                 parsed.content,
                 candidate,

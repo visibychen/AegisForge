@@ -199,3 +199,49 @@ class ExperimentBudget:
             return RepairProvider(settings, reserve, finish)
 
         return create
+
+
+class BudgetPool:
+    """Spend explicitly selected old allowances in one ledger, without changing any ceiling.
+
+    Each reservation still uses the original scope's immediate transaction. An exhausted scope
+    falls through to the next; other errors propagate. Used IDs/statuses survive process restart.
+    This does not transfer, reset, enlarge or retire allowances.
+    """
+
+    def __init__(self, budgets):
+        self.budgets = tuple(budgets)
+        if not self.budgets:
+            raise ValueError("At least one budget is required")
+        first = self.budgets[0]
+        if any(
+            b.path.resolve() != first.path.resolve() or b.limit != first.limit for b in self.budgets
+        ):
+            raise ValueError("A budget pool must use one persistent ledger and ceiling")
+        if len({b.scope for b in self.budgets}) != len(self.budgets):
+            raise ValueError("A scope may appear only once")
+        self.limit = first.limit
+
+    def reserve(self, job):
+        from app.core.errors import DomainError
+
+        for budget in self.budgets:
+            try:
+                return budget.reserve(job)
+            except DomainError as error:
+                if error.code != "EXPERIMENT_ALLOWANCE":
+                    raise
+        raise DomainError("EXPERIMENT_ALLOWANCE", "所选原有子额度已用完。", 429)
+
+    def finish(self, *args):
+        return self.budgets[0].finish(*args)
+
+    def summary(self):
+        return self.budgets[0].summary()
+
+    def remaining(self):
+        return min(
+            sum(b.remaining() for b in self.budgets), self.limit - self.summary()["reservations"]
+        )
+
+    factory = ExperimentBudget.factory

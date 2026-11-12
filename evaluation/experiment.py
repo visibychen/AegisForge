@@ -354,7 +354,7 @@ def summarize(directory, config, budget):
     return summary
 
 
-def generate_repairs(directory, config, budget):
+def generate_repairs(directory, config, budget, *, selected=None):
     from app.core.database import build_engine
     from app.main import create_app
     from app.services.repairs import run_repair_once
@@ -365,6 +365,15 @@ def generate_repairs(directory, config, budget):
     controlled = json.loads(
         (ROOT / "samples/holdout/controlled_repairs.json").read_text(encoding="utf-8")
     )["samples"]
+    if selected is not None:
+        identities = [c["id"] for c in controlled]
+        if (
+            not selected
+            or len(set(selected)) != len(selected)
+            or not set(selected) <= set(identities)
+        ):
+            raise ValueError("Expected a unique, nonempty registered repair subset")
+        controlled = [c for c in controlled if c["id"] in selected]
     rows = []
     for repeat in range(1, config["rounds"] + 1):
         for case in controlled:
@@ -471,7 +480,7 @@ def generate_repairs(directory, config, budget):
     write_json(
         directory / "repair-generation.json",
         {
-            "denominator": 18 * config["rounds"],
+            "denominator": len(controlled) * config["rounds"],
             "rows": rows,
             "budget": budget.summary(),
             "dynamic_pending": True,

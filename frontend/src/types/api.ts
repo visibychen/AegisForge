@@ -58,6 +58,10 @@ export interface ScanResult {
   warnings?: string[]; analysis_complete?: boolean; finding_count?: number;
   expected_chunks?: number; processed_chunks?: number; completed_chunks?: number; model_mode?: string;
   coverage?: CoverageEntry[];
+  raw_finding_count?: number;
+  adjudication?: { version: string; examined: number; kept: number; refuted: number;
+    truncated: boolean; refuted_findings: { artifact_id: string; cwe: string;
+      start_line: number; end_line: number; criterion: string; sources: string[] }[] };
 }
 export interface Scan {
   id: string; status: 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled';

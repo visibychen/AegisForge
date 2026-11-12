@@ -5,6 +5,8 @@ from app.llm.prompts import PROMPT_VERSION
 from app.llm.repair import REPAIR_PROMPT_VERSION
 from app.parsers.inputs import PARSER_VERSION
 from app.rules.detector import RULE_VERSION
+from app.services.adjudicate import ADJUDICATION_VERSION
+from app.services.merge import MERGE_VERSION
 from app.services.patch_review import PATCH_REVIEW_VERSION
 from app.services.receipts import digest
 
@@ -31,6 +33,8 @@ def capture_contract(settings, repair, scan):
                 "patch_review": PATCH_REVIEW_VERSION,
                 "parser": PARSER_VERSION,
                 "redaction": REDACTION_VERSION,
+                "merge": MERGE_VERSION,
+                "adjudication": ADJUDICATION_VERSION,
             },
             "parameters": {
                 "max_tokens": settings.model_output_tokens,

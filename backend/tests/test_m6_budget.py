@@ -16,7 +16,7 @@ from app.core.config import Settings  # noqa: E402
 from app.core.errors import DomainError  # noqa: E402
 from app.llm.prompts import PROMPT_VERSION  # noqa: E402
 
-from evaluation.budget import ExperimentBudget  # noqa: E402
+from evaluation.budget import BudgetPool, ExperimentBudget  # noqa: E402
 
 
 def attempt(budget, count):
@@ -137,3 +137,35 @@ def test_factory_ledger_version_defaults_to_the_contract_constant(tmp_path):
     with closing(sqlite3.connect(tmp_path / "budget.db")) as db:
         job, scope = db.execute("SELECT job, scope FROM calls").fetchone()
     assert job == f"job-1:{PROMPT_VERSION}" and scope == "fx"
+
+
+def test_pool_spends_old_allowances_without_reset_and_stops_atomically(tmp_path):
+    path = tmp_path / "budget.db"
+    old = ExperimentBudget(path, 10, "old", 6)
+    assert attempt(old, 4)[0] == 4
+
+    def reopen():
+        return BudgetPool(
+            [ExperimentBudget(path, 10, "old", 6), ExperimentBudget(path, 10, "new", 4)]
+        )
+
+    pool = reopen()
+    assert pool.remaining() == 6
+    with ThreadPoolExecutor(max_workers=4) as workers:
+        assert sum(workers.map(lambda _: attempt(reopen(), 4)[0], range(4))) == 6
+    again = reopen()
+    assert again.remaining() == 0
+    assert attempt(again, 1) == (0, ["EXPERIMENT_BUDGET"])
+    assert again.summary()["scopes"] == {
+        "old": {"allowance": 6, "used": 6},
+        "new": {"allowance": 4, "used": 4},
+    }
+
+
+def test_pool_rejects_mixed_ledgers_and_duplicate_scopes(tmp_path):
+    a = ExperimentBudget(tmp_path / "a.db", 10, "a", 3)
+    b = ExperimentBudget(tmp_path / "b.db", 10, "a", 3)
+    with pytest.raises(ValueError, match="one persistent"):
+        BudgetPool([a, b])
+    with pytest.raises(ValueError, match="only once"):
+        BudgetPool([a, a])

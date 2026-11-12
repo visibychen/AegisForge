@@ -12,6 +12,7 @@ from app.llm.provider import FakeProvider
 from app.models import ScanTask
 from app.rules.detector import detect
 from app.schemas.contracts import AnalysisRequest
+from app.services.adjudicate import adjudicate
 from app.services.merge import merge_findings
 from app.services.queue import (
     CallLedger,
@@ -105,6 +106,8 @@ async def execute(engine, settings, lease, provider_factory=None):
         summary["warnings"] = list(dict.fromkeys(warnings))[:100]
         summary["service_ms"] = int((time.monotonic() - started) * 1000)
         entries = merge_findings(findings, parsed_by_id) if parsed_by_id else []
+        summary["raw_finding_count"] = len(findings)
+        entries, summary["adjudication"] = adjudicate(entries, parsed_by_id)
         summary["finding_count"] = len(entries)
         with_db_retry(publish, engine, lease, status, summary, entries, error_code)
 

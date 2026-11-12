@@ -13,6 +13,7 @@ from collections import Counter
 from sqlalchemy import func, select
 
 from app.models import FindingRecord, Repair
+from app.services.adjudicate import ADJUDICATION_VERSION, CRITERIA
 from app.services.queue import utcnow
 from app.services.repairs import evaluate_repair
 from app.services.report_integrity import seal_report
@@ -43,6 +44,26 @@ def digest_of(value):
 
 def _count(value) -> int:
     return len(value) if isinstance(value, list) else 0
+
+
+def proof_summary(value):
+    """Only fixed criterion names and bounded integer counts, never refuted source/prose."""
+    if not isinstance(value, dict) or value.get("version") != ADJUDICATION_VERSION:
+        return None
+
+    def count(number):
+        return number if type(number) is int and 0 <= number <= 10000 else None
+
+    criteria = value.get("by_criterion")
+    return {
+        "version": ADJUDICATION_VERSION,
+        **{key: count(value.get(key)) for key in ("examined", "kept", "refuted")},
+        "by_criterion": {
+            key: count(number)
+            for key, number in (criteria if isinstance(criteria, dict) else {}).items()
+            if key in CRITERIA
+        },
+    }
 
 
 def _delta(part) -> dict | None:
@@ -201,6 +222,7 @@ def build_report(session, scan) -> dict:
             "attempt": scan.retries,
             "error_code": safe(scan.error_code),
             "analysis_complete": result.get("analysis_complete"),
+            "adjudication": proof_summary(result.get("adjudication")),
             "created_at": scan.created_at.isoformat(),
             "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
             "chunks": {
@@ -325,6 +347,16 @@ def render_markdown(report: dict) -> str:
         "未被模型成功分析的区域没有智能检测结论。",
         "",
     ]
+    proof = scan.get("adjudication")
+    if proof:
+        out += [
+            "## 静态复核摘要",
+            "",
+            f"检查 {proof['examined']} 条线索，保留 {proof['kept']} 条，"
+            f"依据受限静态判据排除 {proof['refuted']} 条。未知情况保留。",
+            "排除线索不代表整个输入安全，也不替代动态验证。",
+            "",
+        ]
     truncated = "（已截断）" if report["truncated"]["findings"] else ""
     out += [f"## 当前尝试的发现{truncated}", ""]
     if report["findings"]:

@@ -10,7 +10,7 @@ from app.services.patches import EditRejected, RepairWire, check_edits
 # and the last line shows whether it has one) and the exact-text preflight below gives the
 # single correction round concrete integers. The wire schema stays repair-1.0 and apply_edits
 # stays the authority.
-REPAIR_PROMPT_VERSION = "repair-1.2"
+REPAIR_PROMPT_VERSION = "repair-1.3"
 
 
 def repair_lines(content: str) -> list[dict]:
@@ -42,6 +42,16 @@ def repair_messages(request, target, correction=None, detail=None):
         "(same indentation, trailing spaces and line endings). Include needed imports by replacing "
         "their original lines. Edits must "
         "not overlap; return at most eight edits. Make the smallest edit around the vulnerable "
+        "operation. Never invent database columns or domain allow-lists absent from the source: "
+        "for dynamic identifiers use the known table's runtime schema or strict identifier syntax "
+        "and correct identifier quoting, while binding every value. "
+        "Never silently skip a requested "
+        "field or return success after a no-op. Preserve every originally supported legitimate "
+        "field. Invalid numeric or path inputs must produce an explicit 400 response, "
+        "not a default "
+        "value or an uncaught exception. Handle missing/invalid working directories and OSError "
+        "without reintroducing a shell. "
+        "Make the smallest edit around the vulnerable "
         "lines: never rename, remove or re-sign functions or classes, never change decorators "
         "or routes, never add eval/exec/pickle. When old_text ends with a newline, new_text "
         "must end with one too. Do not include markdown, paths, commands or "
