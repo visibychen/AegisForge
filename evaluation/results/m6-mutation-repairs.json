@@ -1,0 +1,219 @@
+{
+  "scope": "post-hoc targeted repair diagnosis; not independent acceptance",
+  "course_acceptance_evaluated": false,
+  "execution_complete": true,
+  "environment_errors": 0,
+  "missing_candidates": 0,
+  "bundle_sha256": "97cd6a8bcdd9388c610d750c4e43888b2cdc88b0a176ce03072c60c4617eb84a",
+  "controls_sha256": "7c62dab81038e38a4981270ee6be63c1852c077fea0142d76a47ea49bb8742ea",
+  "denominator": 1,
+  "successes": 1,
+  "by_cwe": {
+    "CWE-79": 0,
+    "CWE-89": 1,
+    "CWE-78": 0
+  },
+  "rounds": [
+    {
+      "repeat": 1,
+      "successes": 1,
+      "denominator": 1
+    }
+  ],
+  "passed": null,
+  "rows": [
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": true,
+      "success": true,
+      "repair_id": "dea63c04-1ac0-4f21-92e0-3f16a84ea630",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-89",
+                "end_line": 22,
+                "sources": [
+                  "rule"
+                ],
+                "start_line": 22
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          }
+        },
+        "impact": {
+          "added_lines": 10,
+          "change_ratio": 0.588,
+          "changed_lines": 3,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 3,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 17,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "dc14645bb4564157fc1648c3bbdb6a942290be2505355afc514da9654fbe2b61",
+          "diff_sha256": "6f7f6a85e2f6b274e4b246016f714a6ea453866488ffd79842a3403f2c1f9ff1",
+          "digest": "a8458de5016dc86fb2954f85aff45726fc4032bc079605b5f16c735967b6565d",
+          "finding_anchor": "11cdafdf69594c188a1486cbff2cd2b1759fca353d67b01f9cd3c454753599be",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+          "versions": {
+            "adjudication": "adjudication-1.1",
+            "analysis_prompt": "analysis-1.3",
+            "merge": "flow-merge-1.1",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.3",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.3"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "failed",
+          "detail": "仍存在：CWE-89 第22行"
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2594,
+          "input_tokens": 1225,
+          "output_tokens": 339,
+          "prompt_version": "repair-1.3"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2235,
+          "input_tokens": 2203,
+          "output_tokens": 62,
+          "prompt_version": "analysis-1.3"
+        }
+      ],
+      "candidate_sha256": "dc14645bb4564157fc1648c3bbdb6a942290be2505355afc514da9654fbe2b61",
+      "baseline_accepted": true,
+      "dynamic": {
+        "status": "passed",
+        "run_id": "b3c0b7de81584dbb8436d0535e492aee",
+        "case_id": "h-sqli-12",
+        "tests": [
+          {
+            "name": "business_primary",
+            "passed": true
+          },
+          {
+            "name": "business_secondary",
+            "passed": true
+          },
+          {
+            "name": "security_regression",
+            "passed": true
+          }
+        ],
+        "candidate_sha256": "dc14645bb4564157fc1648c3bbdb6a942290be2505355afc514da9654fbe2b61",
+        "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+        "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+        "elapsed_ms": 1098
+      }
+    }
+  ],
+  "human_review_pending": true
+}

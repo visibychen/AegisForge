@@ -8,6 +8,8 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
+**2026-11-12更新：M6质量修复与定向验证已推进，见[本轮证据](docs/m6-quality-2026-11-12.md)。** 新增可达定义、同流合并、可见静态复核和版本化运行审计，修正容器修改导致的漏报及修复业务约束。真实定向首批11/12成功，漏报修正后另作1/1复验，不合并回填；累计992/1000调用。Claude账户遇到验证问题，按用户最新要求改由Codex独立完成，原会话保留。正式三轮验收及人工标签复核仍未完成，以下11月11日数字为保留的历史基线。
+
 **M6 全量实验及 Sonnet5.5/high 三轮协作优化已完成，[PR #16](https://github.com/visibychen/AegisForge/pull/16) 待审。正式验收仍未通过：** 联合源码三轮均值Precision约59.2%、Recall约98.1%，HTTP F1=1；首次修复36/54、SQLi8/18，未达到PLAN门槛，人工标签复核仍pending。改进后开发A/B和后续候选诊断单独保存，不能替代原结果。见[测试报告](docs/test-report.md)、[优化设计](docs/m6-design.md)、[三轮协作](docs/collaboration-2026-11-11.md)。本轮真实模型累计942/1000次，已停止付费调优。M7报告/查重/发布仍待完成。
 
 **M5 完整工作台已完成实现和开发验收，[PR #15](https://github.com/visibychen/AegisForge/pull/15) 待审、未合并。** 总览/历史筛选分页、逻辑移出、服务端风险筛选、证据行号导航、原文候选对比、修复历史、JSON/Markdown报告已实现。创新包括修复说明卡、500行源码窗口和报告完整性校验；原有M4候选补丁与受控验证保留。干净 Compose 完整浏览器验收通过。见[M5设计](docs/m5-design.md)、[验证](docs/m5-verification.md)、[协作](docs/collaboration-2026-11-10.md)。

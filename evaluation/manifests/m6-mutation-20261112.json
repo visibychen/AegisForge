@@ -1,0 +1,30 @@
+{
+  "schema_version": "m6-diagnostic-run-1.0",
+  "run_id": "m6-mutation-20261112",
+  "course_acceptance_evaluated": false,
+  "human_review": "pending",
+  "files": {
+    "detection": {
+      "path": "evaluation/results/m6-mutation-detection.json",
+      "sha256": "f0c364592ab9377f639a4ffae34d3d2665943626c9ee56530878fd2fff8f4715"
+    },
+    "bundle": {
+      "path": "evaluation/results/m6-mutation-candidates.json",
+      "sha256": "97cd6a8bcdd9388c610d750c4e43888b2cdc88b0a176ce03072c60c4617eb84a"
+    },
+    "dynamic": {
+      "path": "evaluation/results/m6-mutation-repairs.json",
+      "sha256": "3b02d7eccd3506a8e7d8cb1a37e4d9288ccdccc1b8a3cf0a8262684907e5af03"
+    },
+    "controls": {
+      "path": "evaluation/results/m6-targeted-controls.json",
+      "sha256": "7c62dab81038e38a4981270ee6be63c1852c077fea0142d76a47ea49bb8742ea"
+    }
+  },
+  "provenance": {
+    "workflow_run": 43173854501,
+    "artifact_id": 13923351791,
+    "artifact_sha256": "b16442dd9f908a92f0c55739456d5248468dbadc16818037568758686d6707ad",
+    "workflow_commit": "292be097a025d84a6f684e0527f080d621701678"
+  }
+}

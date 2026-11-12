@@ -6,7 +6,7 @@ unredacted normalized values held in server memory; evidence is the public redac
 so a credential field carrying a payload is reported without echoing it.
 All traversals are iterative.
 
-rules-1.2 (see ``app/rules/semantics.py``): reaching definitions instead of "last textual
+rules-1.3 (see ``app/rules/semantics.py``): reaching definitions instead of "last textual
 assignment", shadowed imports/builtins are no longer trusted, tuple unpacking, comprehension
 elements, recognised early-exit guards, ``shlex.join``, ``asyncio.create_subprocess_shell`` and
 explicit interpreters in argument lists. Known gaps remain: inter-procedural flow, attributes,

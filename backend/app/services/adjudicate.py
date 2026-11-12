@@ -1,4 +1,4 @@
-"""Static semantic adjudication of merged findings (adjudication-1.0).
+"""Static semantic adjudication of merged findings (adjudication-1.2).
 
 Every source finding, whatever its origin (rules, model or both), is checked the same way: its
 location must map to exactly one structural sink of its CWE (or to assignments feeding exactly one
@@ -13,11 +13,12 @@ Not used: confidence, source/engine, sample IDs, labels or any learned threshold
 Criteria:
 * ``sql_text_has_no_untrusted_part``: the SQL text argument is built only from constants, values
   under a recognised guard, trusted casts or comprehension-generated fixed tokens (rules-1.2
-  shape); bound parameters may carry untrusted values.
-* ``shell_command_has_no_untrusted_part``: a shell command string with only constant or
-  ``shlex.quote``/``shlex.join``/cast/guarded parts (POSIX shell semantics assumed).
+  shape); bound parameters may carry untrusted values, known mutations invalidate this proof.
+* ``shell_command_has_no_untrusted_part``: a constant shell command string.
+* ``quoted_or_validated_shell_operands``: a restricted known data program with independently
+  quoted/validated operands and no shell control structure (POSIX shell semantics assumed).
 * ``argv_has_no_untrusted_part``: a trusted subprocess launcher without a shell whose whole
-  argument vector is constant (cwd/input may still be untrusted: that is not command injection).
+  argument vector is constant; input/stdin and executable overrides are excluded.
 * ``argv_data_operands``: a launcher without a shell, a constant program from a small list of
   tools that never execute their operands, and every untrusted element either after a literal
   ``--`` or starting with a constant prefix that cannot begin an option.
@@ -58,7 +59,7 @@ from app.rules.semantics import (
     percent_pieces,
 )
 
-ADJUDICATION_VERSION = "adjudication-1.1"
+ADJUDICATION_VERSION = "adjudication-1.2"
 CRITERIA = frozenset(
     {
         "sql_text_has_no_untrusted_part",
@@ -306,14 +307,20 @@ def _plain_str(node, sem, hops=4) -> bool:
     if isinstance(node, ast.Call):
         name = sem.trusted(node.func)
         if name == "str":
-            return True
+            # __str__ may legally return a str subclass (including Markup). Unknown objects
+            # cannot prove plain-string escaping merely by being wrapped in str(...).
+            return not node.keywords and (
+                not node.args or (len(node.args) == 1 and _plain_str(node.args[0], sem, hops - 1))
+            )
         if (
             name
             and name.startswith("flask.request.")
             and name.rsplit(".", 2)[-2] in REQUEST_GETTERS
             and name.endswith(".get")
         ):
-            return all(_plain_str(argument, sem, hops - 1) for argument in node.args[1:])
+            return all(_plain_str(argument, sem, hops - 1) for argument in node.args[1:]) and all(
+                k.arg == "default" and _plain_str(k.value, sem, hops - 1) for k in node.keywords
+            )
         return False
     if isinstance(node, ast.Subscript) and isinstance(node.value, ast.Attribute):
         owner = node.value
@@ -478,7 +485,7 @@ def _prove_json_script(node, sem):
     contexts = hole_contexts(pieces)
     used = False
     for context, hole in zip(contexts, holes, strict=True):
-        if not shape("xss", hole, sem).tainted:
+        if isinstance(hole, ast.Constant) or sem.constant_string(hole) is not None:
             continue
         if context == "script" and _json_script_value(hole, sem):
             used = True
@@ -571,7 +578,7 @@ def _prove_shell_data(node, sem):
                     pieces.append("")
         else:
             pieces, holes = template
-        if not holes or any(any(c in p for c in ";|&`$()") for p in pieces):
+        if not holes or any(any(c in p for c in ";|&`$()\r\n\\") for p in pieces):
             return None
         try:
             tokens = shlex.split("AEGIS_DATA".join(pieces))

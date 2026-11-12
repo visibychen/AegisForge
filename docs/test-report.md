@@ -1,5 +1,7 @@
 # M6 测试与实验报告
 
+2026-11-12的后续质量修复、50次新调用与固定动态验证单独记于[本轮报告](m6-quality-2026-11-12.md)，不回写下列历史实验。
+
 日期：2026-11-11，Refs #7，[PR #16](https://github.com/visibychen/AegisForge/pull/16)。冻结基线实验与三轮Claude协作均已完成；M6正式数值验收未通过。协议见[m6-protocol.md](m6-protocol.md)。
 
 ## 环境及可复现性

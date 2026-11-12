@@ -33,9 +33,23 @@ def main():
     from evaluation.gate import RESULTS, read_json, verify_all
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results", type=lambda p: ROOT / p, default=RESULTS)
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--results", type=lambda p: ROOT / p, default=RESULTS)
+    selection.add_argument(
+        "--run",
+        type=lambda p: ROOT / p,
+        help="versioned diagnostic manifest; exits 1, never formal acceptance",
+    )
     parser.add_argument("--output", type=lambda p: ROOT / p)
     args = parser.parse_args()
+    if args.run:
+        from evaluation.targeted import verify_run
+
+        result = verify_run(args.run)
+        if args.output:
+            write_json(args.output, result)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 1 if result["integrity_ok"] else 2
     try:
         samples = load_data("test")[0]["samples"]
         frozen = plan("test", 3)

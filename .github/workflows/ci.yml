@@ -119,11 +119,13 @@ jobs:
         run: >
           python scripts/m6_validate.py diagnostics --targeted
           --bundle evaluation/results/m6-targeted-candidates.json
+          --compare evaluation/results/m6-targeted-repairs.json
           --output data/m6-targeted-repairs-ci.json
       - name: Validate the separate mutable-container follow-up
         run: >
           python scripts/m6_validate.py diagnostics --targeted
           --bundle evaluation/results/m6-mutation-candidates.json
+          --compare evaluation/results/m6-mutation-repairs.json
           --output data/m6-mutation-repairs-ci.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -161,6 +163,8 @@ jobs:
       # recomputed from its raw rows. A truthful record of unmet thresholds passes this job.
       - run: python scripts/m6_freeze_guard.py
       - run: python scripts/m6_verify.py --output data/m6-records-ci.json
+      - run: python scripts/m6_verify_run.py --run evaluation/manifests/m6-targeted-20261112.json
+      - run: python scripts/m6_verify_run.py --run evaluation/manifests/m6-mutation-20261112.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

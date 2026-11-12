@@ -63,6 +63,24 @@ def test_mutated_argv_cannot_be_proved_constant_through_an_alias():
 @pytest.mark.parametrize(
     "source,cwe",
     [
+        (
+            "from markupsafe import Markup\ndef f(value):\n"
+            '    return Markup("<p>{}</p>").format(str(value))',
+            "CWE-79",
+        ),
+        (
+            "from markupsafe import Markup\nfrom flask import request\ndef f():\n"
+            '    return Markup("<p>{}</p>").format(request.args.get("x", type=Markup))',
+            "CWE-79",
+        ),
+        (
+            "import json, html\nfrom flask import request\ndef f():\n"
+            '    return "<script>let a=%s;let b=%s;</script>" % '
+            '(json.dumps(request.args["a"]).replace("<", "\\\\u003c"), '
+            'html.escape(request.args["b"]))',
+            "CWE-79",
+        ),
+        ('import os, shlex\nos.system("cat safe\\nsh -c " + shlex.quote(user))', "CWE-78"),
         ("import subprocess\nsubprocess.run(['awk', request.args['code'], 'data.txt'])", "CWE-78"),
         (
             "import subprocess\nsubprocess.run(['find', '.', '-exec', request.args['exe'], ';'])",
