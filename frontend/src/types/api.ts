@@ -7,8 +7,9 @@ export interface Capabilities {
   request_id: string;
   version: string;
   stage: 'M1' | 'M2' | 'M3';
-  model_mode: 'fake';
-  analysis_available: false;
+  model_mode: 'fake' | 'real';
+  model_aliases?: string[];
+  analysis_available: boolean;
   repair_available: false;
   dynamic_validation_available: false;
   supported_input_types: string[];
@@ -42,4 +43,41 @@ export interface ArtifactPreview {
   content: string; fields: Record<string, string>; field_meta: Record<string, FieldMeta>;
   features: InputFeature[]; warnings: string[]; chunk_count: number;
   rule_findings: Finding[]; rule_findings_truncated: boolean;
+}
+
+export type Strategy = 'rules' | 'llm' | 'hybrid';
+/** One analysed chunk: what rules and the model actually did there (never inferred). */
+export interface CoverageEntry {
+  artifact_id: string; display_name: string; input_type: string; chunk: number;
+  start_line: number; end_line: number;
+  rules: 'pending' | 'ran' | 'not_requested' | 'ast_unavailable';
+  model: 'not_requested' | 'pending' | 'succeeded' | 'simulated' | 'failed';
+  model_error: string | null; failure_category: string | null; llm_findings: number;
+}
+export interface ScanResult {
+  warnings?: string[]; analysis_complete?: boolean; finding_count?: number;
+  expected_chunks?: number; processed_chunks?: number; completed_chunks?: number; model_mode?: string;
+  coverage?: CoverageEntry[];
+}
+export interface Scan {
+  id: string; status: 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled';
+  strategy: Strategy; model_alias: string; error_code: string | null;
+  cancel_requested: boolean; retries: number; created_at: string; finished_at: string | null;
+  call_count: number; artifacts: {id: string; display_name: string; input_type: string; sha256: string}[];
+  budget?: { scan_used: number; scan_limit: number; daily_used: number; daily_limit: number } | null;
+  attempt?: number;
+  attempts?: { attempt: number; status: string; error_code: string | null; finished_at: string | null; summary: ScanResult }[];
+  receipt?: AnalysisReceipt;
+  result: ScanResult;
+}
+export interface AnalysisReceipt {
+  schema_version: string; input_digest: string; plan_digest: string;
+  configuration: { strategy: Strategy; model_alias: string; model: string | null;
+    versions: Record<string, string>; system_prompt_sha256: string | null; options: Record<string, unknown> };
+  artifacts: { artifact_id: string; input_type: string; sha256: string; normalized_sha256: string;
+    fields_sha256: string; chunks: { chunk: number; start_line: number; end_line: number; sha256: string }[] }[];
+  limits: Record<string, number>;
+}
+export interface StoredFinding extends Finding {
+  id: string; contributors: Finding[]; severity_disagreement: boolean; severity_policy?: string | null;
 }

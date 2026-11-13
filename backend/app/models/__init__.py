@@ -1,3 +1,11 @@
-from app.models.foundation import Artifact, Base, Job, ScanTask, TaskArtifact
+from app.models.foundation import (
+    Artifact,
+    Base,
+    FindingRecord,
+    Job,
+    ModelCall,
+    ScanTask,
+    TaskArtifact,
+)
 
-__all__ = ["Artifact", "Base", "Job", "ScanTask", "TaskArtifact"]
+__all__ = ["Artifact", "Base", "FindingRecord", "Job", "ModelCall", "ScanTask", "TaskArtifact"]

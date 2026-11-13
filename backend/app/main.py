@@ -11,6 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.artifacts import install_artifact_routes
+from app.api.scans import install_scan_routes
 from app.core.config import Settings
 from app.core.errors import DomainError
 from app.schemas.contracts import CapabilitiesResponse, ErrorResponse, HealthResponse
@@ -24,7 +25,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
         allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
         expose_headers=["X-Request-ID"],
     )
 
@@ -112,9 +113,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             max_file_bytes=settings.max_file_bytes,
             max_files=settings.max_files,
             max_total_bytes=settings.max_total_bytes,
+            model_mode=settings.model_mode,
+            model_aliases=settings.model_aliases,
         )
 
     install_artifact_routes(application, require_token)
+    install_scan_routes(application, require_token)
     return application
 
 

@@ -27,7 +27,7 @@ class Strategy(StrEnum):
 class ScanCreate(Contract):
     artifact_ids: list[UUID] = Field(min_length=1, max_length=10)
     strategy: Strategy = Strategy.HYBRID
-    model_alias: Literal["fake"] = "fake"
+    model_alias: Literal["fake", "deepseek"] = "fake"
 
     @model_validator(mode="after")
     def unique_artifacts(self):
@@ -85,6 +85,10 @@ class AnalysisRequest(Contract):
     artifact_id: UUID
     input_type: Literal["source", "http"]
     content: str = Field(min_length=1, max_length=12000)
+    start_line: int = Field(default=1, ge=1)
+    end_line: int = Field(default=1, ge=1)
+    fields: dict[str, str] = Field(default_factory=dict, max_length=1000)
+    rule_hints: list[Finding] = Field(default_factory=list, max_length=8)
 
 
 class AnalysisResult(Contract):
@@ -93,6 +97,12 @@ class AnalysisResult(Contract):
     analysis_complete: bool
     findings: list[Finding] = Field(default_factory=list, max_length=100)
     warnings: list[str] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def bounded_warnings(self):
+        if any(len(warning) > 1000 for warning in self.warnings):
+            raise ValueError("warning exceeds output budget")
+        return self
 
     @model_validator(mode="after")
     def fake_cannot_claim_analysis(self):
@@ -120,9 +130,10 @@ class HealthResponse(Contract):
 class CapabilitiesResponse(Contract):
     request_id: str
     version: str
-    stage: Literal["M2"] = "M2"
-    model_mode: Literal["fake"] = "fake"
-    analysis_available: Literal[False] = False
+    stage: Literal["M3"] = "M3"
+    model_mode: Literal["fake", "real"] = "fake"
+    analysis_available: Literal[True] = True
+    model_aliases: list[str] = ["fake"]
     repair_available: Literal[False] = False
     dynamic_validation_available: Literal[False] = False
     supported_input_types: list[str] = ["source", "http"]

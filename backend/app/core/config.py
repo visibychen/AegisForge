@@ -1,3 +1,5 @@
+import os
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -16,10 +18,38 @@ class Settings(BaseSettings):
     data_dir: Path = REPO_ROOT / "data"
     database_url: str | None = None
     allowed_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
-    model_mode: Literal["fake"] = "fake"
+    model_mode: Literal["fake", "real"] = "fake"
+    deepseek_model: Literal["deepseek-flash", "deepseek-v4-pro"] = "deepseek-flash"
+    model_timeout_seconds: float = Field(default=60, gt=0, le=120)
+    task_timeout_seconds: float = Field(default=180, gt=0, le=600)
+    model_response_bytes: int = Field(default=131072, ge=4096, le=262144)
+    model_output_tokens: int = Field(default=4096, ge=256, le=4096)
+    max_model_calls: int = Field(default=32, ge=1, le=32)
+    # Server-wide external call COUNT per UTC day (not a currency limit).
+    daily_model_calls: int = Field(default=64, ge=1, le=10_000)
+    queue_limit: int = Field(default=10, ge=1, le=10)
+    lease_seconds: int = Field(default=60, ge=10, le=300)
     max_file_bytes: int = Field(default=2 * 1024 * 1024, gt=0)
     max_files: int = Field(default=10, gt=0, le=10)
     max_total_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+
+    @property
+    def deepseek_api_key(self) -> SecretStr:
+        # Intentionally NOT a BaseSettings field: .env cannot supply this credential.
+        return SecretStr(os.environ.get("AEGISFORGE_DEEPSEEK_API_KEY", ""))
+
+    @property
+    def model_aliases(self) -> list[str]:
+        aliases = ["fake"]
+        if self.model_mode == "real" and self.valid_model_key:
+            aliases.append("deepseek")
+        return aliases
+
+    @property
+    def valid_model_key(self) -> bool:
+        return bool(
+            re.fullmatch(r"[A-Za-z0-9._-]{16,256}", self.deepseek_api_key.get_secret_value())
+        )
 
     @property
     def resolved_database_url(self) -> str:

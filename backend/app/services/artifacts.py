@@ -19,6 +19,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.credentials import protect_snapshot
 from app.core.errors import DomainError
 from app.core.redaction import redact_name
 from app.models import Artifact
@@ -112,7 +113,9 @@ def store_artifact(session: Session, settings: Settings, name: str, kind: str, r
     validate_name(name, kind)
     if not raw or len(raw) > settings.max_file_bytes:
         raise DomainError("FILE_SIZE", "文件为空或超过单文件大小限制。", 413)
-    parsed = parse_input(kind, decode_input(raw))
+    text = decode_input(raw)
+    parsed = parse_input(kind, text)
+    protect_snapshot(settings, name, text, parsed)
     artifact = Artifact(
         id=new_id(),
         input_type=kind,
@@ -147,7 +150,10 @@ def load_artifact(settings: Settings, artifact: Artifact) -> ParsedInput:
         raise DomainError("SNAPSHOT_MISSING", "原始快照缺失，无法继续分析。", 409) from exc
     if len(raw) != artifact.size_bytes or hashlib.sha256(raw).hexdigest() != artifact.sha256:
         raise DomainError("SNAPSHOT_CHANGED", "原始快照校验失败。", 409)
-    return parse_input(artifact.input_type, decode_input(raw))
+    text = decode_input(raw)
+    parsed = parse_input(artifact.input_type, text)
+    protect_snapshot(settings, artifact.display_name, text, parsed)
+    return parsed
 
 
 def preview(settings: Settings, artifact: Artifact) -> dict:

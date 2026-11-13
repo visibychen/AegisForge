@@ -1,10 +1,14 @@
-import type { ArtifactPreview, Capabilities, Health } from '../types/api';
+import type { ArtifactPreview, Capabilities, Health, Scan, StoredFinding, Strategy } from '../types/api';
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly requestId?: string) {
+  constructor(message: string, public readonly requestId?: string, public readonly status?: number) {
     super(message);
   }
 }
+
+/** Session is unusable (missing/invalid token): callers should stop polling and ask to reconnect. */
+export const isAuthFailure = (error: unknown) =>
+  error instanceof ApiError && (error.status === 401 || error.status === 403);
 
 const OFFLINE = '无法连接服务，请确认后端已启动。';
 
@@ -37,7 +41,7 @@ async function request<T>(path: string, init: RequestInit, timeoutMs: number, si
     data = null; // Proxies may answer with HTML; never surface parser errors to the user.
   }
   if (!response.ok || !data) {
-    throw new ApiError(data?.error?.message ?? statusMessage(response.status), data?.request_id);
+    throw new ApiError(data?.error?.message ?? statusMessage(response.status), data?.request_id, response.status);
   }
   return data as T;
 }
@@ -57,3 +61,16 @@ export function uploadArtifact(
     body: content,
   }, 20000, signal);
 }
+
+export const createScan = (token: string, ids: string[], strategy: Strategy, alias: string, key: string) =>
+  request<{scan: Scan}>('/api/v1/scans', {method: 'POST', headers: {...authorization(token),
+    'Content-Type': 'application/json', 'Idempotency-Key': key},
+    body: JSON.stringify({artifact_ids: ids, strategy, model_alias: alias})}, 20000);
+export const getScan = (token: string, id: string) =>
+  request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}`, {headers: authorization(token)}, 8000);
+export const listScans = (token: string) =>
+  request<{scans: Scan[]; total: number}>('/api/v1/scans?limit=10', {headers: authorization(token)}, 8000);
+export const getFindings = (token: string, id: string, offset = 0) =>
+  request<{findings: StoredFinding[]; total: number; attempt: number}>(`/api/v1/scans/${encodeURIComponent(id)}/findings?offset=${offset}&limit=100`, {headers: authorization(token)}, 8000);
+export const changeScan = (token: string, id: string, action: 'cancel' | 'retry') =>
+  request<{scan: Scan}>(`/api/v1/scans/${encodeURIComponent(id)}/${action}`, {method: 'POST', headers: authorization(token)}, 8000);
