@@ -6,7 +6,7 @@ export interface Health {
 export interface Capabilities {
   request_id: string;
   version: string;
-  stage: 'M1' | 'M2' | 'M3' | 'M4';
+  stage: 'M1' | 'M2' | 'M3' | 'M4' | 'M5';
   model_mode: 'fake' | 'real';
   model_aliases?: string[];
   analysis_available: boolean;
@@ -81,6 +81,41 @@ export interface AnalysisReceipt {
 export interface StoredFinding extends Finding {
   id: string; contributors: Finding[]; severity_disagreement: boolean; severity_policy?: string | null;
 }
+export interface FindingFilters { cwe?: string; severity?: string; source?: string; evidence_status?: string }
+export interface FindingFacets {
+  cwe: Record<string, number>; severity: Record<string, number>;
+  source: Record<string, number>; evidence_status: Record<string, number>;
+}
+export type ScanMode = 'rules' | 'simulated' | 'real';
+export interface Overview {
+  tasks: number; states: Record<string, number>; modes: Record<string, number>;
+  real_outcomes: Record<string, number>; cwes: Record<string, number>; severities: Record<string, number>;
+  repairs: { current?: number; archived?: number; verdict_sampled?: number; verdict_limit?: number; candidates_total?: number; total: number; by_status: Record<string, number>; simulated: number; dynamic: Record<string, number>;
+    verdicts: Record<string, number>; verdicts_truncated: boolean };
+  notice: string;
+}
+export interface HistoryRow {
+  id: string; status: Scan['status']; strategy: Strategy; mode: ScanMode; attempt: number; error_code: string | null;
+  created_at: string; finished_at: string | null; analysis_complete: boolean | null | undefined;
+  expected_chunks?: number | null; completed_chunks?: number | null;
+  artifacts: { display_name: string; input_type: string }[];
+  findings: { total: number; severities: Record<string, number>; cwes: Record<string, number> };
+  repairs: { current?: number; archived?: number; by_status?: Record<string, number>; total: number; simulated: number; verdicts: Record<string, number> };
+}
+export interface HistoryFilters { status?: string; q?: string; cwe?: string; severity?: string }
+/** Redacted public text of one input, for evidence navigation (always rendered as plain text). */
+export interface InputView {
+  artifact_id: string; display_name: string; input_type: 'source' | 'http'; content: string;
+  fields: Record<string, string>; field_meta: Record<string, FieldMeta>; chunk_count: number;
+}
+export interface LineRange { cwe: string; start_line: number; end_line: number; by_source?: Record<string, string> }
+export interface CompareView {
+  finding_attempt?: number; scan_attempt?: number; archived?: boolean; delta_status?: { rules: string; model: string };
+  repair_id: string; scan_id: string; simulated: boolean; target: LineRange;
+  original: { sha256: string; content: string }; candidate: { sha256: string; content: string };
+  hunks: { old_start: number; old_end: number; new_start: number; new_end: number }[];
+  baseline: LineRange[]; after: { persisting: LineRange[]; preexisting: LineRange[]; introduced: LineRange[] };
+}
 export type GateState = 'passed' | 'failed' | 'skipped' | 'pending' | 'error';
 export interface Gate { id: string; label: string; state: GateState; detail: string }
 export interface PatchImpact {
@@ -92,7 +127,7 @@ export interface PatchImpact {
 export interface Repair {
   id: string; scan_id: string; finding_id: string; source_id: string; source_sha256: string; anchor: string;
   candidate_id: string | null; model_alias: string; model: string; status: string; error_code: string | null;
-  diff: string; validation_status: 'passed' | 'failed' | 'unverified' | 'error'; call_count: number;
+  archived?: boolean; finding_attempt?: number; created_at?: string | null; diff: string; validation_status: 'passed' | 'failed' | 'unverified' | 'error'; call_count: number;
   simulated?: boolean; gates?: Gate[]; impact?: PatchImpact | null; dynamic_requested?: boolean;
   checks: {
     contract?: { digest: string; model_alias: string; model: string | null; versions: Record<string, string>; candidate_sha256?: string; source_sha256: string; diff_sha256?: string };

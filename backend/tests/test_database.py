@@ -87,19 +87,20 @@ def test_invalid_scan_status_cannot_be_persisted(database):
 
 
 def test_m4_migration_preserves_existing_model_calls(database):
+    from uuid import uuid4
+
     from app.models import ModelCall
 
     engine, config = database
     command.downgrade(config, "0004_receipts")
     with Session(engine) as session:
-        scan = ScanTask()
-        session.add(scan)
-        session.flush()
-        job = Job(scan_id=scan.id, idempotency_key="existing-scan")
+        scan_id = str(uuid4())
+        session.execute(ScanTask.__table__.insert().values(id=scan_id))
+        job = Job(scan_id=scan_id, idempotency_key="existing-scan")
         session.add(job)
         session.flush()
         call = ModelCall(
-            scan_id=scan.id, job_id=job.id, model="fake", prompt_version="test", input_chars=12
+            scan_id=scan_id, job_id=job.id, model="fake", prompt_version="test", input_chars=12
         )
         session.add(call)
         session.commit()
@@ -108,3 +109,25 @@ def test_m4_migration_preserves_existing_model_calls(database):
     with Session(engine) as session:
         assert session.get(ModelCall, ident) is not None
         assert session.execute(text("PRAGMA foreign_key_check")).all() == []
+
+
+def test_history_downgrade_refuses_to_resurrect_removed_scans(database):
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    engine, config = database
+    scan_id = str(uuid4())
+    with Session(engine) as session:
+        session.execute(
+            ScanTask.__table__.insert().values(id=scan_id, deleted_at=datetime.now(UTC))
+        )
+        session.commit()
+    with pytest.raises(RuntimeError, match="removed scan history"):
+        command.downgrade(config, "0005_repairs")
+    with Session(engine) as session:  # nothing was dropped, the scan is still removed
+        assert session.get(ScanTask, scan_id).deleted_at is not None
+    with Session(engine) as session:
+        session.execute(ScanTask.__table__.update().values(deleted_at=None))
+        session.commit()
+    command.downgrade(config, "0005_repairs")
+    assert "deleted_at" not in {c["name"] for c in inspect(engine).get_columns("scan_tasks")}

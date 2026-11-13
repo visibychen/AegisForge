@@ -10,6 +10,7 @@ vi.mock('../src/api/client', async importOriginal => {
   return {
     ...original, getRepair: vi.fn(), requestValidation: vi.fn(), cancelRepair: vi.fn(), createRepair: vi.fn(),
     getScan: vi.fn(), getFindings: vi.fn(), listScans: vi.fn(), downloadRepair: vi.fn(),
+    listRepairs: vi.fn(async () => ({ repairs: [] })), getCompare: vi.fn(),
   };
 });
 

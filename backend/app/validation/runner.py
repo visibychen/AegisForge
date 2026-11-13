@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
-from app.models import Artifact, Repair
+from app.models import Artifact, FindingRecord, Repair, ScanTask
 from app.services.artifacts import load_artifact
 from app.services.queue import transaction, utcnow
 from app.services.receipts import canonical
@@ -405,6 +405,12 @@ def validate_one(engine, settings, repair_id=None, runner=None):
         item.dynamic_requested = False
         requested_at = previous.get("requested_at")
         try:
+            scan = session.get(ScanTask, item.scan_id)
+            if scan is None or scan.deleted_at is not None:
+                raise DomainError("SCAN_REMOVED", "所属检测任务已移出历史。", 404)
+            finding = session.get(FindingRecord, item.finding_id)
+            if finding is None or finding.attempt != scan.retries:
+                raise DomainError("REPAIR_ARCHIVED", "旧尝试候选不能重新验证。", 409)
             case = match_case(item.source_sha256)
             candidate = session.get(Artifact, item.candidate_id) if item.candidate_id else None
             if item.status != "candidate" or candidate is None:

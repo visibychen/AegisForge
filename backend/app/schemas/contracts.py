@@ -130,7 +130,7 @@ class HealthResponse(Contract):
 class CapabilitiesResponse(Contract):
     request_id: str
     version: str
-    stage: Literal["M4"] = "M4"
+    stage: Literal["M5"] = "M5"
     model_mode: Literal["fake", "real"] = "fake"
     analysis_available: Literal[True] = True
     model_aliases: list[str] = ["fake"]

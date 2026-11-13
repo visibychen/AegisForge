@@ -1,0 +1,167 @@
+{
+  "schema_version": "report-2.1",
+  "generated_at": "2026-11-10T07:32:25.008640+00:00",
+  "source_free": true,
+  "notice": "静态判断与固定测试证据，不代表无漏洞；模拟与仅规则结果不是真实模型分析。",
+  "scan": {
+    "id": "3744dc40-9441-482c-9475-8f51985230d7",
+    "status": "partial",
+    "strategy": "hybrid",
+    "mode": "simulated",
+    "model_alias": "fake",
+    "attempt": 0,
+    "error_code": null,
+    "analysis_complete": false,
+    "created_at": "2026-11-10T07:32:20.467863+00:00",
+    "finished_at": "2026-11-10T07:32:20.758361+00:00",
+    "chunks": {
+      "expected": 1,
+      "completed": 0,
+      "processed": 1
+    },
+    "coverage": {
+      "rules": {
+        "ran": 1
+      },
+      "model": {
+        "simulated": 1
+      },
+      "model_errors": {}
+    },
+    "versions": {
+      "parser": "inputs-1.2",
+      "prompt": "analysis-1.1",
+      "redaction": "redaction-1.2",
+      "rules": "rules-1.1",
+      "severity": "severity-1.0",
+      "wire": "1.1"
+    },
+    "digests": {
+      "input": "c401946c32c0cd06883e07e83783af722bbab51a21418778d496d34c8e4ffe77",
+      "plan": "06082f8fc3c358ccbff0765b3b6a882a2b2b3ffefdf68f04f523f2b1a496957b"
+    }
+  },
+  "findings_by_attempt": {
+    "0": 1
+  },
+  "findings": [
+    {
+      "id": "07e27f7d-a161-4981-a7ab-43ee720f885e",
+      "attempt": 0,
+      "category": "xss",
+      "cwe": "CWE-79",
+      "severity": "high",
+      "sources": [
+        "rule"
+      ],
+      "evidence_status": "potential",
+      "severity_disagreement": false,
+      "location": {
+        "kind": "source",
+        "artifact_id": "f48f2bd5-5ed0-449c-9462-bbff727fbbea",
+        "start_line": 9,
+        "end_line": 9
+      }
+    }
+  ],
+  "attempts": [],
+  "repairs": [
+    {
+      "id": "5c38c18c-8479-48f2-8a82-60a3b86c8df4",
+      "finding_id": "07e27f7d-a161-4981-a7ab-43ee720f885e",
+      "finding_attempt": 0,
+      "current_attempt": true,
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "simulated": true,
+      "model_alias": "fake",
+      "model": "deepseek-flash",
+      "source_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+      "candidate_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gates": [
+        {
+          "id": "syntax",
+          "state": "passed"
+        },
+        {
+          "id": "patch",
+          "state": "passed"
+        },
+        {
+          "id": "structure",
+          "state": "passed"
+        },
+        {
+          "id": "target_rules",
+          "state": "skipped"
+        },
+        {
+          "id": "new_rules",
+          "state": "skipped"
+        },
+        {
+          "id": "target_model",
+          "state": "skipped"
+        },
+        {
+          "id": "new_model",
+          "state": "skipped"
+        },
+        {
+          "id": "dynamic_security",
+          "state": "skipped"
+        },
+        {
+          "id": "dynamic_business",
+          "state": "skipped"
+        }
+      ],
+      "impact": {
+        "total_lines": 9,
+        "changed_lines": 0,
+        "added_lines": 0,
+        "hunks": 0,
+        "distance": 0,
+        "violations": [],
+        "warnings": []
+      },
+      "delta": {},
+      "review": {
+        "status": "not_applicable",
+        "error": null
+      },
+      "contract": {
+        "digest": "d284010ee58d5c8f0ae3facac1710e422826e3eac11c8e56edc63412ed99d33f",
+        "versions": {
+          "analysis_prompt": "analysis-1.1",
+          "parser": "inputs-1.2",
+          "patch_review": "patch-review-1.0",
+          "redaction": "redaction-1.2",
+          "repair_prompt": "repair-1.1",
+          "repair_wire": "repair-1.0",
+          "rules": "rules-1.1"
+        }
+      },
+      "dynamic": {
+        "status": null,
+        "case_id": null,
+        "error_code": null,
+        "digest": null,
+        "tests": []
+      }
+    }
+  ],
+  "truncated": {
+    "findings": false,
+    "repairs": false
+  },
+  "limits": [
+    "报告不含源码、文件名、HTTP 参数名或模型自由文本；证据请在工作台中查看（已脱敏，尽力而为）。",
+    "“受控验证全部通过”只表示登记样例的固定测试集通过，不证明没有其他漏洞。",
+    "摘要用于完整性核对，不是数字签名，不能防御能同时改写记录与摘要的写入者。",
+    "模型服务可能滚动更新，同一配置不保证复现相同输出。"
+  ],
+  "content_digest": "539472537a80e959b43f4f0948a148fcd9f1a0ae37ac03ad8d11661b7baa46c8"
+}

@@ -8,7 +8,7 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
-**M4 修复与验证闭环已实现并通过本地验收，待 PR 集成。** 支持受限候选补丁、diff 下载、语法/结构/规则/LLM复检、修复门禁账本、变更影响及执行契约。三个登记开发例已通过真实 DeepSeek 检测→修复→受控安全/业务回归；Compose 将 API/worker 与 Docker 控制器分离。见 [M4 验证](docs/m4-verification.md)、[设计](docs/m4-design.md)及[协作记录](docs/collaboration-2026-11-08.md)。
+**M5 完整工作台已完成实现和开发验收，[PR #15](https://github.com/visibychen/AegisForge/pull/15) 待审、未合并。** 总览/历史筛选分页、逻辑移出、服务端风险筛选、证据行号导航、原文候选对比、修复历史、JSON/Markdown报告已实现。创新包括修复说明卡、500行源码窗口和报告完整性校验；原有M4候选补丁与受控验证保留。干净 Compose 完整浏览器验收通过。见[M5设计](docs/m5-design.md)、[验证](docs/m5-verification.md)、[协作](docs/collaboration-2026-11-10.md)。
 
 M1 科技流动视觉继续保留。M3 按用户分工完成三阶段、同一 Claude 会话四次真实调用，并在审查中提出和落实创新：逐块覆盖账本、可下载检测凭证。验证包含三类真实 DeepSeek 开发演示；详见 [M3 验证](docs/m3-verification.md)、[设计](docs/m3-design.md)和 [协作记录](docs/collaboration-2026-11-07.md)。冻结的 120 源码/60 HTTP 样例仍保持原划分，人工标注复核 pending，正式准确率评测留待 M6。
 
@@ -168,3 +168,22 @@ npm --prefix frontend run test:e2e -- --workers=1 tests/e2e/repairs.spec.ts --gr
 默认 E2E 跳过这个付费场景；四个离线场景不调用真实模型，修复动态场景需要上述Compose及验证镜像。`python scripts/deploy.py down` 停止本项目容器并保留 data。仅本机开发也可 `python scripts/dev.py validator` 启动独立受信 runner；它不导入模型 key，但同 Windows 用户不构成 OS 权限隔离，不能替代 Compose 的隔离验收。
 
 ![M4 真实修复与门禁](docs/screenshots/m4-real-repair-desktop.png)
+
+
+## M5 工作台和报告
+
+连接服务后，总览按当前检测尝试统计静态风险，真实/模拟/仅规则状态分开；历史可按编号、状态、CWE、等级筛选分页。发现列表支持服务端筛选和证据导航，源码按绝对行号高亮、支持键盘N/P和End，超过500行自动切换窗口；HTTP定位到对应字段。修复页可选择历史候选、并排对比改动与规则/模型位置、查看门禁和说明卡。父任务重试后的候选标为旧尝试，可查看/下载，不能重新申请动态验证。
+
+“移出历史”需要确认，关闭任务、发现、报告和修复入口；调用预算和共享输入保留，输入仍可按artifact ID预览，不是彻底擦除。活动检测/修复/动态验证需先取消。物理回收另行设计。新增0006迁移；本机模式先`python scripts/dev.py migrate`，Compose模式重新build后up自动迁移。存在已移出记录时拒绝降级0006。
+
+历史行可下载JSON或可读Markdown报告，包含覆盖、当前/旧尝试、发现关联和修复说明卡；默认排除源码、文件名、HTTP参数名和模型自由文本。JSON内容摘要可离线检查：
+
+```text
+conda run --no-capture-output -n AegisForge python scripts/verify_report.py report.json
+```
+
+校验器仅解析不超过4MiB的常规UTF-8 JSON文件，失败返回非零，不执行任何内容。摘要不是签名，不保证模型判断正确；Markdown展示的是JSON摘要，不覆盖Markdown自身的文字。
+
+若Windows禁止默认8000端口，可在启动Vite的终端设非秘密环境变量`AEGISFORGE_DEV_API_PORT=28000`，同时将API用`python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 28000`启动。只允许回环代理，默认配置保持8000。
+
+新增GitHub `Workbench Compose E2E` 从干净Ubuntu运行迁移、独立服务、隔离探测和完整默认浏览器流程，不传模型key，显式真实模型场景跳过；白名单报告和截图保留为CI artifact。M6正式保留集实验、M7课程模板报告/查重/最终发布仍待完成。

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Tag } from 'antd';
-import { cancelRepair, downloadRepair, getRepair, isAuthFailure, requestValidation } from '../api/client';
+import { cancelRepair, downloadRepair, getRepair, isAborted, isAuthFailure, isGone, requestValidation } from '../api/client';
 import type { Repair } from '../types/api';
+import CompareView from './CompareView';
+import RepairCard from './RepairCard';
 import RepairGates from './RepairGates';
 
 const RECONNECT = '会话已失效，请重新连接服务后再查看候选修复。';
+const GONE = '该候选修复已不存在（所属检测任务可能已移出历史）。';
 const VERDICT: Record<Repair['validation_status'], { text: string; color?: string }> = {
   passed: { text: '受控验证全部通过', color: 'success' },
   failed: { text: '未通过', color: 'error' },
@@ -19,6 +22,7 @@ const DYNAMIC: Record<string, string> = {
   failed: '存在失败的固定测试', error: '验证环境异常', cancelled: '已取消',
 };
 const ERRORS: Record<string, string> = {
+  REPAIR_ARCHIVED: '旧尝试候选不能重新验证',
   PATCH_SCOPE: '候选改动超出允许范围', PATCH_SYNTAX: '候选未通过语法校验', PATCH_CONFLICT: '编辑原文与快照不一致',
   PATCH_RANGE: '编辑范围越界或重叠', PATCH_SENSITIVE: '候选含需要脱敏的内容', PATCH_NEWLINE: '替换文本缺少行结束',
   PATCH_ENCODING: '候选含不被接受的字符', PATCH_SIZE: '候选为空或过大', PATCH_DIFF_MISMATCH: '补丁无法还原候选',
@@ -32,17 +36,27 @@ const ERRORS: Record<string, string> = {
 const explain = (code?: string | null) => (code ? `${ERRORS[code] ?? '未归类错误'}（${code}）` : '');
 const LIVE = new Set(['pending', 'running']);
 
-export default function RepairPanel({ token, id, scanId }: { token: string; id: string; scanId?: string }) {
+export default function RepairPanel({ token, id, scanId, scanAttempt, onGone, onAuthLost, onChanged }: {
+  token: string; id: string; scanId?: string; scanAttempt?: number;
+  /** The repair (or its scan) no longer exists: the owner clears the selection and the URL. */
+  onGone?: () => void;
+  /** The session is unusable: the owner decides how to ask for a reconnect. */
+  onAuthLost?: () => void;
+  /** The repair reached a state worth refreshing lists for (candidate ready, failed, ...). */
+  onChanged?: () => void;
+}) {
   const [repair, setRepair] = useState<Repair | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [comparing, setComparing] = useState(false);
 
   useEffect(() => {
     let live = true;
     let failures = 0;
     let stopped = false;
-    setRepair(null); setError('');
+    const controller = new AbortController();
+    setRepair(null); setError(''); setComparing(false);
     if (!token || !id) return;
     const timer = setInterval(() => void poll(), 1500);
     let running = false;
@@ -50,33 +64,48 @@ export default function RepairPanel({ token, id, scanId }: { token: string; id: 
       if (running || stopped) return;
       running = true;
       try {
-        const data = await getRepair(token, id);
+        const data = await getRepair(token, id, controller.signal);
+        if (!live) return;
         failures = 0;
         if (scanId && data.repair.scan_id !== scanId) {
           stopped = true; clearInterval(timer);
           if (live) { setRepair(null); setError('该候选修复不属于当前检测任务。'); }
           return;
         }
-        if (live) { setRepair(data.repair); setError(''); }
+        setRepair(data.repair); setError('');
         const { status, dynamic } = data.repair;
         if (['failed', 'cancelled'].includes(status) || (status === 'candidate' && !LIVE.has(dynamic.status ?? ''))) {
           stopped = true; clearInterval(timer);
+          onChanged?.();
         }
       } catch (e) {
+        if (!live || isAborted(e)) return;
         failures += 1;
-        // Authorization problems never heal by retrying; transient network errors get a few tries.
+        // Authorization problems never heal by retrying, and a missing repair never comes back;
+        // transient network errors get a few tries.
+        if (isGone(e)) {
+          stopped = true; clearInterval(timer); setRepair(null); setError(GONE); onGone?.();
+          return;
+        }
         if (isAuthFailure(e) || failures >= 5) { stopped = true; clearInterval(timer); }
-        if (live) setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '修复读取失败。');
+        setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '修复读取失败。');
+        if (isAuthFailure(e)) onAuthLost?.();
       } finally { running = false; }
     }
     void poll();
-    return () => { live = false; clearInterval(timer); };
-  }, [token, id, scanId, revision]);
+    return () => { live = false; controller.abort(); clearInterval(timer); };
+  }, [token, id, scanId, scanAttempt, revision]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function act(task: () => Promise<unknown>) {
     setBusy(true); setError('');
     try { await task(); setRevision(v => v + 1); }
-    catch (e) { setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '操作失败。'); }
+    catch (e) {
+      if (isGone(e)) { setError(GONE); onGone?.(); }
+      else {
+        setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '操作失败。');
+        if (isAuthFailure(e)) onAuthLost?.();
+      }
+    }
     finally { setBusy(false); }
   }
   if (!id) return null;
@@ -87,6 +116,7 @@ export default function RepairPanel({ token, id, scanId }: { token: string; id: 
     {error && <Alert type="error" title={error} role="alert" />}
     {repair && <>
       <p>{verdict && <Tag color={verdict.color}>{verdict.text}</Tag>}{repair.simulated ? '模拟模型' : repair.model_alias} · 外部调用 {repair.call_count} 次</p>
+      {repair.archived && <Alert type="warning" title="旧尝试候选：仅作历史记录，不代表当前检测结果，不能重新申请动态验证。" />}
       {repair.simulated && <Alert type="warning" title="模拟流程只演示处理链路：候选与原文相同，没有生成真实修复，也不会显示为已验证。" />}
       <p>静态复检与模型复检不能代替动态安全及业务验证；通过只表示本次固定测试集通过，不等于没有其他漏洞。</p>
       {repair.error_code && <Alert type="warning" title={explain(repair.error_code)} />}
@@ -97,15 +127,18 @@ export default function RepairPanel({ token, id, scanId }: { token: string; id: 
         <pre>{JSON.stringify(repair.checks.contract, null, 2)}</pre>
       </details>}
       {repair.gates && repair.gates.length > 0 && <RepairGates gates={repair.gates} impact={repair.impact} />}
+      {repair.status === 'candidate' && <RepairCard repair={repair} />}
       {repair.status === 'candidate' && <>
         <p>{repair.simulated ? '' : repair.checks.explanation}</p>
         <pre>{repair.diff || '候选没有产生文本差异。'}</pre>
         <div className="ingest-actions">
+          <Button aria-expanded={comparing} onClick={() => setComparing(v => !v)}>{comparing ? '收起对比' : '对比原文与候选'}</Button>
           <Button onClick={() => void downloadRepair(token, id, 'diff').catch(e => setError(e.message))}>下载补丁</Button>
           <Button onClick={() => void downloadRepair(token, id, 'source').catch(e => setError(e.message))}>下载候选源码</Button>
-          <Button disabled={busy || dynamicLive} onClick={() => void act(() => requestValidation(token, id))}>申请受控动态验证</Button>
+          <Button disabled={busy || dynamicLive || repair.archived} onClick={() => void act(() => requestValidation(token, id))}>申请受控动态验证</Button>
           {dynamicLive && <Button disabled={busy} onClick={() => void act(() => cancelRepair(token, id))}>取消动态验证</Button>}
         </div>
+        {comparing && <CompareView token={token} repairId={id} onGone={() => { setError(GONE); onGone?.(); }} onAuthLost={onAuthLost} />}
         <p>动态验证：{repair.dynamic.status ? DYNAMIC[repair.dynamic.status] ?? repair.dynamic.status : '未请求'}
           {repair.dynamic.error_code ? `；${explain(repair.dynamic.error_code)}` : ''}
           {repair.dynamic.status === 'pending' ? '；需要另行启动独立验证 runner。' : ''}</p>

@@ -6,7 +6,10 @@ import type { ArtifactPreview, Scan } from '../src/types/api';
 
 vi.mock('../src/api/client', async importOriginal => {
   const original = await importOriginal<typeof import('../src/api/client')>();
-  return { ...original, createScan: vi.fn(), getScan: vi.fn(), getFindings: vi.fn(), listScans: vi.fn(), changeScan: vi.fn() };
+  return {
+    ...original, createScan: vi.fn(), getScan: vi.fn(), getFindings: vi.fn(), listScans: vi.fn(), changeScan: vi.fn(),
+    listRepairs: vi.fn(async () => ({ repairs: [] })), getInput: vi.fn(),
+  };
 });
 
 const artifact = { id: 'a1', display_name: 'app.py', input_type: 'source' } as ArtifactPreview;
