@@ -32,4 +32,4 @@ conda run --no-capture-output -n AegisForge python scripts/reports/build_course_
 - 经课程认可渠道取得**低于15%**的真实查重报告，与课程报告一并提交；本仓库没有代替该证明。
 - 用户已于2026-11-13授权直接完成PR集成与v1.0.0工程发布，查重由作者之后补齐；发布过程按[交付说明](../release-v1.0.0.md)核对，不将查重写为通过。
 
-具体写作、版式和证据核查见[M7验证记录](../m7-verification.md)，操作说明见[用户指南](../user-guide.md)。Issue #8 保持进行中。
+具体写作、版式和证据核查见[M7验证记录](../m7-verification.md)，操作说明见[用户指南](../user-guide.md)。报告与工程发布已完成，[v1.0.0](https://github.com/visibychen/AegisForge/releases/tag/v1.0.0)提供匿名Word及源码等四个附件；Issue #8按工程范围收尾，真实查重独立跟踪[Issue #18](https://github.com/visibychen/AegisForge/issues/18)。

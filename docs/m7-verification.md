@@ -1,4 +1,4 @@
-# M7 课程报告与发布准备验证
+# M7 课程报告与发布验证
 
 2026-11-13，Refs #8。用户要求重新仔细阅读两份原始教学文件后撰写报告，随后明确当前为最终版，授权直接完成PR与发布，查重由作者后续自行补齐。课程查重要求继续披露，不作为本次工程Release的阻塞项，不生成虚假查重证明。
 
@@ -38,10 +38,21 @@ python scripts/m6_freeze_guard.py
 python scripts/acceptance.py --profile course-delivery-v1 --output data/m7-report/course-profile.json
 ```
 
-依赖、Ruff/格式、冻结历史均通过；课程profile27项检查均满足，返回`course_delivery_accepted_with_limitations`。M6的产品/controller和依赖锁未改变，既有513本机后端/1平台skip、56前端及远端514/514是M6结果，不冒称本次文档重跑。报告PR会再运行普通/课程CI，结果在PR和发布记录补充。
+依赖、Ruff/格式、冻结历史均通过；课程profile27项检查均满足，返回`course_delivery_accepted_with_limitations`。M6的产品/controller和依赖锁未改变，既有513本机后端/1平台skip、56前端及远端514/514是M6结果，不冒称本次文档重跑。报告PR #17及最终main均实际运行普通/课程CI，八个自动作业通过，strict手动作业按设计skip，最终主分支[运行43344304036](https://github.com/visibychen/AegisForge/actions/runs/43344304036)。
 
 ## 集成与发布口径
 
-已核对PR #11–#16最新头提交的历史CI全部success，按顺序重定向main并以merge保留原提交历史，不squash掉冻结实验引用。集成后main `69cf0ebb7a58f603a11660f7025404d1db773d22`的文件树与M6头`7642e23`完全一致。随后提交报告PR，绿色后合并和发布v1.0.0，详见[发布说明](release-v1.0.0.md)。
+已核对PR #11–#16最新头提交的历史CI全部success，按顺序重定向main并以merge保留原提交历史，不squash掉冻结实验引用。集成后main `69cf0ebb7a58f603a11660f7025404d1db773d22`的文件树与M6头`7642e23`完全一致。报告PR #17已在八作业通过后合并为`7b96deeb726d1df179496ae2a8bcc36eafec8e64`，最终main八作业通过后发布[v1.0.0](https://github.com/visibychen/AegisForge/releases/tag/v1.0.0)，详见[发布说明](release-v1.0.0.md)。
 
 个人Word、cover.json、运行数据和发布用临时包留在Git忽略目录。公开Word匿名封面、固定标签的源码包、交付摘要和SHA-256清单在Release提供；上传摘要及标签目标提交另核对。查重由作者后续经认可渠道补齐，Issue #8不再因缺该材料阻塞工程发布，但不能声称课程查重已达标。
+
+## 发布结果与CI首次失败记录
+
+- PR #17头`c443829c5f0f7ce40f013a9c56c209d220603223`，[43342376074](https://github.com/visibychen/AegisForge/actions/runs/43342376074)最新尝试八个普通/课程作业成功、一个strict手动作业跳过。首次Workbench在390px视口切换后立即比较scrollWidth失败，未改源码与断言，定向复验通过；不把首次失败改记为通过。
+- 早先main集成运行[43341314874](https://github.com/visibychen/AegisForge/actions/runs/43341314874)的Windows取消优先级测试失败（预期cancelled，实际failed；测试任务截止50ms），同产品的报告PR Windows通过。两处时序敏感失败的根因尚未定位，[Issue #19](https://github.com/visibychen/AegisForge/issues/19)保留后续稳定性工作。
+- 最终main`7b96deeb726d1df179496ae2a8bcc36eafec8e64`的[43344304036](https://github.com/visibychen/AegisForge/actions/runs/43344304036)八个普通/课程作业全部成功；不依赖删除失败测试或修改M6冻结绑定获得绿色。
+- 标签、远端tag剥离后的commit和源码包一致；Git归档408项，含目录。发布前全包逐文件检查真实本机密钥和三项个人封面值均未命中，运行数据及`.env`未包含。公开Word所有包部件同样核查；个人与公开Word除封面外30页栅格逐像素相同。
+- 四个附件为`AegisForge-course-report.docx`、`AegisForge-v1.0.0-source.zip`、`delivery-manifest.json`和`SHA256SUMS.txt`。逐项核对GitHub返回的大小与SHA-256后才将草稿转为公开；清单明确查重pending_author_followup、新增模型调用0。
+- PR #11–#17合并，M2–M7及总跟踪按工程范围收尾；[查重#18](https://github.com/visibychen/AegisForge/issues/18)和测试稳定性#19继续保留。发布后仅同步状态文档，不重新生成实验或改写模型结果。
+
+发布后状态PR仅更改7个Markdown文件，53个本地链接、代码围栏、敏感值排除和`git diff --check`通过，冻结历史守卫仍通过；产品、测试、依赖、报告源稿及实验没有变化。该状态提交使用`[skip ci]`避免重复相同产品的容器实验，不将其写成新的全套测试通过；完整CI证据始终绑定上面的v1.0.0提交，标签不移动。

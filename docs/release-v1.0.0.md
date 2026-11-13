@@ -18,7 +18,7 @@
 
 HTTP只分析离线攻击特征，不证明服务端漏洞；普通上传不执行。容器仅支持登记样例，命令桩、固定业务断言、同UID及Chromium禁用自身sandbox等边界保留。内容摘要不是数字签名，逻辑移出不等于物理擦除。M6累计真实模型调用992/1000，本次报告和发布不增加调用。
 
-M6最终CI运行43227929665八个普通/课程作业通过；本次报告PR与最终main的检查以GitHub实际状态为准。课程profile核对功能及证据，旧strict入口仍保留未达到的自设数值参考目标，不能将它改写为通过。
+M6最终CI运行43227929665八个普通/课程作业通过；本次报告PR运行43342376074最新尝试及[最终main运行43344304036](https://github.com/visibychen/AegisForge/actions/runs/43344304036)八个普通/课程作业均通过。课程profile核对功能及证据，旧strict入口仍保留未达到的自设数值参考目标，不能将它改写为通过。
 
 ## 发布核对
 
@@ -27,3 +27,7 @@ M6最终CI运行43227929665八个普通/课程作业通过；本次报告PR与�
 3. 报告PR通过普通/课程CI后合并，主分支采用同一受测内容；不重写冻结样例及原始实验。
 4. 标签v1.0.0固定最终提交，源码包由该标签导出，公开附件摘要核对后发布。
 5. 查重材料保留为作者后续待办，未取得证明时不勾选已完成。
+
+## 已发布记录
+
+[v1.0.0](https://github.com/visibychen/AegisForge/releases/tag/v1.0.0)已公开，固定提交`7b96deeb726d1df179496ae2a8bcc36eafec8e64`；四个附件大小与GitHub SHA-256逐项一致。报告PR #17已合并，后续状态文档提交不移动本标签。查重由作者继续在[Issue #18](https://github.com/visibychen/AegisForge/issues/18)补齐。发布核查中出现的两处偶发测试断言失败及复验记录见[M7验证](m7-verification.md)，稳定性跟踪于[Issue #19](https://github.com/visibychen/AegisForge/issues/19)；首次失败未删除、未改记。

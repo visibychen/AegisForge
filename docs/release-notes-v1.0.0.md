@@ -9,3 +9,5 @@ HTTP只进行离线攻击特征分析，普通上传代码不执行，动态验�
 工程验证包括Windows/Linux后端、前端、固定Docker重放、工作台浏览器及课程证据门禁；旧strict入口仍保留未达的自设数值参考目标。本次报告与发布新增模型调用为0，M6总预算仍992/1000。
 
 **查重报告由作者后续自行补齐。发布不表示已经查重通过，课程提交时仍需按模板附低于15%的真实检测报告。**
+
+报告PR [43342376074](https://github.com/visibychen/AegisForge/actions/runs/43342376074)最新尝试与最终main [43344304036](https://github.com/visibychen/AegisForge/actions/runs/43344304036)各八个普通/课程作业通过；strict数值参考作业按设计跳过。发布前曾有手机宽度即时断言及Windows短截止取消断言失败，原日志保留，相同产品复验通过；根因尚未确认，后续稳定性工作见[Issue #19](https://github.com/visibychen/AegisForge/issues/19)。
