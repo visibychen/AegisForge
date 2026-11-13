@@ -1,0 +1,384 @@
+#@@ bundle aegisforge-holdout source CWE-78 (AI-authored, human_review pending; see ../manifest.json)
+#@@ HOLDOUT: do not read during rule/prompt development. Line 1 = first non-blank line.
+
+#@@ sample SRC-CMDI-09-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/backup")
+def backup():
+    database = request.form["database"]
+    command = "pg_dump %s > /var/backups/latest.sql" % database
+    return {"status": os.system(command)}
+
+#@@ sample SRC-CMDI-09-S
+import os
+import shlex
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/backup")
+def backup():
+    database = request.form["database"]
+    command = "pg_dump %s > /var/backups/latest.sql" % shlex.quote(database)
+    return {"status": os.system(command)}
+
+#@@ sample SRC-CMDI-10-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/api/disk-usage")
+def disk_usage():
+    return {"usage": os.popen(f"du -sh {request.get_json(force=True)['path']}").read()}
+
+#@@ sample SRC-CMDI-10-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/api/disk-usage")
+def disk_usage():
+    path = request.get_json(force=True)["path"]
+    result = subprocess.run(["du", "-sh", "--", path], capture_output=True, text=True)
+    return {"usage": result.stdout}
+
+#@@ sample SRC-CMDI-11-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/thumbnails")
+def thumbnail():
+    upload = request.files["image"]
+    upload.save(f"/srv/uploads/{upload.filename}")
+    subprocess.run(f"convert /srv/uploads/{upload.filename} -resize 128x128 /srv/thumbs/{upload.filename}", shell=True)
+    return {"thumbnail": upload.filename}
+
+#@@ sample SRC-CMDI-11-S
+import subprocess
+
+from flask import Flask, request
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+
+
+@app.post("/thumbnails")
+def thumbnail():
+    upload = request.files["image"]
+    name = secure_filename(upload.filename)
+    upload.save(f"/srv/uploads/{name}")
+    subprocess.run(["convert", f"/srv/uploads/{name}", "-resize", "128x128", f"/srv/thumbs/{name}"], check=True)
+    return {"thumbnail": name}
+
+#@@ sample SRC-CMDI-12-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/count-lines")
+def count_lines():
+    target = request.args.get("file", "app.log")
+    out = subprocess.run(["bash", "-c", "wc -l /var/log/" + target], capture_output=True, text=True)
+    return {"result": out.stdout}
+
+#@@ sample SRC-CMDI-12-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/count-lines")
+def count_lines():
+    target = request.args.get("file", "app.log")
+    out = subprocess.run(["wc", "-l", "--", "/var/log/" + target.replace("/", "")], capture_output=True, text=True)
+    return {"result": out.stdout}
+
+#@@ sample SRC-CMDI-13-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def checkout(branch):
+    return subprocess.run("git -C /srv/repo checkout " + branch, shell=True, capture_output=True)
+
+
+@app.post("/deploy")
+def deploy():
+    result = checkout(request.get_json(force=True)["branch"])
+    return {"ok": result.returncode == 0}
+
+#@@ sample SRC-CMDI-13-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def checkout(branch):
+    if branch.startswith("-"):
+        raise ValueError("invalid branch")
+    return subprocess.run(["git", "-C", "/srv/repo", "switch", branch], capture_output=True)
+
+
+@app.post("/deploy")
+def deploy():
+    result = checkout(request.get_json(force=True)["branch"])
+    return {"ok": result.returncode == 0}
+
+#@@ sample SRC-CMDI-14-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/cache/purge")
+def purge():
+    os.system("varnishadm ban req.http.host == " + request.headers.get("X-Purge-Host", ""))
+    return {"purged": True}
+
+#@@ sample SRC-CMDI-14-S
+import os
+import re
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+HOST = re.compile(r"[a-z0-9.-]{1,253}")
+
+
+@app.post("/cache/purge")
+def purge():
+    host = request.headers.get("X-Purge-Host", "")
+    if not HOST.fullmatch(host):
+        abort(400)
+    os.system("varnishadm ban req.http.host == " + host)
+    return {"purged": True}
+
+#@@ sample SRC-CMDI-15-V
+import asyncio
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/trace")
+async def trace():
+    host = request.args.get("host", "127.0.0.1")
+    proc = await asyncio.create_subprocess_shell(f"traceroute -m 8 {host}", stdout=asyncio.subprocess.PIPE)
+    output, _ = await proc.communicate()
+    return {"trace": output.decode()}
+
+#@@ sample SRC-CMDI-15-S
+import asyncio
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/trace")
+async def trace():
+    host = request.args.get("host", "127.0.0.1")
+    proc = await asyncio.create_subprocess_exec("traceroute", "-m", "8", "--", host, stdout=asyncio.subprocess.PIPE)
+    output, _ = await proc.communicate()
+    return {"trace": output.decode()}
+
+#@@ sample SRC-CMDI-16-V
+import os
+from string import Template
+
+from flask import Flask, request
+
+app = Flask(__name__)
+MAIL = Template("echo 'Your report is ready' | mail -s '$subject' $address")
+
+
+@app.post("/notify")
+def notify():
+    command = MAIL.substitute(subject=request.form["subject"], address=request.form["email"])
+    return {"status": os.system(command)}
+
+#@@ sample SRC-CMDI-16-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/notify")
+def notify():
+    args = ["mail", "-s", request.form["subject"], "--", request.form["email"]]
+    result = subprocess.run(args, input="Your report is ready\n", text=True)
+    return {"status": result.returncode}
+
+#@@ sample SRC-CMDI-17-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+class Archiver:
+    def __init__(self, root):
+        self.root = root
+
+    def list_entries(self, archive):
+        proc = subprocess.Popen(f"unzip -l {self.root}/{archive}", shell=True, stdout=subprocess.PIPE)
+        return proc.communicate()[0].decode()
+
+
+@app.route("/archives")
+def archives():
+    return {"listing": Archiver("/srv/archives").list_entries(request.args.get("name", ""))}
+
+#@@ sample SRC-CMDI-17-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+class Archiver:
+    def __init__(self, root):
+        self.root = root
+
+    def list_entries(self, archive):
+        proc = subprocess.Popen(["unzip", "-l", f"{self.root}/{archive}"], stdout=subprocess.PIPE)
+        return proc.communicate()[0].decode()
+
+
+@app.route("/archives")
+def archives():
+    return {"listing": Archiver("/srv/archives").list_entries(request.args.get("name", ""))}
+
+#@@ sample SRC-CMDI-18-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/healthcheck")
+def healthcheck():
+    results = {}
+    for host in request.get_json(force=True)["hosts"]:
+        results[host] = os.system(f"curl -fsS --max-time 3 http://{host}/health")
+    return results
+
+#@@ sample SRC-CMDI-18-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/healthcheck")
+def healthcheck():
+    results = {}
+    for host in request.get_json(force=True)["hosts"]:
+        command = ["curl", "-fsS", "--max-time", "3", f"http://{host}/health"]
+        results[host] = subprocess.run(command, capture_output=True).returncode
+    return results
+
+#@@ sample SRC-CMDI-19-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/convert-audio")
+def convert_audio():
+    source = request.args.get("src", "input.wav")
+    if request.args.get("format") == "mp3":
+        command = "ffmpeg -y -i %s output.mp3" % source
+    else:
+        command = "ffmpeg -y -i %s output.ogg" % source
+    return {"exit": subprocess.call(command, shell=True)}
+
+#@@ sample SRC-CMDI-19-S
+import shlex
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/convert-audio")
+def convert_audio():
+    source = request.args.get("src", "input.wav")
+    if request.args.get("format") == "mp3":
+        command = ["ffmpeg", "-y", "-i", source, "output.mp3"]
+    else:
+        command = ["ffmpeg", "-y", "-i", source, "output.ogg"]
+    return {"exit": subprocess.call(shlex.join(command), shell=True)}
+
+#@@ sample SRC-CMDI-20-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/build")
+def build():
+    project = request.form["project"]
+    script = "cd /srv/projects/" + project + " && make release"
+    done = subprocess.run(script, shell=True)
+    return {"exit": done.returncode}
+
+#@@ sample SRC-CMDI-20-S
+import subprocess
+from pathlib import Path
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+PROJECTS = Path("/srv/projects")
+
+
+@app.post("/build")
+def build():
+    project = PROJECTS / request.form["project"]
+    if project.resolve().parent != PROJECTS:
+        abort(400)
+    done = subprocess.run(["make", "release"], cwd=project)
+    return {"exit": done.returncode}

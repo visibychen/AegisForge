@@ -13,12 +13,24 @@ def run(command: list[str], cwd=ROOT) -> None:
 
 def main() -> None:
     require_conda()
-    parser = argparse.ArgumentParser(description="Run the implemented M1 quality checks")
+    parser = argparse.ArgumentParser(description="Run the implemented AegisForge quality checks")
     parser.add_argument("--backend-only", action="store_true")
     args = parser.parse_args()
     config = "backend/pyproject.toml"
     run([sys.executable, "-m", "pip", "check"])
-    run([sys.executable, "-m", "ruff", "check", "--config", config, "backend", "scripts"])
+    run(
+        [
+            sys.executable,
+            "-m",
+            "ruff",
+            "check",
+            "--config",
+            config,
+            "backend",
+            "scripts",
+            "evaluation",
+        ]
+    )
     run(
         [
             sys.executable,
@@ -30,9 +42,11 @@ def main() -> None:
             config,
             "backend",
             "scripts",
+            "evaluation",
         ]
     )
     run([sys.executable, "-m", "pytest"], cwd=ROOT / "backend")
+    run([sys.executable, "evaluation/datasets.py", "check"])
     if not args.backend_only:
         npm = shutil.which("npm.cmd") or shutil.which("npm")
         if not npm:

@@ -1,0 +1,402 @@
+#@@ bundle aegisforge-holdout source CWE-89 (AI-authored, human_review pending; see ../manifest.json)
+#@@ HOLDOUT: do not read during rule/prompt development. Line 1 = first non-blank line.
+
+#@@ sample SRC-SQLI-09-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/compare")
+def compare():
+    ids = request.args.getlist("id")
+    db = sqlite3.connect("catalog.db")
+    sql = "SELECT id, name, price FROM items WHERE id IN (" + ",".join(ids) + ")"
+    return {"items": db.execute(sql).fetchall()}
+
+#@@ sample SRC-SQLI-09-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/compare")
+def compare():
+    ids = request.args.getlist("id")
+    db = sqlite3.connect("catalog.db")
+    marks = ",".join("?" for _ in ids)
+    sql = "SELECT id, name, price FROM items WHERE id IN (" + marks + ")"
+    return {"items": db.execute(sql, ids).fetchall()}
+
+#@@ sample SRC-SQLI-10-V
+import sqlite3
+
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/invoice/<invoice_id>")
+def invoice(invoice_id):
+    db = sqlite3.connect("billing.db")
+    row = db.execute("SELECT total, status FROM invoices WHERE id = " + invoice_id).fetchone()
+    return {"invoice": row}
+
+#@@ sample SRC-SQLI-10-S
+import sqlite3
+
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/invoice/<invoice_id>")
+def invoice(invoice_id):
+    db = sqlite3.connect("billing.db")
+    row = db.execute("SELECT total, status FROM invoices WHERE id = " + str(int(invoice_id))).fetchone()
+    return {"invoice": row}
+
+#@@ sample SRC-SQLI-11-V
+import sqlite3
+
+from flask import Flask
+
+app = Flask(__name__)
+
+
+@app.route("/export/<table>")
+def export(table):
+    db = sqlite3.connect("reports.db")
+    rows = db.execute(f"SELECT * FROM {table} LIMIT 100").fetchall()
+    return {"rows": rows}
+
+#@@ sample SRC-SQLI-11-S
+import sqlite3
+
+from flask import Flask, abort
+
+app = Flask(__name__)
+EXPORTABLE = {"sales", "refunds", "inventory"}
+
+
+@app.route("/export/<table>")
+def export(table):
+    if table not in EXPORTABLE:
+        abort(404)
+    db = sqlite3.connect("reports.db")
+    rows = db.execute(f"SELECT * FROM {table} LIMIT 100").fetchall()
+    return {"rows": rows}
+
+#@@ sample SRC-SQLI-12-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.patch("/users/<int:user_id>")
+def update_user(user_id):
+    changes = request.get_json(force=True)
+    assignments = []
+    for column, value in changes.items():
+        assignments.append(f"{column} = '{value}'")
+    db = sqlite3.connect("app.db")
+    db.execute(f"UPDATE users SET {', '.join(assignments)} WHERE id = ?", (user_id,))
+    db.commit()
+    return {"updated": user_id}
+
+#@@ sample SRC-SQLI-12-S
+import sqlite3
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+EDITABLE = ("display_name", "email", "timezone")
+
+
+@app.patch("/users/<int:user_id>")
+def update_user(user_id):
+    changes = request.get_json(force=True)
+    columns = [column for column in EDITABLE if column in changes]
+    if not columns or set(changes) - set(EDITABLE):
+        abort(400)
+    clause = ", ".join(f"{column} = ?" for column in columns)
+    db = sqlite3.connect("app.db")
+    db.execute(f"UPDATE users SET {clause} WHERE id = ?", [*(changes[c] for c in columns), user_id])
+    db.commit()
+    return {"updated": user_id}
+
+#@@ sample SRC-SQLI-13-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/guests")
+def add_guests():
+    names = request.form.getlist("name")
+    event = request.form["event"]
+    db = sqlite3.connect("events.db")
+    db.executemany("INSERT INTO guests(name, event) VALUES (?, '%s')" % event, [(n,) for n in names])
+    db.commit()
+    return {"added": len(names)}
+
+#@@ sample SRC-SQLI-13-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/guests")
+def add_guests():
+    names = request.form.getlist("name")
+    event = request.form["event"]
+    db = sqlite3.connect("events.db")
+    db.executemany("INSERT INTO guests(name, event) VALUES (?, ?)", [(n, event) for n in names])
+    db.commit()
+    return {"added": len(names)}
+
+#@@ sample SRC-SQLI-14-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/reports")
+def reports():
+    cursor = sqlite3.connect("saas.db").cursor()
+    cursor.execute(f"SELECT title FROM reports WHERE tenant = '{request.headers.get('X-Tenant', '')}'")
+    return {"reports": cursor.fetchall()}
+
+#@@ sample SRC-SQLI-14-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/reports")
+def reports():
+    cursor = sqlite3.connect("saas.db").cursor()
+    cursor.execute("SELECT title FROM reports WHERE tenant = ?", (request.headers.get("X-Tenant", ""),))
+    return {"reports": cursor.fetchall()}
+
+#@@ sample SRC-SQLI-15-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+class ArticleRepository:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(path)
+
+    def by_author(self, author):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, title FROM articles WHERE author = '" + author + "'")
+        return cursor.fetchall()
+
+
+@app.route("/articles")
+def articles():
+    return {"articles": ArticleRepository("blog.db").by_author(request.args.get("author", ""))}
+
+#@@ sample SRC-SQLI-15-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+class ArticleRepository:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(path)
+
+    def by_author(self, author):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id, title FROM articles WHERE author = ?", (author,))
+        return cursor.fetchall()
+
+
+@app.route("/articles")
+def articles():
+    return {"articles": ArticleRepository("blog.db").by_author(request.args.get("author", ""))}
+
+#@@ sample SRC-SQLI-16-V
+import sqlite3
+
+from flask import Flask, session
+
+app = Flask(__name__)
+app.secret_key = "dev-only"
+
+
+@app.route("/my-orders")
+def my_orders():
+    db = sqlite3.connect("shop.db")
+    (username,) = db.execute("SELECT username FROM users WHERE id = ?", (session["uid"],)).fetchone()
+    rows = db.execute(f"SELECT id, total FROM orders WHERE customer = '{username}'").fetchall()
+    return {"orders": rows}
+
+#@@ sample SRC-SQLI-16-S
+import sqlite3
+
+from flask import Flask, session
+
+app = Flask(__name__)
+app.secret_key = "dev-only"
+
+
+@app.route("/my-orders")
+def my_orders():
+    db = sqlite3.connect("shop.db")
+    (username,) = db.execute("SELECT username FROM users WHERE id = ?", (session["uid"],)).fetchone()
+    rows = db.execute("SELECT id, total FROM orders WHERE customer = ?", (username,)).fetchall()
+    return {"orders": rows}
+
+#@@ sample SRC-SQLI-17-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/feed")
+def feed():
+    limit = request.args.get("limit", "20")
+    offset = request.args.get("offset", "0")
+    db = sqlite3.connect("social.db")
+    sql = "SELECT id, body FROM posts ORDER BY id DESC LIMIT %s OFFSET %s" % (limit, offset)
+    return {"posts": db.execute(sql).fetchall()}
+
+#@@ sample SRC-SQLI-17-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/feed")
+def feed():
+    limit = min(max(int(request.args.get("limit", "20")), 1), 100)
+    offset = max(int(request.args.get("offset", "0")), 0)
+    db = sqlite3.connect("social.db")
+    sql = "SELECT id, body FROM posts ORDER BY id DESC LIMIT ? OFFSET ?"
+    return {"posts": db.execute(sql, (limit, offset)).fetchall()}
+
+#@@ sample SRC-SQLI-18-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/recommendations")
+def recommendations():
+    db = sqlite3.connect("shop.db")
+    return {"items": db.execute("SELECT name FROM items WHERE region = '{}'".format(request.cookies.get("region", "eu"))).fetchall()}
+
+#@@ sample SRC-SQLI-18-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/recommendations")
+def recommendations():
+    db = sqlite3.connect("shop.db")
+    return {"items": db.execute("SELECT name FROM items WHERE region = ?", (request.cookies.get("region", "eu"),)).fetchall()}
+
+#@@ sample SRC-SQLI-19-V
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/jobs")
+def jobs():
+    sql = "SELECT id, title FROM jobs WHERE 1 = 1"
+    if request.args.get("city"):
+        sql += " AND city = '" + request.args["city"] + "'"
+    if request.args.get("level"):
+        sql += " AND level = '" + request.args["level"] + "'"
+    db = sqlite3.connect("jobs.db")
+    return {"jobs": db.execute(sql).fetchall()}
+
+#@@ sample SRC-SQLI-19-S
+import sqlite3
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/jobs")
+def jobs():
+    sql, params = "SELECT id, title FROM jobs WHERE 1 = 1", []
+    if request.args.get("city"):
+        sql += " AND city = ?"
+        params.append(request.args["city"])
+    if request.args.get("level"):
+        sql += " AND level = ?"
+        params.append(request.args["level"])
+    db = sqlite3.connect("jobs.db")
+    return {"jobs": db.execute(sql, params).fetchall()}
+
+#@@ sample SRC-SQLI-20-V
+from flask import Flask, request
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
+
+app = Flask(__name__)
+engine = create_engine("sqlite:///crm.db")
+
+
+def count_leads(session, status):
+    return session.execute(text("SELECT COUNT(*) FROM leads WHERE status = '" + status + "'")).scalar()
+
+
+@app.post("/leads/count")
+def leads_count():
+    with Session(engine) as session:
+        return {"count": count_leads(session, request.get_json(force=True)["status"])}
+
+#@@ sample SRC-SQLI-20-S
+from flask import Flask, request
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
+
+app = Flask(__name__)
+engine = create_engine("sqlite:///crm.db")
+
+
+def count_leads(session, status):
+    return session.execute(text("SELECT COUNT(*) FROM leads WHERE status = :status"), {"status": status}).scalar()
+
+
+@app.post("/leads/count")
+def leads_count():
+    with Session(engine) as session:
+        return {"count": count_leads(session, request.get_json(force=True)["status"])}

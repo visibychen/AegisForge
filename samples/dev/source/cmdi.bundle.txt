@@ -1,0 +1,245 @@
+#@@ bundle aegisforge-dev source CWE-78 (AI-authored, human_review pending; see ../manifest.json)
+#@@ Each sample starts at the first non-blank line after its delimiter (line 1).
+
+#@@ sample SRC-CMDI-01-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/ping")
+def ping():
+    host = request.args.get("host", "127.0.0.1")
+    status = os.system(f"ping -c 1 {host}")
+    return {"reachable": status == 0}
+
+#@@ sample SRC-CMDI-01-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/ping")
+def ping():
+    host = request.args.get("host", "127.0.0.1")
+    result = subprocess.run(["ping", "-c", "1", "--", host], capture_output=True, timeout=5)
+    return {"reachable": result.returncode == 0}
+
+#@@ sample SRC-CMDI-02-V
+import os
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/whois")
+def whois():
+    domain = request.args.get("domain", "")
+    output = os.popen("whois " + domain).read()
+    return {"output": output[:2000]}
+
+#@@ sample SRC-CMDI-02-S
+import os
+import shlex
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/whois")
+def whois():
+    domain = request.args.get("domain", "")
+    output = os.popen("whois " + shlex.quote(domain)).read()
+    return {"output": output[:2000]}
+
+#@@ sample SRC-CMDI-03-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/archive")
+def archive():
+    folder = request.form["folder"]
+    cmd = "tar -czf /tmp/backup.tgz {}".format(folder)
+    subprocess.run(cmd, shell=True, check=True)
+    return {"archived": folder}
+
+#@@ sample SRC-CMDI-03-S
+import subprocess
+from pathlib import Path
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+BASE = Path("/srv/projects")
+
+
+@app.post("/archive")
+def archive():
+    folder = (BASE / request.form["folder"]).resolve()
+    if BASE not in folder.parents:
+        abort(400)
+    subprocess.run(["tar", "-czf", "/tmp/backup.tgz", str(folder)], check=True)
+    return {"archived": folder.name}
+
+#@@ sample SRC-CMDI-04-V
+import subprocess as sp
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/convert")
+def convert():
+    name = request.args.get("file", "report")
+    sp.call("libreoffice --headless --convert-to pdf uploads/" + name + ".docx", shell=True)
+    return {"pdf": name + ".pdf"}
+
+#@@ sample SRC-CMDI-04-S
+import subprocess as sp
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/convert")
+def convert():
+    name = request.args.get("file", "report")
+    sp.call(["libreoffice", "--headless", "--convert-to", "pdf", f"uploads/{name}.docx"])
+    return {"pdf": name + ".pdf"}
+
+#@@ sample SRC-CMDI-05-V
+from os import system
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/service")
+def service():
+    action = request.form.get("action", "status")
+    code = system("systemctl " + action + " nginx")
+    return {"exit_code": code}
+
+#@@ sample SRC-CMDI-05-S
+from os import system
+
+from flask import Flask, request
+
+app = Flask(__name__)
+ACTIONS = {"status": "systemctl status nginx", "reload": "systemctl reload nginx"}
+
+
+@app.post("/service")
+def service():
+    command = ACTIONS.get(request.form.get("action", "status"), "systemctl status nginx")
+    code = system(command)
+    return {"exit_code": code}
+
+#@@ sample SRC-CMDI-06-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def build_grep(pattern, logfile):
+    return "grep -n '" + pattern + "' /var/log/app/" + logfile
+
+
+@app.route("/logs")
+def logs():
+    cmd = build_grep(request.args["q"], request.args.get("file", "app.log"))
+    out = subprocess.check_output(cmd, shell=True, text=True)
+    return {"lines": out.splitlines()[:50]}
+
+#@@ sample SRC-CMDI-06-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+def build_grep(pattern, logfile):
+    return ["grep", "-n", "--", pattern, "/var/log/app/" + logfile.replace("/", "")]
+
+
+@app.route("/logs")
+def logs():
+    cmd = build_grep(request.args["q"], request.args.get("file", "app.log"))
+    out = subprocess.check_output(cmd, text=True)
+    return {"lines": out.splitlines()[:50]}
+
+#@@ sample SRC-CMDI-07-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/resize")
+def resize():
+    payload = request.get_json(force=True)
+    args = ["convert", payload["src"], "-resize", payload["size"], payload["dst"]]
+    proc = subprocess.Popen(" ".join(args), shell=True)
+    return {"pid": proc.pid}
+
+#@@ sample SRC-CMDI-07-S
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.post("/resize")
+def resize():
+    payload = request.get_json(force=True)
+    args = ["convert", payload["src"], "-resize", payload["size"], payload["dst"]]
+    proc = subprocess.Popen(args)
+    return {"pid": proc.pid}
+
+#@@ sample SRC-CMDI-08-V
+import subprocess
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/dns")
+def dns():
+    name = request.args.get("name", "example.com")
+    return {"answer": subprocess.getoutput("nslookup " + name)}
+
+#@@ sample SRC-CMDI-08-S
+import ipaddress
+import subprocess
+
+from flask import Flask, abort, request
+
+app = Flask(__name__)
+
+
+@app.route("/dns")
+def dns():
+    try:
+        address = ipaddress.ip_address(request.args.get("ip", ""))
+    except ValueError:
+        abort(400)
+    return {"answer": subprocess.getoutput("nslookup " + str(address))}
