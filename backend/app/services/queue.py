@@ -82,7 +82,7 @@ def claim(engine, settings, at=None) -> Lease | None:
     at = at or utcnow()
     with transaction(engine) as session:
         for job in session.scalars(
-            select(Job).where(Job.status == "running", Job.lease_until <= at)
+            select(Job).where(Job.kind == "scan", Job.status == "running", Job.lease_until <= at)
         ):
             scan = session.get(ScanTask, job.scan_id)
             for call in session.scalars(
@@ -100,7 +100,10 @@ def claim(engine, settings, at=None) -> Lease | None:
                 job.status, scan.status = "queued", "queued"
         session.flush()
         job = session.scalar(
-            select(Job).where(Job.status == "queued").order_by(Job.created_at, Job.id).limit(1)
+            select(Job)
+            .where(Job.kind == "scan", Job.status == "queued")
+            .order_by(Job.created_at, Job.id)
+            .limit(1)
         )
         if job is None:
             return None

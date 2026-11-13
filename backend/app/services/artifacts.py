@@ -108,7 +108,9 @@ def build_preview(artifact: Artifact, parsed: ParsedInput, rules: RuleResult) ->
     }
 
 
-def store_artifact(session: Session, settings: Settings, name: str, kind: str, raw: bytes) -> dict:
+def store_artifact(
+    session: Session, settings: Settings, name: str, kind: str, raw: bytes, *, commit=True
+) -> dict:
     """Validate everything, including the full preview, before anything is persisted."""
     validate_name(name, kind)
     if not raw or len(raw) > settings.max_file_bytes:
@@ -133,7 +135,7 @@ def store_artifact(session: Session, settings: Settings, name: str, kind: str, r
         _write_snapshot(path, raw)
         created = True
         session.add(artifact)
-        session.commit()
+        session.commit() if commit else session.flush()
     except Exception:
         session.rollback()
         if created:

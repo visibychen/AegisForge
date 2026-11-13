@@ -73,7 +73,7 @@ export default function App() {
         <nav>
           <a href="#workspace" className="nav-item active" aria-current="page" title="工作台"><DashboardOutlined aria-hidden="true" /><span className="nav-text">工作台</span></a>
           <a href="#scans" className="nav-item" title="检测任务"><FileSearchOutlined aria-hidden="true" /><span className="nav-text">检测任务</span></a>
-          <span className="nav-item unavailable" aria-disabled="true" title="修复工作台（未开放）"><ToolOutlined aria-hidden="true" /><span className="nav-text">修复工作台</span></span>
+          <a href="#scans" className="nav-item" title="修复工作台（在检测结果中生成候选修复）"><ToolOutlined aria-hidden="true" /><span className="nav-text">修复工作台</span></a>
           <span className="nav-item unavailable" aria-disabled="true" title="历史记录（未开放）"><HistoryOutlined aria-hidden="true" /><span className="nav-text">历史记录</span></span>
         </nav>
         <div className="sidebar-bottom">
@@ -100,18 +100,18 @@ export default function App() {
         <main>
           <section className="page-heading">
             <div><div className="eyebrow">CODE SECURITY WORKSPACE</div><h1>代码安全工作台</h1><p>从风险发现到修复验证，让安全分析有迹可循。</p></div>
-            <Tag className="preview-tag">输入与特征</Tag>
+            <Tag className="preview-tag">检测 · 修复 · 验证</Tag>
           </section>
 
           <Alert type="info" showIcon className="preview-alert"
-            title="已开放规则、模型与联合检测；模型失败会明确标记部分完成，修复验证尚未开放。" />
+            title="已开放检测与候选修复；模型失败会明确标记部分完成。普通源码仅做静态复检，登记样例可申请独立容器动态验证。" />
 
           <section className="hero-panel" aria-labelledby="hero-title">
             <div className="hero-streams" aria-hidden="true"><span /><span /><span /></div>
             <div className="hero-copy">
               <span className="hero-kicker"><span className="kicker-dot" />智能分析 · 证据驱动</span>
               <h2 id="hero-title">洞察代码风险，<br /><span>构筑安全防线。</span></h2>
-              <p>提交 Python Web 源码与离线 HTTP 请求，<br className="desktop-break" />查看脱敏预览与风险线索，为后续分析和修复建立依据。</p>
+              <p>提交 Python Web 源码与离线 HTTP 请求，<br className="desktop-break" />得到有证据的检测结果、候选补丁和分层验证记录。</p>
               <div className="hero-flow"><span>漏洞检测</span><i className="flow-link" /><span>补丁生成</span><i className="flow-link" /><span>修复验证</span></div>
             </div>
             <HeroVisual />
@@ -146,7 +146,7 @@ export default function App() {
                 <Button className="connect-button" htmlType="submit" type="primary" block loading={loading} disabled={!token.trim()} icon={<ArrowRightOutlined aria-hidden="true" />}>连接服务</Button>
               </form>
               {error && <Alert type="error" showIcon title={error} role="alert" />}
-              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>{capabilities.model_aliases?.includes('deepseek') ? 'DeepSeek 已配置 · 密钥仅由后端使用' : '模拟模式 · 真实模型尚未配置'}</p><p>可创建持久检测任务；修复验证尚未开放。</p></div></div>}
+              {capabilities && <div className="connected-state" role="status"><CheckCircleOutlined aria-hidden="true" /><div><strong>已连接本地服务</strong><p>{capabilities.model_aliases?.includes('deepseek') ? 'DeepSeek 已配置 · 密钥仅由后端使用' : '模拟模式 · 真实模型尚未配置'}</p><p>可创建检测与候选修复；动态验证需独立 runner。</p></div></div>}
               <div className="privacy-note"><SafetyCertificateOutlined aria-hidden="true" />令牌仅用于当前连接，不保存到浏览器存储。</div>
             </section>
           </div>

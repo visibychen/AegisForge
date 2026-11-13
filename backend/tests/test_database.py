@@ -84,3 +84,27 @@ def test_invalid_scan_status_cannot_be_persisted(database):
         session.add(ScanTask(status="made-up-success"))
         with pytest.raises(IntegrityError):
             session.commit()
+
+
+def test_m4_migration_preserves_existing_model_calls(database):
+    from app.models import ModelCall
+
+    engine, config = database
+    command.downgrade(config, "0004_receipts")
+    with Session(engine) as session:
+        scan = ScanTask()
+        session.add(scan)
+        session.flush()
+        job = Job(scan_id=scan.id, idempotency_key="existing-scan")
+        session.add(job)
+        session.flush()
+        call = ModelCall(
+            scan_id=scan.id, job_id=job.id, model="fake", prompt_version="test", input_chars=12
+        )
+        session.add(call)
+        session.commit()
+        ident = call.id
+    command.upgrade(config, "head")
+    with Session(engine) as session:
+        assert session.get(ModelCall, ident) is not None
+        assert session.execute(text("PRAGMA foreign_key_check")).all() == []

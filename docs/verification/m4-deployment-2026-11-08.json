@@ -1,0 +1,95 @@
+{
+  "id": "2ab8a59a-6598-4164-896f-f450dfe2c862",
+  "scan_id": "c0c691d4-ead6-4f8d-9661-4fa7d0ae79a4",
+  "status": "candidate",
+  "validation_status": "passed",
+  "gates": [
+    {
+      "id": "syntax",
+      "label": "语法校验",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "patch",
+      "label": "补丁可应用（diff 回放一致）",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "structure",
+      "label": "结构保持与改动范围",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "target_rules",
+      "label": "目标漏洞已消除（规则）",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "new_rules",
+      "label": "未引入新风险（规则）",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "target_model",
+      "label": "目标漏洞已消除（模型复检）",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "new_model",
+      "label": "未引入新风险（模型复检）",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "dynamic_security",
+      "label": "受控动态验证：安全回归",
+      "state": "passed",
+      "detail": ""
+    },
+    {
+      "id": "dynamic_business",
+      "label": "受控动态验证：业务回归",
+      "state": "passed",
+      "detail": ""
+    }
+  ],
+  "dynamic": {
+    "candidate_sha256": "a2c54c8c03e7bed49fa3989e29af112abeb70958af8661326b461f16b6233f7e",
+    "case_id": "xss-01",
+    "digest": "f14ea6b17174e6da8d9d434ff6cddef459290856de1d2b362084c81c2948090c",
+    "elapsed_ms": 2197,
+    "finished_at": "2026-11-08T07:58:50.364042+00:00",
+    "harness_sha256": "b1ac8dbfe24c5b94a27de9aebdd5f190edc7d5d308c140ab026178cef6a6d023",
+    "image_id": "sha256:3a30074b0c3e1d09d49c4356e263534b271be1e5dbdaf1183dbd853b69aa4f38",
+    "registry_sha256": "8153d7dfd8d008e6c07eeb3c63b078b6a705588e66115c2746136dbd22422681",
+    "requested_at": "2026-11-08T07:58:47.246191+00:00",
+    "run_id": "33361b1a3ce648e1bae12ea2b8d646e7",
+    "source_sha256": "af035d080c12db3e05998fc769191908a747bb0a8cac92c0cfc973ded6815d6e",
+    "started_at": "2026-11-08T07:58:48.151212+00:00",
+    "status": "passed",
+    "tests": [
+      {
+        "name": "business_greeting",
+        "passed": true
+      },
+      {
+        "name": "business_unicode",
+        "passed": true
+      },
+      {
+        "name": "security_browser_no_script",
+        "passed": true
+      }
+    ],
+    "tests_sha256": "760a7cf83c7d431f407776a4ef0e4519ddf8d10c17424d6aa9e0291e77307fdb"
+  },
+  "call_count": 2,
+  "scope": "existing real browser candidate; final harness revalidation via deployed controller; zero extra model calls",
+  "passed": true
+}

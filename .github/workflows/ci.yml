@@ -55,3 +55,26 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  controlled-validation:
+    name: Controlled Docker regressions (development only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      - run: python scripts/build_validator.py
+      - run: python scripts/repair_smoke.py controls
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m4-controlled-summary
+          path: data/m4-controls-*/summary.json

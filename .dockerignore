@@ -1,0 +1,17 @@
+**
+!backend
+!backend/app
+!backend/app/**
+!backend/alembic.ini
+!backend/migrations
+!backend/migrations/**
+!backend/requirements.lock
+!samples
+!samples/controlled
+!samples/controlled/**
+!deploy
+!deploy/app.Dockerfile
+!deploy/validator
+!deploy/validator/**
+**/__pycache__
+**/*.pyc

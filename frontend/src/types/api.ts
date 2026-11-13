@@ -6,12 +6,12 @@ export interface Health {
 export interface Capabilities {
   request_id: string;
   version: string;
-  stage: 'M1' | 'M2' | 'M3';
+  stage: 'M1' | 'M2' | 'M3' | 'M4';
   model_mode: 'fake' | 'real';
   model_aliases?: string[];
   analysis_available: boolean;
-  repair_available: false;
-  dynamic_validation_available: false;
+  repair_available: boolean;
+  dynamic_validation_available: boolean;
   supported_input_types: string[];
   planned_input_types: string[];
   max_file_bytes: number;
@@ -80,4 +80,29 @@ export interface AnalysisReceipt {
 }
 export interface StoredFinding extends Finding {
   id: string; contributors: Finding[]; severity_disagreement: boolean; severity_policy?: string | null;
+}
+export type GateState = 'passed' | 'failed' | 'skipped' | 'pending' | 'error';
+export interface Gate { id: string; label: string; state: GateState; detail: string }
+export interface PatchImpact {
+  total_lines: number; changed_lines: number; added_lines: number; change_ratio: number; hunks: number;
+  distance: number; removed: string[]; signature_changed: string[]; decorator_changed: string[];
+  forbidden_added: string[]; risky_added: string[]; imports_added: string[];
+  violations: string[]; warnings: string[];
+}
+export interface Repair {
+  id: string; scan_id: string; finding_id: string; source_id: string; source_sha256: string; anchor: string;
+  candidate_id: string | null; model_alias: string; model: string; status: string; error_code: string | null;
+  diff: string; validation_status: 'passed' | 'failed' | 'unverified' | 'error'; call_count: number;
+  simulated?: boolean; gates?: Gate[]; impact?: PatchImpact | null; dynamic_requested?: boolean;
+  checks: {
+    contract?: { digest: string; model_alias: string; model: string | null; versions: Record<string, string>; candidate_sha256?: string; source_sha256: string; diff_sha256?: string };
+    mode?: string; explanation?: string; syntax?: string; static_passed?: boolean; target_remaining?: boolean;
+    llm_complete?: boolean; review?: { status: string; error: string | null };
+    preexisting?: { cwe: string; start_line: number; end_line: number }[];
+  };
+  dynamic: {
+    status?: string; error_code?: string; run_id?: string | null; digest?: string; case_id?: string;
+    tests?: { name: string; passed: boolean }[]; candidate_sha256?: string; harness_sha256?: string;
+    requested_at?: string | null; finished_at?: string; elapsed_ms?: number; cancel_requested?: boolean;
+  };
 }

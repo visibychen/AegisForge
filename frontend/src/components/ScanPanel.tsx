@@ -4,6 +4,8 @@ import { changeScan, createScan, getFindings, getScan, isAuthFailure, listScans 
 import type { ArtifactPreview, Scan, StoredFinding, Strategy } from '../types/api';
 import CoverageLedger from './CoverageLedger';
 import AnalysisReceipt from './AnalysisReceipt';
+import RepairPanel from './RepairPanel';
+import { createRepair } from '../api/client';
 
 const RECONNECT = '会话已失效，请重新连接服务后再查看任务。';
 
@@ -24,14 +26,40 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [repairId, setRepairId] = useState(() => new URLSearchParams(location.search).get('repair') ?? '');
+  // A repair request keeps one idempotency key until it succeeds, so a lost response or a
+  // double click can never create (and pay for) a second candidate.
+  const repairSubmission = useRef<{ signature: string; key: string } | null>(null);
+  function showRepair(next: string) {
+    setRepairId(next);
+    const url = new URL(location.href);
+    if (next) url.searchParams.set('repair', next); else url.searchParams.delete('repair');
+    window.history.replaceState(null, '', url);
+  }
+  async function repairFinding(finding: StoredFinding) {
+    const source = scan?.artifacts.find(a => a.id === finding.location.artifact_id);
+    if (!source || busy) return;
+    setBusy(true); setError('');
+    const signature = `${finding.id}|${source.sha256}|${alias}`;
+    const current = repairSubmission.current?.signature === signature ? repairSubmission.current : { signature, key: crypto.randomUUID() };
+    repairSubmission.current = current;
+    try {
+      const data = await createRepair(token, finding.id, source.sha256, alias, current.key);
+      repairSubmission.current = null;
+      showRepair(data.repair.id);
+    } catch (e) { setError(isAuthFailure(e) ? RECONNECT : e instanceof Error ? e.message : '修复创建失败。'); }
+    finally { setBusy(false); }
+  }
   // One idempotency key per submission intent: reused on resubmit until it succeeds or the
   // inputs/strategy/model change, so a lost response cannot create a duplicate task.
   const submission = useRef<{ signature: string; key: string } | null>(null);
   useEffect(() => { setAlias(aliases.includes('deepseek') ? 'deepseek' : 'fake'); }, [aliases.join(',')]);
 
   function selectScan(next: string) {
+    if (next !== id) showRepair(''); // a repair belongs to one scan; never show it under another
     setId(next); setOffset(0);
     const url = new URL(location.href); url.searchParams.set('scan', next);
+    if (next !== id) url.searchParams.delete('repair');
     window.history.replaceState(null, '', url);
   }
 
@@ -95,7 +123,8 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
     <div className="selected-artifacts">{artifacts.map(a => <div key={a.id}><span>{a.display_name}</span><Tag>{a.input_type}</Tag><Button size="small" onClick={() => onRemove(a.id)} aria-label={`移除 ${a.display_name}`}>移除</Button></div>)}</div>
     <div className="scan-controls">
       <div><label htmlFor="scan-strategy">分析方式</label><Select id="scan-strategy" aria-label="分析方式" value={strategy} onChange={setStrategy} options={[{value:'hybrid',label:'规则 + 模型'},{value:'rules',label:'仅规则'},{value:'llm',label:'仅模型'}]} /></div>
-      <div><label htmlFor="scan-model">模型</label><Select id="scan-model" aria-label="模型" value={alias} onChange={setAlias} disabled={strategy === 'rules'} options={aliases.map(value => ({value,label:value === 'deepseek' ? 'DeepSeek' : '模拟模型'}))} /></div>
+      <div><label htmlFor="scan-model">模型</label><Select id="scan-model" aria-label="模型" value={alias} onChange={setAlias} options={aliases.map(value => ({value,label:value === 'deepseek' ? 'DeepSeek' : '模拟模型'}))} /></div>
+      <p>候选修复使用当前选择的模型；DeepSeek 会产生外部调用。仅规则检测不调用模型。</p>
       <Button type="primary" loading={busy} disabled={!token || artifacts.length === 0 || artifacts.length > 10} onClick={() => void submit()}>创建检测任务</Button>
     </div>
     {artifacts.length > 10 && <Alert type="warning" title="每个任务最多 10 个快照，请移除多余输入。" />}
@@ -119,9 +148,11 @@ export default function ScanPanel({token, aliases, artifacts, onRemove}: {
         <p>{scan.artifacts.find(a => a.id === f.location.artifact_id)?.display_name ?? f.location.artifact_id} · {f.location.kind === 'source' ? `第 ${f.location.start_line}–${f.location.end_line} 行` : f.location.field} · {f.evidence_status}</p>
         <pre>{f.evidence}</pre><p>{f.explanation}</p><p>建议：{f.recommendation}</p>
         <details><summary>查看各来源判断</summary>{f.contributors.map((item,index) => <div key={index}><Tag>{item.sources.join(' + ')}</Tag><Tag>{item.severity}</Tag><p>{item.explanation}</p><p>{item.recommendation}</p></div>)}</details>
+        <Button disabled={busy || f.location.kind !== 'source'} onClick={() => void repairFinding(f)}>生成{alias === 'fake' ? '模拟' : 'DeepSeek'}候选修复</Button>
       </div>)}
       {findingTotal > 100 && <div className="ingest-actions"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0,offset-100))}>上一页</Button><span>{offset+1}–{Math.min(offset+100,findingTotal)} / {findingTotal}</span><Button disabled={offset+100 >= findingTotal} onClick={() => setOffset(offset+100)}>下一页</Button></div>}
     </article>}
+    <RepairPanel token={token} id={repairId} scanId={scan?.id} />
     <h3>最近任务</h3>
     {history.length === 0 ? <p>暂无任务记录。</p> : <ul className="scan-history">{history.map(item => <li key={item.id}><button onClick={() => selectScan(item.id)}>{STATUS[item.status]} · {item.artifacts.map(a=>a.display_name).join('、')} · {item.id.slice(0,8)}</button></li>)}</ul>}
   </section></ConfigProvider>;

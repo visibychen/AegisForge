@@ -1,0 +1,17 @@
+[
+  {
+    "id": "xss-01",
+    "name": "SRC-XSS-01-V",
+    "source": "from flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/greet\")\ndef greet():\n    name = request.args.get(\"name\", \"guest\")\n    return f\"<h1>Hello, {name}!</h1>\"\n"
+  },
+  {
+    "id": "sqli-01",
+    "name": "SRC-SQLI-01-V",
+    "source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/user\")\ndef user():\n    name = request.args.get(\"name\", \"\")\n    db = sqlite3.connect(\"app.db\")\n    row = db.execute(f\"SELECT id, email FROM users WHERE name = '{name}'\").fetchone()\n    return {\"user\": row}\n"
+  },
+  {
+    "id": "cmdi-01",
+    "name": "SRC-CMDI-01-V",
+    "source": "import os\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/ping\")\ndef ping():\n    host = request.args.get(\"host\", \"127.0.0.1\")\n    status = os.system(f\"ping -c 1 {host}\")\n    return {\"reachable\": status == 0}\n"
+  }
+]
