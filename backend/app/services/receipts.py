@@ -11,7 +11,8 @@ from app.llm.wire import WIRE_SCHEMA_VERSION
 from app.parsers.inputs import PARSER_VERSION
 from app.rules.detector import RULE_VERSION
 from app.schemas.contracts import AnalysisRequest
-from app.services.merge import SEVERITY_POLICY
+from app.services.adjudicate import ADJUDICATION_VERSION
+from app.services.merge import MERGE_VERSION, SEVERITY_POLICY
 
 
 def canonical(value) -> str:
@@ -54,6 +55,8 @@ def build_receipt(settings, strategy, alias, pairs):
         "prompt": PROMPT_VERSION,
         "wire": WIRE_SCHEMA_VERSION,
         "severity": SEVERITY_POLICY,
+        "merge": MERGE_VERSION,
+        "adjudication": ADJUDICATION_VERSION,
     }
     dummy = AnalysisRequest(artifact_id=UUID(int=0), input_type="source", content="receipt")
     configuration = {

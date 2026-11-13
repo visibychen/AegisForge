@@ -3,5 +3,7 @@
 !harness.py
 !target.py
 !target_guard.py
+!holdout_cases.py
+!command_stub.py
 !ping_stub.py
 !requirements.lock

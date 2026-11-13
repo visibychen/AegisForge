@@ -101,7 +101,7 @@ def command(image_id, name, case, source, run_id="0" * 32):
         "--memory-swap",
         "512m",
         "--pids-limit",
-        "128" if case == "xss-01" else "64",
+        "128" if case == "xss-01" or case.startswith("h-xss-") else "64",
         "--tmpfs",
         "/tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777",
         "--log-driver",
@@ -254,7 +254,9 @@ def sweep_orphans(environment=None) -> int:
     return len(stale)
 
 
-def run_container(settings, source: str, case, *, run_id=None, should_cancel=None):
+def run_container(
+    settings, source: str, case, *, run_id=None, should_cancel=None, profile="legacy"
+):
     started = time.monotonic()
     run_id = run_id or uuid4().hex
     nonce = secrets.token_hex(16)
@@ -267,9 +269,19 @@ def run_container(settings, source: str, case, *, run_id=None, should_cancel=Non
         return int((time.monotonic() - started) * 1000)
 
     try:
-        fingerprint = validator_fingerprint()
+        if profile == "legacy":
+            image_name, fingerprint = IMAGE, validator_fingerprint()
+        elif profile == "review-v1":
+            from app.validation.registry import review_validator_fingerprint
+
+            image_name, fingerprint = (
+                "aegisforge-validator:review-v1",
+                review_validator_fingerprint(),
+            )
+        else:
+            raise ResultError("VALIDATION_PROFILE")
         inspected = subprocess.run(
-            ["docker", "image", "inspect", IMAGE],
+            ["docker", "image", "inspect", image_name],
             capture_output=True,
             env=environment,
             timeout=10,

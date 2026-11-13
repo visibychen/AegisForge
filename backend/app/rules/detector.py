@@ -4,22 +4,39 @@ Source rules walk the AST of the *original* text (never the redacted view) and r
 evidence from the redacted lines, which keep identical numbering. HTTP rules match the
 unredacted normalized values held in server memory; evidence is the public redacted value,
 so a credential field carrying a payload is reported without echoing it.
-All traversals are iterative. Known gaps: inter-procedural flow, generators/comprehensions,
+All traversals are iterative.
+
+rules-1.3 (see ``app/rules/semantics.py``): reaching definitions instead of "last textual
+assignment", shadowed imports/builtins are no longer trusted, tuple unpacking, comprehension
+elements, recognised early-exit guards, ``shlex.join``, ``asyncio.create_subprocess_shell`` and
+explicit interpreters in argument lists. Known gaps remain: inter-procedural flow, attributes,
 sinks not listed below; such code may yield false negatives or conservative positives.
 """
 
 import ast
+import posixpath
 import re
+import shlex
 from dataclasses import dataclass
 from uuid import UUID
 
 from app.core.redaction import MASK
-from app.parsers.inputs import ParsedInput, qualified
+from app.parsers.inputs import ParsedInput
+from app.rules.semantics import (
+    COMPREHENSIONS,
+    Element,
+    Guard,
+    Import,
+    Param,
+    Semantics,
+    Unknown,
+)
 from app.schemas.contracts import Finding, HttpLocation, SourceLocation
 
-RULE_VERSION = "rules-1.1"
+RULE_VERSION = "rules-1.3"
 MAX_RULE_FINDINGS = 100
-MAX_HOPS = 3
+MAX_HOPS = 8
+WORK_LIMIT = 5000  # bounded effort per expression; exhausted analysis is reported as tainted
 CWE = {"xss": "CWE-79", "sqli": "CWE-89", "cmdi": "CWE-78"}
 ADVICE = {
     "xss": "按输出上下文转义，使用自动转义模板，避免将输入拼接为 HTML。",
@@ -32,12 +49,37 @@ HTTP_PATTERNS = {
     "sqli": re.compile(r"\bunion\s+select\b|['\"]\s*(?:or|and)\s+[\w'\"]+\s*=|\bsleep\s*\(", re.I),
     "cmdi": re.compile(r"(?:;|\|\||&&)\s*(?:cat|id|whoami|curl|sh|echo)\b|\$\(|`[^`]+`", re.I),
 }
+# Fully qualified, trusted names only (an unshadowed import or builtin; see Semantics.trusted).
 SANITIZERS = {
-    "xss": {"escape", "html.escape", "markupsafe.escape", "flask.escape", "int", "float"},
+    "xss": {
+        "html.escape",
+        "markupsafe.escape",
+        "markupsafe.escape_silent",
+        "flask.escape",
+        "jinja2.escape",
+        "int",
+        "float",
+    },
     "sqli": {"int", "float", "uuid.UUID"},
-    "cmdi": {"shlex.quote", "int", "float", "ipaddress.ip_address", "ipaddress.ip_network"},
+    "cmdi": {
+        "shlex.quote",
+        "shlex.join",
+        "int",
+        "float",
+        "ipaddress.ip_address",
+        "ipaddress.ip_network",
+    },
 }
-SHELL_ALWAYS = {"os.system", "os.popen", "subprocess.getoutput", "subprocess.getstatusoutput"}
+MARKUP = {"markupsafe.Markup", "flask.Markup", "jinja2.Markup"}
+SQL_TEXT = {"sqlalchemy.text", "sqlalchemy.sql.text", "sqlalchemy.sql.expression.text"}
+PASS_THROUGH = MARKUP | SQL_TEXT | {"str"}  # results as tainted as their argument
+SHELL_ALWAYS = {
+    "os.system",
+    "os.popen",
+    "subprocess.getoutput",
+    "subprocess.getstatusoutput",
+    "asyncio.create_subprocess_shell",
+}
 SHELL_OPTIONAL = {
     "subprocess.run",
     "subprocess.call",
@@ -45,9 +87,27 @@ SHELL_OPTIONAL = {
     "subprocess.check_output",
     "subprocess.Popen",
 }
+EXEC_ARGV = SHELL_OPTIONAL | {"asyncio.create_subprocess_exec"}
+# Programs that interpret one of their arguments as code or as another command.
+SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "fish", "ash", "cmd", "cmd.exe", "powershell", "pwsh"}
+EVAL_FLAGS = {"-c", "/c", "/k", "-e", "-r", "--eval", "-command", "-Command", "--command"}
+SCRIPT_RUNNERS = {
+    "python",
+    "python3",
+    "perl",
+    "ruby",
+    "node",
+    "nodejs",
+    "php",
+    "lua",
+    "tclsh",
+    "Rscript",
+}
+PROGRAM_EVALUATORS = {"awk", "gawk", "mawk", "nawk", "sed", "jq", "expect"}
+COMMAND_RUNNERS = {"env", "xargs", "sudo", "nohup", "timeout", "nice", "doas", "watch", "time"}
+FIND_EXEC = {"-exec", "-execdir", "-ok", "-okdir"}
 SQL_METHODS = {"execute", "executemany", "executescript"}
 SQL_KEYWORDS = {"sql", "statement", "operation", "query"}
-PASS_THROUGH = {"Markup", "text", "str"}  # wrappers whose result is as tainted as the argument
 HTML_TAG = re.compile(r"<\s*[A-Za-z!/]")
 
 
@@ -82,140 +142,150 @@ def finding(category: str, evidence: str, location, http=False) -> Finding:
     )
 
 
-class Scope:
-    """Import aliases plus module/function assignments for bounded local resolution."""
+# Backwards-compatible name used by patch review (call counting only).
+Scope = Semantics
 
-    def __init__(self, tree: ast.Module):
-        self.aliases: dict[str, str] = {}
-        self.owner: dict[ast.AST, ast.AST] = {}
-        self.params: dict[ast.AST, set[str]] = {}
-        self.tables: dict[ast.AST | None, dict[str, list[tuple[int, ast.AST]]]] = {None: {}}
-        for node in ast.walk(tree):  # breadth-first, so inner functions overwrite owners
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    local = alias.asname or alias.name.split(".")[0]
-                    self.aliases[local] = alias.name if alias.asname else local
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                for alias in node.names:
-                    self.aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
-            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-                arguments = node.args
-                every = arguments.posonlyargs + arguments.args + arguments.kwonlyargs
-                every += [a for a in (arguments.vararg, arguments.kwarg) if a]
-                self.params[node] = {a.arg for a in every}
-                for child in ast.walk(node):
-                    if child is not node:
-                        self.owner[child] = node
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)) and node.value:
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                table = self.tables.setdefault(self.owner.get(node), {})
-                value = node if isinstance(node, ast.AugAssign) else node.value
-                for target in targets:
-                    if isinstance(target, ast.Name):
-                        table.setdefault(target.id, []).append((node.lineno, value))
-
-    def canonical(self, func: ast.AST) -> str:
-        root, _, rest = qualified(func).partition(".")
-        resolved = self.aliases.get(root, root)
-        return f"{resolved}.{rest}" if rest else resolved
-
-    def resolve(self, identifier: str, owner: ast.AST | None, line: int) -> ast.AST | None:
-        if owner is not None:
-            if identifier in self.params.get(owner, ()):
-                return None
-            local = self.tables.get(owner, {}).get(identifier)
-            if local:
-                earlier = [value for at, value in local if at < line]
-                return earlier[-1] if earlier else None
-            values = self.tables[None].get(identifier)  # module value read at call time
-            return values[-1][1] if values else None
-        earlier = [value for at, value in self.tables[None].get(identifier, []) if at < line]
-        return earlier[-1] if earlier else None
-
-    def allowlisted(self, node: ast.AST) -> bool:
-        """``ALLOWED[x]`` / ``ALLOWED.get(x, CONST)`` on a module dict of constants."""
-        if isinstance(node, ast.Subscript):
-            target = node.value
-        elif (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and node.func.attr == "get"
-            and all(isinstance(arg, ast.Constant) for arg in node.args[1:])
-        ):
-            target = node.func.value
-        else:
-            return False
-        if not isinstance(target, ast.Name):
-            return False
-        values = self.tables[None].get(target.id)
-        if not values or not isinstance(values[-1][1], ast.Dict):
-            return False
-        return all(isinstance(value, ast.Constant) for value in values[-1][1].values)
+_EMPTY: dict = {}
 
 
-def shape(category: str, node: ast.AST, scope: Scope) -> Shape:
+def _markup_arguments(arguments, sem):
+    """Arguments of a Markup method/``%`` that are *not* escaped by it.
+
+    Plain values are escaped by MarkupSafe; values that are visibly ``Markup(...)`` are inserted
+    as-is, so their own content is analysed. For *detection* other values of unknown type are
+    treated as plain (the common idiom); the adjudicator never relies on that assumption.
+    """
+    passed = []
+    for argument in arguments:
+        candidates = [argument]
+        if isinstance(argument, ast.Name):
+            candidates = [d for d in sem.defs(argument.id, argument) if isinstance(d, ast.AST)]
+        for candidate in candidates:
+            if isinstance(candidate, ast.Call) and sem.trusted(candidate.func) in MARKUP:
+                passed.extend(candidate.args)
+    return passed
+
+
+def shape(category: str, node: ast.AST, sem: Semantics) -> Shape:
     """Classify an expression for one category without recursion."""
     sanitizers = SANITIZERS[category]
     result = Shape()
-    stack: list[tuple[ast.AST, int]] = [(node, 0)]
+    stack: list[tuple] = [(node, 0, _EMPTY)]
+    seen: set = set()
+    work = 0
     while stack:
-        current, hops = stack.pop()
-        if isinstance(current, ast.Constant):
+        work += 1
+        if work > WORK_LIMIT:
+            result.tainted = True
+            break
+        current, hops, env = stack.pop()
+        key = (id(current), id(env), hops)
+        if key in seen:
+            continue
+        seen.add(key)
+        if isinstance(current, Guard):
+            if category not in current.safe_for:
+                stack.extend((d, hops, _EMPTY) for d in current.inner)
+        elif isinstance(current, (Param, Unknown, Import)):
+            result.tainted = True
+        elif isinstance(current, Element):
+            stack.append((current.iterable, hops, _EMPTY))
+        elif isinstance(current, ast.Constant):
             if isinstance(current.value, str) and HTML_TAG.search(current.value):
                 result.html = True
         elif isinstance(current, ast.Name):
-            value = None
-            if hops < MAX_HOPS:
-                value = scope.resolve(current.id, scope.owner.get(current), current.lineno)
-            if value is None:
-                result.tainted = True
+            if current.id in env:
+                iterable, outer = env[current.id]
+                stack.append((iterable, hops, outer))
+            elif hops < MAX_HOPS:
+                stack.extend((d, hops + 1, _EMPTY) for d in sem.defs(current.id, current))
             else:
-                stack.append((value, hops + 1))
+                result.tainted = True
         elif isinstance(current, ast.AugAssign):
             result.built = True
-            stack.append((current.value, hops))
-            owner = scope.owner.get(current)
+            stack.append((current.value, hops, _EMPTY))
             target = current.target
-            earlier = scope.resolve(target.id, owner, current.lineno) if hops < MAX_HOPS else None
-            if earlier is None:
-                result.tainted = True
+            if hops < MAX_HOPS and isinstance(target, ast.Name):
+                stack.extend((d, hops + 1, _EMPTY) for d in sem.defs(target.id, current))
             else:
-                stack.append((earlier, hops + 1))
+                result.tainted = True
+        elif isinstance(current, COMPREHENSIONS):
+            inner = dict(env)
+            for generator in current.generators:
+                outer = dict(inner)
+                for name in ast.walk(generator.target):
+                    if isinstance(name, ast.Name):
+                        inner[name.id] = (generator.iter, outer)
+            elements = (
+                [current.key, current.value] if isinstance(current, ast.DictComp) else [current.elt]
+            )
+            stack.extend((element, hops, inner) for element in elements)
         elif isinstance(current, ast.JoinedStr):
             result.built = True
-            stack.extend((value, hops) for value in current.values)
+            stack.extend((value, hops, env) for value in current.values)
         elif isinstance(current, ast.FormattedValue):
-            stack.append((current.value, hops))
+            stack.append((current.value, hops, env))
         elif isinstance(current, ast.BinOp):
             result.built = result.built or isinstance(current.op, (ast.Add, ast.Mod))
-            stack += [(current.left, hops), (current.right, hops)]
+            left = current.left
+            if (
+                isinstance(current.op, ast.Mod)
+                and isinstance(left, ast.Call)
+                and sem.trusted(left.func) in MARKUP
+            ):
+                stack.append((left, hops, env))  # Markup.__mod__ escapes plain arguments
+                values = (
+                    current.right.elts if isinstance(current.right, ast.Tuple) else [current.right]
+                )
+                stack.extend((v, hops, env) for v in _markup_arguments(values, sem))
+            else:
+                stack += [(left, hops, env), (current.right, hops, env)]
         elif isinstance(current, (ast.List, ast.Tuple, ast.Set)):
-            stack.extend((element, hops) for element in current.elts)
+            stack.extend((element, hops, env) for element in current.elts)
+        elif isinstance(current, ast.Dict):
+            stack.extend((v, hops, env) for v in [*current.keys, *current.values] if v is not None)
         elif isinstance(current, ast.IfExp):
-            stack += [(current.body, hops), (current.orelse, hops)]
-        elif scope.allowlisted(current):
+            stack += [(current.body, hops, env), (current.orelse, hops, env)]
+        elif allowlisted(current, sem):
             continue
         elif isinstance(current, ast.Call):
-            name = scope.canonical(current.func)
-            short = name.rsplit(".", 1)[-1]
+            name = sem.trusted(current.func)
             if isinstance(current.func, ast.Attribute) and current.func.attr in {"format", "join"}:
                 result.built = True
                 receiver = current.func.value
-                stack.append((receiver, hops))
-                escapes = isinstance(receiver, ast.Call) and qualified(receiver.func).endswith(
-                    "Markup"
+                stack.append((receiver, hops, env))
+                arguments = [*current.args, *(k.value for k in current.keywords)]
+                escapes = (
+                    current.func.attr == "format"
+                    and isinstance(receiver, ast.Call)
+                    and sem.trusted(receiver.func) in MARKUP
                 )
-                if not escapes:  # Markup(...).format() escapes its arguments
-                    stack.extend((arg, hops) for arg in current.args)
-                    stack.extend((keyword.value, hops) for keyword in current.keywords)
-            elif short in PASS_THROUGH:
-                stack.extend((arg, hops) for arg in current.args)
-            elif name not in sanitizers and short not in sanitizers:
+                if escapes:  # Markup(...).format() escapes plain arguments, not Markup ones
+                    arguments = _markup_arguments(arguments, sem)
+                stack.extend((argument, hops, env) for argument in arguments)
+            elif name in PASS_THROUGH:
+                stack.extend((argument, hops, env) for argument in current.args)
+            elif name is None or name not in sanitizers:
                 result.tainted = True  # unknown call result, e.g. request.args.get(...)
         else:
-            result.tainted = True  # attributes, subscripts, comprehensions, ...
+            result.tainted = True  # attributes, subscripts, ...
     return result
+
+
+def allowlisted(node: ast.AST, sem: Semantics) -> bool:
+    """``ALLOWED[x]`` / ``ALLOWED.get(x, CONST)`` on a never-mutated module dict of constants."""
+    if isinstance(node, ast.Subscript):
+        target = node.value
+    elif (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get"
+        and all(isinstance(arg, ast.Constant) for arg in node.args[1:])
+    ):
+        target = node.func.value
+    else:
+        return False
+    return isinstance(target, ast.Name) and sem.constant_dict(target)
 
 
 def _argument(call: ast.Call, keywords: set[str]) -> ast.AST | None:
@@ -224,36 +294,133 @@ def _argument(call: ast.Call, keywords: set[str]) -> ast.AST | None:
     return next((kw.value for kw in call.keywords if kw.arg in keywords), None)
 
 
-def source_category(node: ast.AST, scope: Scope) -> str | None:
+def shell_requested(call: ast.Call) -> bool | None:
+    """True/False for a constant ``shell=`` keyword, None when it is not a constant."""
+    for keyword in call.keywords:
+        if keyword.arg == "shell":
+            if isinstance(keyword.value, ast.Constant):
+                return keyword.value.value is True
+            return None
+    return False
+
+
+def argv_elements(call: ast.Call, name: str, sem: Semantics):
+    """Elements of an argument vector when they are statically known, else None."""
+    if name == "asyncio.create_subprocess_exec":
+        values = list(call.args)
+    else:
+        argv = _argument(call, {"args"})
+        if isinstance(argv, ast.Name):
+            defs = sem.defs(argv.id, argv)
+            if len(defs) != 1 or not isinstance(next(iter(defs)), (ast.List, ast.Tuple)):
+                return None
+            argv = next(iter(defs))
+        if not isinstance(argv, (ast.List, ast.Tuple)):
+            return None
+        values = list(argv.elts)
+    if not values or any(isinstance(v, ast.Starred) for v in values):
+        return None
+    return values
+
+
+def program_name(element, sem: Semantics) -> str | None:
+    text = sem.constant_string(element)
+    return posixpath.basename(text) if text else None
+
+
+def argv_injects(call: ast.Call, name: str, sem: Semantics) -> bool:
+    """An argument vector whose program or interpreted argument is caller-controlled."""
+    values = argv_elements(call, name, sem)
+    if values is None:
+        return False
+    tainted = [shape("cmdi", v, sem).tainted for v in values]
+    program = program_name(values[0], sem)
+    if program is None:
+        return True  # quoting does not make a caller-selected executable trustworthy
+    if program in SHELLS | SCRIPT_RUNNERS | PROGRAM_EVALUATORS:
+        if any(
+            k.arg in {"input", "stdin"} and sem.constant_string(k.value) is None
+            for k in call.keywords
+        ):
+            return True
+    if not any(tainted[1:]):
+        return False
+    flags = [sem.constant_string(v) for v in values]
+    if program in SHELLS or program in SCRIPT_RUNNERS:
+        for index in range(1, len(values) - 1):
+            if flags[index] in EVAL_FLAGS and any(tainted[index + 1 :]):
+                return True
+        if program in SCRIPT_RUNNERS and tainted[1]:
+            return True  # the caller chooses the script
+        return False
+    if program in PROGRAM_EVALUATORS or program in COMMAND_RUNNERS:
+        return True
+    if program == "find":
+        for index, flag in enumerate(flags):
+            if flag in FIND_EXEC and any(tainted[index + 1 :]):
+                return True
+    return False
+
+
+def sink_name(node: ast.Call, sem: Semantics) -> str | None:
+    """Callee name for sink matching (see Semantics.loose); SQL methods match by attribute."""
+    name = sem.loose(node.func)
+    if name is None and isinstance(node.func, ast.Attribute):
+        return "." + node.func.attr  # an object method such as cursor.execute
+    if name is not None and name.split(".")[0] in {"sqlalchemy"} and name.endswith(".text"):
+        return "sqlalchemy.text"
+    return name
+
+
+def source_category(node: ast.AST, sem: Semantics) -> str | None:
     if isinstance(node, ast.Return):
         if node.value is None:
             return None
-        found = shape("xss", node.value, scope)
+        found = shape("xss", node.value, sem)
         return "xss" if found.tainted and found.built and found.html else None
     if not isinstance(node, ast.Call):
         return None
-    name = scope.canonical(node.func)
+    name = sink_name(node, sem)
+    if name is None:
+        return None
     short = name.rsplit(".", 1)[-1]
     method = node.func.attr if isinstance(node.func, ast.Attribute) else None
-    if method in SQL_METHODS or (short == "text" and name.startswith("sqlalchemy")):
+    if method in SQL_METHODS or name in SQL_TEXT:
         query = _argument(node, SQL_KEYWORDS)
         if query is None:
             return None
-        found = shape("sqli", query, scope)
+        found = shape("sqli", query, sem)
         parameters = len(node.args) > 1 or any(kw.arg == "parameters" for kw in node.keywords)
         raw_query = method in SQL_METHODS and not parameters
         return "sqli" if found.tainted and (found.built or raw_query) else None
-    shell = any(
-        kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True
-        for kw in node.keywords
-    )
-    if name in SHELL_ALWAYS or (name in SHELL_OPTIONAL and shell):
+    shell = shell_requested(node)
+    if name in SHELL_ALWAYS or (name in SHELL_OPTIONAL and shell is not False):
         command = _argument(node, {"args", "cmd", "command"})
-        return "cmdi" if command is not None and shape("cmdi", command, scope).tainted else None
+        if command is None:
+            return None
+        if shape("cmdi", command, sem).tainted:
+            return "cmdi"
+        # POSIX quoting neutralises shell syntax, not a second explicitly invoked interpreter.
+        prefix = command
+        while isinstance(prefix, ast.BinOp) and isinstance(prefix.op, ast.Add):
+            prefix = prefix.left
+        text = sem.constant_string(prefix)
+        if text is not None and sem.constant_string(command) is None:
+            try:
+                parts = shlex.split(text)
+            except ValueError:
+                parts = []
+            if parts and posixpath.basename(parts[0]) in (
+                SHELLS | SCRIPT_RUNNERS | PROGRAM_EVALUATORS | COMMAND_RUNNERS
+            ):
+                return "cmdi"
+        return None
+    if name in EXEC_ARGV and argv_injects(node, name, sem):
+        return "cmdi"
     if short in {"render_template_string", "Markup"} and node.args:
-        return "xss" if shape("xss", node.args[0], scope).tainted else None
+        return "xss" if shape("xss", node.args[0], sem).tainted else None
     if short == "make_response" and node.args:
-        found = shape("xss", node.args[0], scope)
+        found = shape("xss", node.args[0], sem)
         return "xss" if found.tainted and found.built and found.html else None
     return None
 
@@ -262,7 +429,7 @@ def _detect_source(artifact_id: UUID, parsed: ParsedInput) -> RuleResult:
     tree = parsed.private_tree
     if tree is None:
         return RuleResult([], ["源码规则未运行：AST 不可用，不能据此认为没有风险。"], False)
-    scope = Scope(tree)
+    sem = Semantics(tree)
     lines = parsed.content.split("\n")  # redacted view with identical line numbering
     seen: set[tuple[str, int]] = set()
     results: list[Finding] = []
@@ -271,7 +438,7 @@ def _detect_source(artifact_id: UUID, parsed: ParsedInput) -> RuleResult:
         key=lambda node: (node.lineno, node.col_offset),
     )
     for node in nodes:
-        category = source_category(node, scope)
+        category = source_category(node, sem)
         if not category or (category, node.lineno) in seen:
             continue
         seen.add((category, node.lineno))
@@ -280,7 +447,11 @@ def _detect_source(artifact_id: UUID, parsed: ParsedInput) -> RuleResult:
         results.append(finding(category, "\n".join(lines[start - 1 : end]), location))
         if len(results) > MAX_RULE_FINDINGS:
             break
-    return _limited(results)
+    result = _limited(results)
+    if sem.exhausted:
+        result.truncated = True
+        result.warnings.append("源码语义分析预算已耗尽；规则覆盖不完整，不能据此判定无风险。")
+    return result
 
 
 def _detect_http(artifact_id: UUID, parsed: ParsedInput) -> RuleResult:

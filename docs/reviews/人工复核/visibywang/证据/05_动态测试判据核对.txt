@@ -1,0 +1,167 @@
+AegisForge 人工复核证据 05：动态测试判据核对
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+说明：
+1. 判据文件为 deploy/validator/holdout_cases.py（下称 HC），测试名固定为
+   business_primary / business_secondary / security_regression。
+2. "V 结果"与"S 结果"抄自 evaluation/results/m6-targeted-controls.json 的三项 passed 布尔值，
+   顺序固定为 (primary, secondary, security)。这是已有运行记录，我没有亲自运行。
+3. 环境：target.py 以 127.0.0.1:18080 服务候选 Flask app；harness.py 负责浏览器/文件观测；
+   Dockerfile 为 pg_dump/du/wc/varnishadm/curl/make 建命令桩，并创建 /srv/projects/demo、other
+   与 /var/backups/latest.sql → /tmp/m6-backup.sql。
+4. 只记录与判据有关的事实；评论见《动态测试审查.txt》。
+
+一、逐条核对表
+--------------------------------------------------------------------
+[h-xss-09] ← SRC-XSS-09-V
+输入：/welcome?user=Alice（primary）；user="Alice & Bob"（secondary）；
+      user="<svg onload=window.__aegis_xss=1>"（security）。
+判据：HC 97-108（请求构造）；177-193（业务：状态 200 且 documentElement.textContent 含 Alice，
+      或 200/400 且 inner_text("body") 含 "Alice & Bob"）；194-202（安全：状态 ∈{200,400,422}
+      且 window.__aegis_xss === undefined）。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 8 行 str.format 直接输出；测试用浏览器执行标记，判别有效。
+
+[h-xss-11] ← SRC-XSS-11-V
+输入：Cookie theme=Alice（primary）；theme=dark（secondary）；
+      theme="'><script>window.__aegis_xss=1</script>"（security）。
+判据：HC 100-101、153-158（业务：200 且 body 含 Alice/Preferences、含 dark）；
+      195-199（security 专用引号闭合载荷）；194-202（执行标记）。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 8 行为单引号 class 属性；payload 针对该上下文。business_secondary 只有 "dark"，
+      边界覆盖偏弱（见动态审查）。
+
+[h-xss-13] ← SRC-XSS-13-V
+输入：JSON {"code":"Alice"}（primary）；{"code":"Alice-42"}（secondary）；
+      {"code":"<svg onload=window.__aegis_xss=1>"}（security）。
+判据：HC 102-103、144-152（primary：200 且 json == {"redeemed":"Alice"}；
+      secondary：400 且响应字节含 Alice-42；security：194-202 执行标记）。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 10-11 行只在非 alnum 时输出 HTML，测试三组输入正好覆盖 200 JSON 与 400 HTML。
+
+[h-xss-14] ← SRC-XSS-14-V
+输入：/search-widget?q=Alice（primary）；q="O'Reilly & friends"（secondary）；
+      q="';window.__aegis_xss=1;//"（security，HC 198-199 覆盖默认载荷）。
+判据：HC 104-105、159-176（secondary 用浏览器读 window.initialQuery == 原值）；
+      194-202（security 执行标记）。
+V 结果：(true, false, false)  S 结果：(true, true, true)
+观察：源码第 9 行为 <script> 内单引号字符串；security 只覆盖引号闭合，未覆盖 </script> 闭合
+      （见问题清单 Q2）。
+
+[h-xss-17] ← SRC-XSS-17-V
+输入：/u/Alice（primary）；/u/Alice%20%26%20Bob（secondary）；
+      /u/<svg onload=window.__aegis_xss=1>（路径，URL 编码，security）。
+判据：HC 106-107（urllib.parse.quote(value, safe="")）；177-193（业务文本）；194-202（执行标记）。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 8 行拼接路径变量；编码 safe="" 避免斜杠改变路由，输入可达。
+
+[h-xss-19] ← SRC-XSS-19-V
+输入：/find?term=Alice（primary）；term="Alice & Bob"（secondary）；
+      term="<svg onload=window.__aegis_xss=1>"（security）。
+判据：HC 108、177-193、194-202。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：与 h-xss-09 同构；MethodView 的 get() 不改变 sink。
+
+[h-sqli-09] ← SRC-SQLI-09-V
+输入：/compare?id=1（primary）；id=2&id=1（secondary）；
+      id="0) OR 1=1 --"（security）。
+判据：HC 206-218。primary：200 且 items == [[1,"Alpha",10]]；secondary：排序后等于两行；
+      security：状态 ∈{400,422} 或 200 且 items == []。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 12-13 行 join IN 列表；payload 的 ")" 正对 IN (...) 的闭合。
+
+[h-sqli-10] ← SRC-SQLI-10-V
+输入：/invoice/1（primary）；/invoice/2（secondary）；/invoice/0%20OR%201=1（security）。
+判据：HC 219-233。primary/secondary 精确 JSON；security：状态 ∈{400,422,500} 或 200 且 invoice 为 null。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 11 行为未加引号数值拼接；500 被接受与 str(int()) 修法一致。
+
+[h-sqli-12] ← SRC-SQLI-12-V
+输入：PATCH /users/1 {"display_name":"Alicia"}（primary）；
+      {"display_name":"O'Reilly"}（secondary）；
+      {"display_name":"owned' WHERE id = ? OR 1=1 --"}（security）。
+判据：HC 234-245。primary/secondary：200 且 app.db 中 display_name 等于新值；
+      security：状态 ∈{200,400,422} 且 users.id=2 仍为 Bob。
+V 结果：(true, false, false)  S 结果：(true, true, true)
+观察：源码第 12-15 行拼 SET；测试只更新 display_name，EDITABLE 另有两列未覆盖（问题清单 Q3）。
+
+[h-sqli-14] ← SRC-SQLI-14-V
+输入：X-Tenant: tenant-a（primary）；O'Reilly（secondary）；"' OR 1=1 --"（security）。
+判据：HC 246-258。primary/secondary：200 且 reports 等于 [["Report A"]] / [["Report Q"]]；
+      security：状态 ∈{400,422} 或 200 且 reports == []。
+V 结果：(true, false, false)  S 结果：(true, true, true)
+观察：源码第 11 行 f-string 拼 header；secondary 同时检查单引号数据仍可查询，防止过度清洗。
+
+[h-sqli-17] ← SRC-SQLI-17-V
+输入：/feed?limit=1&offset=0（primary）；limit=2&offset=1（secondary）；
+      limit="1+1"&offset=0（security）。
+判据：HC 259-269。primary/secondary 精确 posts；security：状态 ∈{400,422,500}。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 13-14 行 % 拼 LIMIT/OFFSET；security 拦截"表达式"与"默认值回退"（200 会失败）。
+
+[h-sqli-19] ← SRC-SQLI-19-V
+输入：/jobs?city=Paris&level=senior（primary）；city=London（secondary，无 level）；
+      city="' OR 1=1 --"（security）。
+判据：HC 270-282。primary/secondary 精确 jobs；security：状态 ∈{400,422} 或 200 且 jobs == []。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 12、14 行两分支 += 拼接；secondary 专门检查参数列表与占位符对齐。
+
+[h-cmdi-09] ← SRC-CMDI-09-V
+输入：form database=demo（primary）；other（secondary）；
+      "demo; touch /tmp/aegis-command-marker #"（security）。
+判据：HC 295-306（请求）；309-337。expected = (data == {"status": 0})；
+      observed = 命令桩日志任一 argv 含 value；security：状态 ∈{200,400,422} 且 MARKER 不存在。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 11-12 行 os.system 带重定向；测试未检查 /var/backups/latest.sql 的内容
+      （问题清单 Q4）。
+
+[h-cmdi-10] ← SRC-CMDI-10-V
+输入：JSON {"path":"demo"}（primary）；{"path":"other"}（secondary）；
+      {"path":"demo; touch /tmp/aegis-command-marker #"}（security）。
+判据：HC 299-300；309-337。expected = (data == {"usage":"du:<value>\n"})；observed 看 argv。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：命令桩对 du 打印 "du:" + 最后一个参数，与期望字符串一致；os.popen 的 shell 解释被测试捕获。
+
+[h-cmdi-12] ← SRC-CMDI-12-V
+输入：/count-lines?file=app.log（primary）；audit.log（secondary）；
+      "app.log; touch /tmp/aegis-command-marker #"（security）。
+判据：HC 301-302；309-337。expected = (data == {"result":"wc:/var/log/<value>\n"})。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 11 行显式 ["bash","-c",...]；测试期望值来自命令桩对 wc 的输出。
+
+[h-cmdi-14] ← SRC-CMDI-14-V
+输入：X-Purge-Host: demo（primary）；other（secondary）；
+      "demo; touch /tmp/aegis-command-marker #"（security）。
+判据：HC 303；309-337。expected = (data == {"purged": True})；observed 看 varnishadm argv。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：响应固定，安全性主要靠 argv 日志 + MARKER；正则白名单修法返回 400 被接受。
+
+[h-cmdi-18] ← SRC-CMDI-18-V
+输入：JSON {"hosts":["demo"]}（primary）；{"hosts":["other"]}（secondary）；
+      {"hosts":["demo; touch /tmp/aegis-command-marker #"]}（security）。
+判据：HC 304-305；309-337。expected = (data == {value: 0})；observed 看 curl argv。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 11-12 行循环 os.system；业务值 "demo" 不是合法域名，可能使严格校验修复失败。
+
+[h-cmdi-20] ← SRC-CMDI-20-V
+输入：form project=demo（primary）；other（secondary）；
+      "demo; touch /tmp/aegis-command-marker #"（security）。
+判据：HC 306；309-337。expected = (data == {"exit": 0})；
+      observed = 任一日志 call["cwd"] == "/srv/projects/" + value（number==20 分支）；
+      security：状态 ∈{200,400,422} 且 MARKER 不存在。
+V 结果：(true, true, false)  S 结果：(true, true, true)
+观察：源码第 11-12 行 "cd && make" + shell=True；S 参考实现 cwd= 检查因载荷含 "/" 返回 400，
+      若载荷不含斜杠会 500（安全回归不接受 500），详见动态审查建议。
+
+二、共性核对
+--------------------------------------------------------------------
+1. 编号对应：controlled_repairs.json 18 条、m6_cases.json 18 条、HC IDS 18 条、controls 36 次
+   （18 V + 18 S），四者 ID 集合完全一致；m6_cases 的 source_sha256 与 freeze.json test 段一致。
+2. 输入可达性：XSS 覆盖 query/path/cookie/json/form；SQLi 覆盖 query 列表/path/JSON/PATCH/header/
+   cookie/json；CMDi 覆盖 form/JSON/query/header。每条都对应源码中的真实取值点。
+3. 业务预期：全部为精确 JSON、精确数据库值、浏览器文本或命令桩 argv/cwd，不是"状态 200 即通过"。
+4. 安全判据：XSS 用浏览器执行标记；SQLi 用状态码或空结果 + 数据库未变；CMDi 用 MARKER 文件 +
+   命令桩日志。三者的误报/漏报边界不同，已逐条指出。
+5. 功能保留：CMDi 的 observed 检查能阻止"硬编码返回"；SQLi 的数据库检查能阻止"返回成功但没写入"。
+6. 已知缺口（本轮 disagree）：h-xss-14 的 </script>、h-sqli-12 的 email/timezone、h-cmdi-09 的
+   备份文件内容；另有多条建议项见问题清单第五节。

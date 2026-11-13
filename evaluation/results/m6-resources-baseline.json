@@ -1,0 +1,35 @@
+{
+  "scope": "fixed trusted stress probes; no user/model code",
+  "memory_limit_bytes": 134217728,
+  "pids_limit": 32,
+  "rows": [
+    {
+      "probe": "memory",
+      "exit_code": 137,
+      "observation": null,
+      "accepted": true
+    },
+    {
+      "probe": "pids",
+      "exit_code": 0,
+      "observation": {
+        "blocked": true,
+        "children": 30
+      },
+      "accepted": true
+    },
+    {
+      "probe": "filesystem",
+      "exit_code": 0,
+      "observation": {
+        "root_write_denied": true,
+        "tmp_write": true,
+        "socket": false,
+        "external": false,
+        "uid": 65532
+      },
+      "accepted": true
+    }
+  ],
+  "passed": true
+}

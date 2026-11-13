@@ -1,0 +1,978 @@
+{
+  "scope": "18 frozen original and AI reference controls; human review pending",
+  "passed": true,
+  "rows": [
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "30524f794e084e35bae0ccab4f75780b",
+      "case_id": "h-xss-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2504
+    },
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "a01648ab9b28497bb069cd06538f1402",
+      "case_id": "h-xss-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2502
+    },
+    {
+      "sample_id": "SRC-XSS-11-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "3538eed476164dc199e0c79249520c75",
+      "case_id": "h-xss-11",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "e14e3ea059c338ce379da514c3fd2b4c7c5c47fb8415ab00f12627eec2921b8e",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2150
+    },
+    {
+      "sample_id": "SRC-XSS-11-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "b99e555391ef4471971bafb2d2f08885",
+      "case_id": "h-xss-11",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "e4199208356606348450d5b9ee8d5c36b30d46aeb9fa331e09ba854a44bf686b",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2151
+    },
+    {
+      "sample_id": "SRC-XSS-13-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "8015e7080ada46d1906a38702ba435fc",
+      "case_id": "h-xss-13",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "efdcbad4fec7ef306506ed84b304747c6183fa6d225839ff5e7c62c9e324be05",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2100
+    },
+    {
+      "sample_id": "SRC-XSS-13-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "d1d0176cd9ca44afb957536a316f5db2",
+      "case_id": "h-xss-13",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "6d0c6941c242cabba76c785e6888109dbca85c0b5ca9ab4102f3359537af62aa",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2151
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "f2c43f3997c244a3bd6380619a244785",
+      "case_id": "h-xss-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2251
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "4cc732047ddf492089cc8c2a9c69a887",
+      "case_id": "h-xss-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "b1c779650f778dba9ab6ad30f3dd8af5db426fa9dbb8ed70177b8669b64782a9",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2201
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "0c63faaa578046c9a6655c749a4b14aa",
+      "case_id": "h-xss-17",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2401
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "c2f4a179ec824bdfbb64c26a610e9d5c",
+      "case_id": "h-xss-17",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "134dc8bc11e83eeb9e22d8aaf664a6cf922a58057baae5c0c792f09a80e7a9cc",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2401
+    },
+    {
+      "sample_id": "SRC-XSS-19-V",
+      "cwe": "CWE-79",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "eb46a6c7146a4d10869b1a63deb41719",
+      "case_id": "h-xss-19",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "e8ac502c4eb81cc2c4da1e683e9b891c4c3b3f06c42a084bde64a42d4a9861e6",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2404
+    },
+    {
+      "sample_id": "SRC-XSS-19-V",
+      "cwe": "CWE-79",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "45da679babda4ae09c55381c64d03e09",
+      "case_id": "h-xss-19",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "c75503e5f273dbf1104f7d5444cdfd992e910c616b6a4275040663ecbc669eda",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 2402
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "591b873043ff4925a5fbcb74ae94361f",
+      "case_id": "h-sqli-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "a38c6f028ad74d238cea5a0c96e83786",
+      "case_id": "h-sqli-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "4be52e62ab98dd91c5834cb689fce076ad515445ddb3984dd331f9435670b485",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "98050189791e418fb5549e53c1f45d05",
+      "case_id": "h-sqli-10",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1099
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "d0d88a699d6949e9a6b44a12c5ede211",
+      "case_id": "h-sqli-10",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "7f9e5d7711b09bff410842dca0fb831e49a1c10e5ba99bf1f86da3ea8b0225cf",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "e177d2c2adc943ffbef3e6b3b6f8719b",
+      "case_id": "h-sqli-12",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1099
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "98992d815d7441bba97259d02b51f1b8",
+      "case_id": "h-sqli-12",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "0d43945ee13c9373ebc388f81a9a568f04fac0509860aa0534fa8dbb219fee5a",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1097
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "faf7591280ed48b3bfe36d06748c524b",
+      "case_id": "h-sqli-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": false
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "de345c19c7d04bd891a71bc2eca26e47",
+      "case_id": "h-sqli-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "ea448b5488fecb53c2b4f9734bd93d3fe3276d5e39cdfa2314b973a46d168e76",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1148
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "349b7acfbcf64f08adae87e3790bf0aa",
+      "case_id": "h-sqli-17",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "4ac42bf828274feda7cef17054ba4cee",
+      "case_id": "h-sqli-17",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "a8d96b6af3b5683a84f6b03f81a0a6c8845235d7a49f0cf170b911886455e370",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "cwe": "CWE-89",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "e7a35be6d6c94a8ea1453f4cd0830027",
+      "case_id": "h-sqli-19",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1098
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "cwe": "CWE-89",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "1510d05b47824fa7b50b08b571c13179",
+      "case_id": "h-sqli-19",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "f72bfa0a70efa9a9ebf41d2b7d63b50cf712277481b5402255f960bf7813b0b3",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1148
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "a01d56deb777496a9e13b14c9f229987",
+      "case_id": "h-cmdi-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1349
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "4af0cbd6442040fa9a9bbcbfc5424d92",
+      "case_id": "h-cmdi-09",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "20595550594293fcaa8a3c7ebca21077b5536ef36cf660b50759233144067ffd",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1449
+    },
+    {
+      "sample_id": "SRC-CMDI-10-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "9de4d39c1a8145cc8dd588d223b5bdc7",
+      "case_id": "h-cmdi-10",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "68acc5b0d5516e3d254e8546a4a051b746a12a504c479f5175876e9db9ff3e42",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1298
+    },
+    {
+      "sample_id": "SRC-CMDI-10-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "62c853ca0d844bd497cd4e7545a2d58a",
+      "case_id": "h-cmdi-10",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "894c9bdfb162afc0366336cb4b32689b58cb0486feef809656ffa14417668839",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1299
+    },
+    {
+      "sample_id": "SRC-CMDI-12-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "b54aee85b64e43be8babe428f7fc6e1d",
+      "case_id": "h-cmdi-12",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "9a3ba76af99dd49c42c21dab9aad07fb29cdce07520c238f076c58accced44ef",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1348
+    },
+    {
+      "sample_id": "SRC-CMDI-12-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "5ab2af19e7b146faae196cc22e76d82b",
+      "case_id": "h-cmdi-12",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "ad88edd526b659b6a70ff1ab16b5f728430917fb32bca3ff0c08b4c2936d3dcf",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1431
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "b1ac7b9c049a400d95de5c7e997f1003",
+      "case_id": "h-cmdi-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1399
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "832f6f63a38240ef8a6a10c645c7eefb",
+      "case_id": "h-cmdi-14",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "d220e0f0a2f0a3f76667366e1c80ff4358a4c5995af3122fe6567ead447f2c27",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1249
+    },
+    {
+      "sample_id": "SRC-CMDI-18-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "548a91d1b02249ce8f354625398bb62a",
+      "case_id": "h-cmdi-18",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "747c90decbe6d7d7f983897a2292d5710c4c9fdea9c6ddc77f9334c49872e523",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1298
+    },
+    {
+      "sample_id": "SRC-CMDI-18-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "035f16efdb4e46a58ef95d81b8281274",
+      "case_id": "h-cmdi-18",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "f90e296ecf131074b3691233a042911d2a76ea462e8d952366a3b73cb54d1f73",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1348
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "cwe": "CWE-78",
+      "control": "V",
+      "accepted": true,
+      "status": "failed",
+      "run_id": "5cda87aad18442b488339cb2a0005699",
+      "case_id": "h-cmdi-20",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": false
+        }
+      ],
+      "candidate_sha256": "12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1248
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "cwe": "CWE-78",
+      "control": "S",
+      "accepted": true,
+      "status": "passed",
+      "run_id": "774ee76475224dc6bd852b107107dedf",
+      "case_id": "h-cmdi-20",
+      "tests": [
+        {
+          "name": "business_primary",
+          "passed": true
+        },
+        {
+          "name": "business_secondary",
+          "passed": true
+        },
+        {
+          "name": "security_regression",
+          "passed": true
+        }
+      ],
+      "candidate_sha256": "05116a5358e4652b682edb4bb4f893b8bca0c6c5048d980bcbcd95c28f5c9ff8",
+      "image_id": "sha256:e2ab753a68a78bfef298b4e7cca2dd39c3ac28870fe5b0421a76c3879be3761e",
+      "harness_sha256": "2a8227b86267f4d59ec5f656c1ada06b4812e4e97769e8fb83feb78467d6ab05",
+      "elapsed_ms": 1248
+    }
+  ]
+}

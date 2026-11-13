@@ -1,0 +1,35 @@
+{
+  "scope": "CI dependency installation incidents; browser tests were not executed",
+  "incidents": [
+    {
+      "run_id": 43033123844,
+      "commit": "5fce115b9986f90a508c5e4ae74637f34a3fce33",
+      "job_id": 130564983295,
+      "conclusion": "cancelled by newer commit",
+      "browser_tests_executed": false,
+      "observed_error": "Temporary failure resolving 'azure.archive.ubuntu.com'"
+    },
+    {
+      "run_id": 43037962830,
+      "commit": "79359ed468c7fbeb337a346147c848ea4067293b",
+      "job_id": 130581942373,
+      "conclusion": "dependency installation timed out after 8 minutes",
+      "browser_tests_executed": false,
+      "observed_error": "Temporary failure resolving 'azure.archive.ubuntu.com'",
+      "source": "mirror+file:/etc/apt/apt-mirrors.txt",
+      "other_jobs": "six non-browser jobs succeeded"
+    },
+    {
+      "run_id": 43039772538,
+      "commit": "a94dd8d757ec641acd1bf49e742b35ec2ff20f95",
+      "job_id": 130588135626,
+      "conclusion": "dependency installation timed out after 8 minutes",
+      "browser_tests_executed": false,
+      "observed_error": "Temporary failure resolving 'archive.ubuntu.com'",
+      "source": "mirror+file:/etc/apt/apt-mirrors.txt",
+      "other_jobs": "six non-browser jobs succeeded"
+    }
+  ],
+  "fix": "Archive replacement did not resolve wider Ubuntu source DNS failures. Use the official version-matched Playwright image pinned to its verified linux/amd64 manifest digest; run the same browser tests with host Node 24 and no model credential or Docker socket.",
+  "limitations": "Installation failures do not establish browser compatibility; later successful executions must be recorded separately."
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": "m6-diagnostic-run-1.0",
+  "run_id": "m6-targeted-20261112",
+  "course_acceptance_evaluated": false,
+  "human_review": "pending",
+  "files": {
+    "detection": {
+      "path": "evaluation/results/m6-targeted-detection.json",
+      "sha256": "5459545d952ed1b04afd489de2678f382fa94fdc8fd0cad0cc9e686baa9addd7"
+    },
+    "bundle": {
+      "path": "evaluation/results/m6-targeted-candidates.json",
+      "sha256": "9642b1bb840e7b4e5f6a9a95c275f26913c49504430495096059b4b56616c5d7"
+    },
+    "dynamic": {
+      "path": "evaluation/results/m6-targeted-repairs.json",
+      "sha256": "fc20feddce0f3781294a5f21562df482083da105ebb9f7ac3e3169774a200ba5"
+    },
+    "controls": {
+      "path": "evaluation/results/m6-targeted-controls.json",
+      "sha256": "7c62dab81038e38a4981270ee6be63c1852c077fea0142d76a47ea49bb8742ea"
+    }
+  },
+  "provenance": {
+    "workflow_run": 43173854501,
+    "artifact_id": 13923351791,
+    "artifact_sha256": "b16442dd9f908a92f0c55739456d5248468dbadc16818037568758686d6707ad",
+    "workflow_commit": "292be097a025d84a6f684e0527f080d621701678"
+  }
+}

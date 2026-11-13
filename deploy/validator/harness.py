@@ -37,6 +37,9 @@ TESTS = {
     "sqli-01": ["business_lookup", "business_apostrophe", "security_query_boundary"],
     "cmdi-01": ["business_ping", "business_second_host", "security_shell_boundary"],
 }
+from holdout_cases import TESTS as HOLDOUT_TESTS  # noqa: E402
+
+TESTS.update(HOLDOUT_TESTS)
 UNREACHABLE_HOST = "192.0.2.77"  # ping_stub.py answers this one with a non-zero exit status
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -176,6 +179,10 @@ def xss_security(browser):
 
 
 def run_case(case, ready, browser, results):
+    if case in HOLDOUT_TESTS:
+        from holdout_cases import run_case as run_holdout
+
+        return run_holdout(case, ready, browser, results)
     if not ready:
         return results
     if case == "xss-01":
@@ -287,7 +294,7 @@ def main():
         )
         if probe.returncode:
             raise InfrastructureError
-        if case == "xss-01":
+        if case == "xss-01" or case.startswith("h-xss-"):
             from playwright.sync_api import sync_playwright
 
             playwright = sync_playwright().start()
@@ -298,6 +305,10 @@ def main():
             )
         if case == "sqli-01":
             seed_database()
+        if case in HOLDOUT_TESTS:
+            from holdout_cases import setup
+
+            setup(case)
         candidate_phase = True
         process, ready = start_target(time.monotonic() + BUDGET)
         try:

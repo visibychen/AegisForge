@@ -1,0 +1,3069 @@
+{
+  "protocol": {
+    "scope": "post-hoc conditional repair diagnosis on exposed cases, not independent acceptance",
+    "historical_detection_round": 2,
+    "attempt_kind": "one later candidate per correctly detected historical target",
+    "runtime_files": {
+      "backend/app/core/__init__.py": "93fc55892854d3c3a40c5514c363b770d04a22f3de819dc05b3d27abbd0d46f8",
+      "backend/app/core/config.py": "346bf35e969ead6247e54dbf6bdc990b8e630557f084e2239a4be7850097bcdb",
+      "backend/app/core/credentials.py": "09a2c2c11635419e85f70ffa729040e52dcef560ea784e8ed96ea462cd35f3d2",
+      "backend/app/core/database.py": "d4990312e48f92de403457fe6de0f42d64a0cdcf99963f00f07b390af316bfc6",
+      "backend/app/core/errors.py": "543b067a0b9d43808c8093ee7b90ea9cae62da83adc82dc2936e4b3f1af7e249",
+      "backend/app/core/redaction.py": "54afb24df4f3ff30607983b810517df008ee78bc7a9e45cd7215fbb79a997a6e",
+      "backend/app/parsers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/parsers/inputs.py": "0f60a60c7488b590fbabef1a1e5c16ae4e6867459c26fbbee433a2d07fd18d50",
+      "backend/app/rules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/rules/detector.py": "85912d066a6019693e3de63b37f0c8c52f70d2723fef65962b0ef3f84cf0feb1",
+      "backend/app/llm/__init__.py": "77be26817ead4989b6832eaf42c5e0bf0d21aaef61e9df6840fcbc6f79648690",
+      "backend/app/llm/deepseek.py": "cfe0bb175d2bc767a16d9ae7f949e6b6b3719fdec56a8f62b49bd15903b7c53d",
+      "backend/app/llm/prompts.py": "05652cbb3340fc25a762c15749c144e2a622da781622771370bcfa0bcdcb071b",
+      "backend/app/llm/provider.py": "841a25e2855a68185f7e8cd132f7ae455bd28d5786148373a206203ac4a543eb",
+      "backend/app/llm/repair.py": "3962d8a841cb0aa26b0a8a11633e30d78c641577a30366be9adb37aeeeb347dc",
+      "backend/app/llm/wire.py": "b61205393a68bc7501dd23346fa4dfe8293192665e9206d9d4f738c85382b6b5",
+      "backend/app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/services/artifacts.py": "d3392664bbc369fe4c2ba72d25e3c09ba8b4369793fe494870a3f4c6186f3da1",
+      "backend/app/services/merge.py": "76b6888c506fe5da71d7ea7f63075a71082de5dc04af65b9ba51dd5889334533",
+      "backend/app/services/patch_review.py": "3d0ea2c8e16fab6be627c7a9aa36e88209529dd5a90174e86d770ebdfde3de28",
+      "backend/app/services/patches.py": "469c951ddaa11f8a99dff2de191c669e972d2d320a73bdb921161747904182c8",
+      "backend/app/services/queue.py": "43d6e6fcf46a694db69b1ba454397bf66357b1ac98445b86ff5fe45494d9e070",
+      "backend/app/services/receipts.py": "fc196434f3e09b7daa97029f5099d8452f58b27999532df38fe9855b36bb0313",
+      "backend/app/services/repair_contract.py": "f0d444b7bb03c0702750f414972bede22dafccca06ea42dd0b0ea74654e27722",
+      "backend/app/services/repairs.py": "d1184b4c8d5b595166c5f73e85b45175c10254f29b4408ebdf9f973ca3a853ec",
+      "backend/app/services/report_integrity.py": "1eff887da6ce0e0d1b0588e9601ddf63608223863d60b86dbbb03f3c185ceaae",
+      "backend/app/services/reports.py": "23e25acab92764cd7e9180ea7d6b03fea443c6de4b97d423a7caaf45dba10d39",
+      "backend/app/services/scans.py": "a7e14eaf55444afe5d26e96c589fc0ca08463fe274f25048028cbc29f3af5405",
+      "backend/app/services/workspace.py": "23e70ab13230087d88ce8aee745f68671b8fcf3adab650223dbd01f07c971a1e",
+      "backend/app/worker/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "backend/app/worker/__main__.py": "7cf0bd8cf08a2b48456ec576043e8e2116e577b6da2dd94ccea322762d038457",
+      "backend/app/worker/runner.py": "d2dd67660b7157b3fc6ec81cb5725a9efad7a86bd7406603bfb742ff698603f6",
+      "backend/app/schemas/__init__.py": "7febd78a690a2832459ee8a0b36777eb0697ecf7244aa8733d5d9bcf1b433a28",
+      "backend/app/schemas/contracts.py": "ebb67ea600a1688672673e5249b4101b36f7dd7936f593aa2dbd41edbd48f808",
+      "backend/app/models/__init__.py": "a3ced5fcbdef94493b70404f9db04e9cbb49cc2580ae5690e78af4cedd2ec69d",
+      "backend/app/models/foundation.py": "1e107a2fb29fc800b94890fb3f6a2f6f9cfae44b5dd817db67fdcb5a0e496d09",
+      "backend/app/api/__init__.py": "0160b8a4e431219d621343e7e9e9b644e506a868ea698bdc85cb6dec5383836d",
+      "backend/app/api/artifacts.py": "e836ae738b886a6dcd27952839c0078d8ea97efbf189e703de1935aae1726c4d",
+      "backend/app/api/repairs.py": "f16130e25b03dca3ff6758f68f24a0bd4340077de16de359ce5254bc641a42ae",
+      "backend/app/api/scans.py": "7c41555f3b0c53de35c2ab8754728664e160b739776b4abf4875723473c218d6",
+      "backend/app/api/workspace.py": "35c6b07e9de17a2cb19c0531d101664ba8cc030e984d57333b0043b2a408a1df"
+    },
+    "model": "deepseek-flash",
+    "case_ids": [
+      "SRC-XSS-09-V",
+      "SRC-XSS-11-V",
+      "SRC-XSS-13-V",
+      "SRC-XSS-14-V",
+      "SRC-XSS-17-V",
+      "SRC-XSS-19-V",
+      "SRC-SQLI-09-V",
+      "SRC-SQLI-10-V",
+      "SRC-SQLI-12-V",
+      "SRC-SQLI-14-V",
+      "SRC-SQLI-17-V",
+      "SRC-SQLI-19-V",
+      "SRC-CMDI-09-V",
+      "SRC-CMDI-10-V",
+      "SRC-CMDI-12-V",
+      "SRC-CMDI-14-V",
+      "SRC-CMDI-18-V",
+      "SRC-CMDI-20-V"
+    ],
+    "allowance": 70
+  },
+  "denominator": 18,
+  "rows": [
+    {
+      "sample_id": "SRC-XSS-09-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "c19abdb0-7801-43e6-b96a-0fb3debf7921",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 2,
+          "change_ratio": 0.25,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "markupsafe.escape"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 8,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261",
+          "diff_sha256": "9e132fa26efc63cd8d8f1891b1e8cc0bb8c47317b97ad308aad0e7aaf1a5bbe2",
+          "digest": "0799555837fd671120e6a80709b6efe1baac5e6151207fd7bc77661451302dc2",
+          "finding_anchor": "9f50e1e41b6ea4cb522d5abc59e88204ef3814184b01cf582f0d59cb39896377",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "ee11b47859c10c322f1602d7a298f099536b90f53cd647fed3776142088e67b6",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2969,
+          "input_tokens": 930,
+          "output_tokens": 203,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2817,
+          "input_tokens": 1700,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "from flask import Flask, request\nfrom markupsafe import escape\n\napp = Flask(__name__)\n\n\n@app.route(\"/welcome\")\ndef welcome():\n    return \"<p>Welcome back, {}.</p>\".format(escape(request.args.get(\"user\", \"\")))\n",
+      "candidate_sha256": "7b61fbe1bb184e950c741566f0a8759358e30f4661d64db43f804a04f1d45261"
+    },
+    {
+      "sample_id": "SRC-XSS-11-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "b18bb727-3a0e-4b66-adaf-a34cf2acbae8",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-79",
+                "end_line": 10,
+                "sources": [
+                  "llm"
+                ],
+                "start_line": 9
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 3,
+          "change_ratio": 0.375,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "markupsafe.escape"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 8,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "f0730c80aa25a537f96b003191a461c6bbac0cfe57b3fc563e5c814a40c0a05f",
+          "diff_sha256": "a9d4a9a363e8153a0536be6102872fbc6d80cb8703282321ff0e8ffdddc41516",
+          "digest": "1d87cbabdee33ee16d7a3b27c56c3a2eb103454e7a98662e1d32f0069cb455a2",
+          "finding_anchor": "4e33d8d03e0c7e192457859ef1eca9c0757c9a02a181beaddf161498e90dd96b",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "e14e3ea059c338ce379da514c3fd2b4c7c5c47fb8415ab00f12627eec2921b8e",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "failed",
+          "detail": "仍存在：CWE-79 第9行"
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 3081,
+          "input_tokens": 936,
+          "output_tokens": 210,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2661,
+          "input_tokens": 1719,
+          "output_tokens": 255,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "from flask import Flask, request\nfrom markupsafe import escape\n\napp = Flask(__name__)\n\n\n@app.route(\"/theme\")\ndef theme():\n    theme = escape(request.cookies.get(\"theme\", \"light\"))\n    return \"<body class='\" + str(theme) + \"'>Preferences</body>\"\n",
+      "candidate_sha256": "f0730c80aa25a537f96b003191a461c6bbac0cfe57b3fc563e5c814a40c0a05f"
+    },
+    {
+      "sample_id": "SRC-XSS-13-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "e4cea5dc-e545-4fe8-9d2f-c1faec11eb10",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 2,
+          "change_ratio": 0.167,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "markupsafe.escape"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 12,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "b0db971df3bc00c01fb9c917d6df046dcf0ac2ecb8e687b16d8b779a67a2562c",
+          "diff_sha256": "03e655be10aa55dfdd27ce9a599d875b9c6d856a5e3d934d1d98ab46ffcd3088",
+          "digest": "9934d10dc900e78a04c4e5ea3836b34584437f0414d70b12238f11983035c72d",
+          "finding_anchor": "c7279e74c52caf1ad4b349a76134c551d11d3331130adf160f68b82187005aec",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "efdcbad4fec7ef306506ed84b304747c6183fa6d225839ff5e7c62c9e324be05",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2619,
+          "input_tokens": 1029,
+          "output_tokens": 205,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 3987,
+          "input_tokens": 1794,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "from flask import Flask, request\nfrom markupsafe import escape\n\napp = Flask(__name__)\n\n\n@app.post(\"/api/coupons/redeem\")\ndef redeem():\n    payload = request.get_json(silent=True) or {}\n    code = payload.get(\"code\", \"\")\n    if not code.isalnum():\n        return f\"<h1>Invalid coupon</h1><p>{escape(code)} is not a valid code.</p>\", 400\n    return {\"redeemed\": code}\n",
+      "candidate_sha256": "b0db971df3bc00c01fb9c917d6df046dcf0ac2ecb8e687b16d8b779a67a2562c"
+    },
+    {
+      "sample_id": "SRC-XSS-14-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "ee4003cd-4d53-4971-9e1c-23db1d3ba40b",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-79",
+                "end_line": 12,
+                "sources": [
+                  "llm"
+                ],
+                "start_line": 10
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-79",
+                "end_line": 12,
+                "sources": [
+                  "rule"
+                ],
+                "start_line": 12
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          }
+        },
+        "impact": {
+          "added_lines": 4,
+          "change_ratio": 0.444,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "json"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 9,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "f4dd0f4cb9e4b444dd0fbf6450a88b6b7914733e26ccf7ddd389416db4b427d4",
+          "diff_sha256": "970bddabd62a7bcddd20eeee7a7398aa75efd35f1708af7a85ec6a7ae66b14d8",
+          "digest": "4d6d783d2ec9d480d2f1df5be2bd4b346cd737de6cb51445f392c6a83269596d",
+          "finding_anchor": "f27b8d916f1de7368e1348df6d918afe73beb997db60d63e736d9ab244f7185b",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "bb3fe1945d629462398b6fdd3c58a89a7b63c82efa3d05186e3830911abbe8b8",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "failed",
+          "detail": "仍存在：CWE-79 第12行"
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "failed",
+          "detail": "仍存在：CWE-79 第10行"
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2516,
+          "input_tokens": 955,
+          "output_tokens": 238,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 5026,
+          "input_tokens": 1761,
+          "output_tokens": 317,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import json\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/search-widget\")\ndef widget():\n    query = request.args.get(\"q\", \"\")\n    encoded = json.dumps(query).replace(\"<\", \"\\\\u003c\")\n    return \"<script>var initialQuery = %s;</script><div id='app'></div>\" % encoded\n",
+      "candidate_sha256": "f4dd0f4cb9e4b444dd0fbf6450a88b6b7914733e26ccf7ddd389416db4b427d4"
+    },
+    {
+      "sample_id": "SRC-XSS-17-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "38313a09-6356-40d3-8b9e-0e7efe909856",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 2,
+          "change_ratio": 0.25,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "markupsafe.escape"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 8,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "c7053a60a260b15bdfe589ea01982486884cc36ac289bb499b42f165265541ff",
+          "diff_sha256": "d8d95b8503404c76b09ac31fbd92f450fc39585a84c57b5c7d85ed160d8c8fc7",
+          "digest": "f2f45f654941673058a037eef00f45a60309fe0b2829cd79f344b70afe1f248c",
+          "finding_anchor": "fb51c7ed397435861c9dc89a921bcf242a96178df7057a1c034a1d04f805e4b9",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "0889d2d8352e6feb62d4072b5b1e41a1c0b05081488a198a261988151a8e6791",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 3247,
+          "input_tokens": 929,
+          "output_tokens": 210,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 1884,
+          "input_tokens": 1704,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "from flask import Flask\nfrom markupsafe import escape\n\napp = Flask(__name__)\n\n\n@app.route(\"/u/<username>\")\ndef public_profile(username):\n    return \"<h2>Profile of \" + str(escape(username)) + \"</h2><p>No public posts yet.</p>\"\n",
+      "candidate_sha256": "c7053a60a260b15bdfe589ea01982486884cc36ac289bb499b42f165265541ff"
+    },
+    {
+      "sample_id": "SRC-XSS-19-V",
+      "cwe": "CWE-79",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "0c7e8768-f39c-4429-9ce8-8bebd8441ab3",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 2,
+          "change_ratio": 0.154,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "markupsafe.escape"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 13,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "6b682a86fc24fba26b54bd4a85159e34d1e434760644ae167de05a647eacd185",
+          "diff_sha256": "9c8a7ecd74bb00fa9c4ecab950096890802722f04577dcc44ebdad519c0da7b1",
+          "digest": "a8fe7a905ca3126dfdeb2444c6c71de384e9d7a4022eda4c034cb8564da13851",
+          "finding_anchor": "d74ee9e807e6c72f8657d59bb8c203bf5fd961b84d7276a761f5aeb5e70a9fa3",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "e8ac502c4eb81cc2c4da1e683e9b891c4c3b3f06c42a084bde64a42d4a9861e6",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2301,
+          "input_tokens": 1020,
+          "output_tokens": 207,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2805,
+          "input_tokens": 1793,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "from flask import Flask, request\nfrom markupsafe import escape\nfrom flask.views import MethodView\n\napp = Flask(__name__)\n\n\nclass SearchView(MethodView):\n    def get(self):\n        term = request.args.get(\"term\", \"\")\n        return f\"<h1>Results for {escape(term)}</h1><ul></ul>\"\n\n\napp.add_url_rule(\"/find\", view_func=SearchView.as_view(\"find\"))\n",
+      "candidate_sha256": "6b682a86fc24fba26b54bd4a85159e34d1e434760644ae167de05a647eacd185"
+    },
+    {
+      "sample_id": "SRC-SQLI-09-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "9c99231e-d9c2-4be5-a76d-6369ed54f154",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-89",
+                "end_line": 16,
+                "sources": [
+                  "rule"
+                ],
+                "start_line": 16
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          }
+        },
+        "impact": {
+          "added_lines": 5,
+          "change_ratio": 0.385,
+          "changed_lines": 2,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 1,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 13,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "b5fe5aa09167a53690e8d78cdae8481b277ce890209f13670b6c0d372866e81b",
+          "diff_sha256": "b7f51c636b67e49551040c190c99b2ddf8deb5f807e11e1762ef8f95ea7b7fe6",
+          "digest": "9de062a564736eac9aa899dbd156a1c60f07d9c540e31f733dc73b91d2a70fc2",
+          "finding_anchor": "809412b8dc03d8deb5900ad2f0de22b17163f72be91d6513f1eb62dd259b5fe1",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "529df0959507f3334006adbe95564aa7625543256521c4ee899871791f796514",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "failed",
+          "detail": "仍存在：CWE-89 第16行"
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2528,
+          "input_tokens": 1019,
+          "output_tokens": 302,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 1321,
+          "input_tokens": 1842,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/compare\")\ndef compare():\n    ids = request.args.getlist(\"id\")\n    db = sqlite3.connect(\"catalog.db\")\n    if not ids:\n        return {\"items\": []}\n    placeholders = \",\".join(\"?\" for _ in ids)\n    sql = \"SELECT id, name, price FROM items WHERE id IN (\" + placeholders + \")\"\n    return {\"items\": db.execute(sql, ids).fetchall()}\n",
+      "candidate_sha256": "b5fe5aa09167a53690e8d78cdae8481b277ce890209f13670b6c0d372866e81b"
+    },
+    {
+      "sample_id": "SRC-SQLI-10-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "0e97019f-329f-4674-9f8d-ea8ebfe6c179",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 1,
+          "change_ratio": 0.083,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 1,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 12,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "386435affa83f7635354f364a95f1291281123916c9f547a706accae33f12a36",
+          "diff_sha256": "cb166f5cb518a78fbbf3ce3f0a17d30368e134a8e6b88f764ce846101fe4c9bd",
+          "digest": "2d7938c934791836451324ca0e8526b1552ebdf5576a2176e7049f4baefd7d18",
+          "finding_anchor": "aa5a86b760e7e8b6b4658819c67940c61478179922c7d9c7a02fcb12d2149d99",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "ec60904319f8d4c2bf96171564c582dc3ab5df9b472dc953820ad75123d896ee",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2245,
+          "input_tokens": 1004,
+          "output_tokens": 154,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2386,
+          "input_tokens": 1753,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask\n\napp = Flask(__name__)\n\n\n@app.route(\"/invoice/<invoice_id>\")\ndef invoice(invoice_id):\n    db = sqlite3.connect(\"billing.db\")\n    row = db.execute(\"SELECT total, status FROM invoices WHERE id = ?\", (invoice_id,)).fetchone()\n    return {\"invoice\": row}\n",
+      "candidate_sha256": "386435affa83f7635354f364a95f1291281123916c9f547a706accae33f12a36"
+    },
+    {
+      "sample_id": "SRC-SQLI-12-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "5260908a-8c66-4bfd-ae00-349173cc2a74",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 10,
+          "change_ratio": 0.588,
+          "changed_lines": 2,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 4,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 17,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "716bb000a6adaeb5202deb6dc89a8e640152b760718e65e4b3c0aab8fc7cceef",
+          "diff_sha256": "289d01ad4e33b0aba6fc1e23d29c0ef73a3405f022cb2efcfda6cde279dcfaf8",
+          "digest": "604225486ab4387cb261bbaa585d33bfe1451b5b0c4b14e142165f752b5f98ed",
+          "finding_anchor": "1c369f8078787d5949671cdca4459d7861037a1e5bc10dab2fb9dd4ec4ad6a26",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "4f60aeb83c3447804ddce11560fe29aa24687f136cb9c1c1cd3e6e9683156a24",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 5407,
+          "input_tokens": 1100,
+          "output_tokens": 343,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 4251,
+          "input_tokens": 2001,
+          "output_tokens": 44,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.patch(\"/users/<int:user_id>\")\ndef update_user(user_id):\n    changes = request.get_json(force=True)\n    allowed_columns = {\"name\", \"email\", \"username\", \"password\", \"age\"}\n    assignments = []\n    params = []\n    for column, value in changes.items():\n        if column not in allowed_columns:\n            continue\n        assignments.append(f\"{column} = ?\")\n        params.append(value)\n    if not assignments:\n        return {\"updated\": user_id}\n    db = sqlite3.connect(\"app.db\")\n    params.append(user_id)\n    db.execute(f\"UPDATE users SET {', '.join(assignments)} WHERE id = ?\", tuple(params))\n    db.commit()\n    return {\"updated\": user_id}\n",
+      "candidate_sha256": "716bb000a6adaeb5202deb6dc89a8e640152b760718e65e4b3c0aab8fc7cceef"
+    },
+    {
+      "sample_id": "SRC-SQLI-14-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "2e96135e-cd1a-4f56-bfb0-8ebe3490a495",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 1,
+          "change_ratio": 0.083,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 1,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 12,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "60ea6a404e519936228d7cac5c57003286470e4dbc9b19ed48d2fc3608d87c23",
+          "diff_sha256": "a568450d6ad6a6575f3dff17d1b4d702fdb9a4795444a8124b023f022a287296",
+          "digest": "fbb7fe18ab0fa4db49d61407b2620843e2998b7d5d81098f7fde438a6fa92d2b",
+          "finding_anchor": "900bb943073a1f70e68d7f393316e14c8241c6ee5670025c3df2cdb8a5ceea59",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "cb417cdd172d52b651547a575dc0ceaa728c3c073196a35ec817327d9b921d5c",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2554,
+          "input_tokens": 1008,
+          "output_tokens": 154,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2165,
+          "input_tokens": 1758,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/reports\")\ndef reports():\n    cursor = sqlite3.connect(\"saas.db\").cursor()\n    cursor.execute(\"SELECT title FROM reports WHERE tenant = ?\", (request.headers.get('X-Tenant', ''),))\n    return {\"reports\": cursor.fetchall()}\n",
+      "candidate_sha256": "60ea6a404e519936228d7cac5c57003286470e4dbc9b19ed48d2fc3608d87c23"
+    },
+    {
+      "sample_id": "SRC-SQLI-17-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "cc42fea1-3d34-48f9-ad9c-420cf5498d87",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 10,
+          "change_ratio": 0.714,
+          "changed_lines": 4,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 14,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "a041d74bf64191c520fa59de7d1f7f1abb842eb55a8ddd06255abffaadce3dc2",
+          "diff_sha256": "16d899a7a333825e3015827a253d06881245478a4627b1b78f99872aff9afda2",
+          "digest": "f6d90171f3ecc1dc18d32c2af871f26304ec1cb6477f5261536955b72e0fa0f2",
+          "finding_anchor": "49a5f152b31d9e25192b72bf525513194179bebd63f5af1baee1a58cb29eca2f",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "a478524ce7e26b631d9f1422ae5d1b6ac4292b03f950698083144acebbe6220d",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 4993,
+          "input_tokens": 1049,
+          "output_tokens": 320,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 3680,
+          "input_tokens": 1907,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/feed\")\ndef feed():\n    try:\n        limit = int(request.args.get(\"limit\", \"20\"))\n    except (TypeError, ValueError):\n        limit = 20\n    try:\n        offset = int(request.args.get(\"offset\", \"0\"))\n    except (TypeError, ValueError):\n        offset = 0\n    db = sqlite3.connect(\"social.db\")\n    sql = \"SELECT id, body FROM posts ORDER BY id DESC LIMIT ? OFFSET ?\"\n    return {\"posts\": db.execute(sql, (limit, offset)).fetchall()}\n",
+      "candidate_sha256": "a041d74bf64191c520fa59de7d1f7f1abb842eb55a8ddd06255abffaadce3dc2"
+    },
+    {
+      "sample_id": "SRC-SQLI-19-V",
+      "cwe": "CWE-89",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "7029ff72-95cf-4bed-b5df-5ff745922586",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 6,
+          "change_ratio": 0.375,
+          "changed_lines": 3,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 4,
+          "imports_added": [],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 16,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "6f204e46a8d3d6e75d7cfb6fdb7c675da6053eceff30817527f6e01dd697c489",
+          "diff_sha256": "591e26c4e151e2ad1594ddf5757cc18ddea8c285e7b6a47b161e8c8700c16538",
+          "digest": "e22850347d8a46da9f47121dd3fb512b691201ad8498a690ba83c837cebb64de",
+          "finding_anchor": "d24b61a857f9727c1ae4c26eb7a96764b526c068518e5e46c0ed02bec7fac840",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "3d1e6f864c36496823628b03f95d50b7134b985833a993792df27dc5f520bb0a",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 4177,
+          "input_tokens": 1108,
+          "output_tokens": 330,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 1954,
+          "input_tokens": 1890,
+          "output_tokens": 20,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import sqlite3\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/jobs\")\ndef jobs():\n    sql = \"SELECT id, title FROM jobs WHERE 1 = 1\"\n    params = []\n    if request.args.get(\"city\"):\n        sql += \" AND city = ?\"\n        params.append(request.args[\"city\"])\n    if request.args.get(\"level\"):\n        sql += \" AND level = ?\"\n        params.append(request.args[\"level\"])\n    db = sqlite3.connect(\"jobs.db\")\n    return {\"jobs\": db.execute(sql, params).fetchall()}\n",
+      "candidate_sha256": "6f204e46a8d3d6e75d7cfb6fdb7c675da6053eceff30817527f6e01dd697c489"
+    },
+    {
+      "sample_id": "SRC-CMDI-09-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "5922a61e-3d87-450e-b5f9-a9d782827ca2",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 7,
+          "change_ratio": 0.583,
+          "changed_lines": 2,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "re",
+            "subprocess"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 12,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "06b7e2ef23180a931787621c6e5e8daa08bcdb0d93b5ac9d2ace50220de578e1",
+          "diff_sha256": "2b67612e48da303d871c5d20aa3ed3394c5efe824377b55372132e646d600f92",
+          "digest": "d6ff1574d2c695e3035345fcd5b0bceeedce9d96531139281bd8e0fdedafd539",
+          "finding_anchor": "3b7651c62221aaa03e47dad58694ac08d3bcf99ed479dacd69e06cd167355dc7",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "08cb7e8f1425b4c52c5e35fc58951c670074d32ec29a676b35523153d0dbb288",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2625,
+          "input_tokens": 978,
+          "output_tokens": 303,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 4025,
+          "input_tokens": 1860,
+          "output_tokens": 60,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import os\nimport re\nimport subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.post(\"/backup\")\ndef backup():\n    database = request.form[\"database\"]\n    if not re.fullmatch(r\"[A-Za-z0-9_.-]+\", database):\n        return {\"status\": -1, \"error\": \"invalid database name\"}, 400\n    with open(\"/var/backups/latest.sql\", \"wb\") as out:\n        status = subprocess.call([\"pg_dump\", database], stdout=out)\n    return {\"status\": status}\n",
+      "candidate_sha256": "06b7e2ef23180a931787621c6e5e8daa08bcdb0d93b5ac9d2ace50220de578e1"
+    },
+    {
+      "sample_id": "SRC-CMDI-10-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "9af2ab00-13a4-47be-974a-8809d6a803eb",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-78",
+                "end_line": 12,
+                "sources": [
+                  "llm"
+                ],
+                "start_line": 11
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 4,
+          "change_ratio": 0.4,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "subprocess"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 10,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "9ed715a56e0ced3ce3a6a46936186e8ec6ad83c509f7dac09e3e47c33f09bffe",
+          "diff_sha256": "f4c35cd2d045e37d65a9028e07359afef20752a9e46333a9ee54701462dacb40",
+          "digest": "726d934f591bc7ce97c4d121d8cbe47483b6d628f6e684d3aea01f89b0e7e0fe",
+          "finding_anchor": "2ffe812b22ea3ae81e116e1af31f02ed6ad7a695fbe194a4f83e4169b656b471",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "68acc5b0d5516e3d254e8546a4a051b746a12a504c479f5175876e9db9ff3e42",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "failed",
+          "detail": "仍存在：CWE-78 第11行"
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 4790,
+          "input_tokens": 968,
+          "output_tokens": 228,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 5258,
+          "input_tokens": 1769,
+          "output_tokens": 241,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import os\nimport subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.post(\"/api/disk-usage\")\ndef disk_usage():\n    path = request.get_json(force=True)['path']\n    result = subprocess.run([\"du\", \"-sh\", \"--\", str(path)], capture_output=True, text=True)\n    return {\"usage\": result.stdout}\n",
+      "candidate_sha256": "9ed715a56e0ced3ce3a6a46936186e8ec6ad83c509f7dac09e3e47c33f09bffe"
+    },
+    {
+      "sample_id": "SRC-CMDI-12-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "bfe11208-198b-449a-8d6e-b38fba6774d6",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 6,
+          "change_ratio": 0.5,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "os"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 12,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "1794a866091b2df0a403eccaf7c65dfe844a427dd285fe29b7414029e6df26ad",
+          "diff_sha256": "05741faa0d7f10ab984f0a66ca6f2bd61cc1626d6cd96a4b03ae3b0018bbafe2",
+          "digest": "43093759bd85f7e8ea966a5dc6ae690897541089f712c8a1c4960597de6e719f",
+          "finding_anchor": "8e261bfa3299101b35217c7db16f548cf7fc00649ab0f1ea654375865d1e6287",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "9a3ba76af99dd49c42c21dab9aad07fb29cdce07520c238f076c58accced44ef",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 6038,
+          "input_tokens": 1014,
+          "output_tokens": 306,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2507,
+          "input_tokens": 1864,
+          "output_tokens": 57,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import os\nimport subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.route(\"/count-lines\")\ndef count_lines():\n    target = request.args.get(\"file\", \"app.log\")\n    log_dir = \"/var/log\"\n    path = os.path.join(log_dir, target)\n    if os.path.dirname(os.path.abspath(path)) != os.path.abspath(log_dir):\n        return {\"error\": \"invalid file\"}, 400\n    out = subprocess.run([\"wc\", \"-l\", path], capture_output=True, text=True)\n    return {\"result\": out.stdout}\n",
+      "candidate_sha256": "1794a866091b2df0a403eccaf7c65dfe844a427dd285fe29b7414029e6df26ad"
+    },
+    {
+      "sample_id": "SRC-CMDI-14-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "1f5e2c81-fb3a-4d1b-b789-a0425f370b90",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-78",
+                "end_line": 13,
+                "sources": [
+                  "llm"
+                ],
+                "start_line": 12
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 4,
+          "change_ratio": 0.364,
+          "changed_lines": 1,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "shlex",
+            "subprocess"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 11,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "cab307a50639588341302c1f5745e6683b251d58b8815805f5b94ea49438d0be",
+          "diff_sha256": "68f5fd38c33fdedeb9aa1f5becd19f86c18f5ee01831117b05949363807c52b9",
+          "digest": "e7719ac419349cabf7a2c69c8d4ceaaca21e76959fe6b6107ea1c3c1c4d28970",
+          "finding_anchor": "82ed5cf10092fb54972051c95ecb68c96a660818bba94b408e9b559c6b013573",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "8d5f47660b4f11d1b96e256452cf9d67dd228dc25f2c1cf8185185a9cf3d83ef",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "failed",
+          "detail": "仍存在：CWE-78 第12行"
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2844,
+          "input_tokens": 984,
+          "output_tokens": 235,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 3474,
+          "input_tokens": 1784,
+          "output_tokens": 268,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import os\nimport shlex\nimport subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.post(\"/cache/purge\")\ndef purge():\n    host = request.headers.get(\"X-Purge-Host\", \"\")\n    subprocess.run([\"varnishadm\", \"ban\", \"req.http.host == \" + host], check=False)\n    return {\"purged\": True}\n",
+      "candidate_sha256": "cab307a50639588341302c1f5745e6683b251d58b8815805f5b94ea49438d0be"
+    },
+    {
+      "sample_id": "SRC-CMDI-18-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "752523d4-36da-4f26-b74a-78c2590500ab",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "failed",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [
+              {
+                "cwe": "CWE-78",
+                "end_line": 14,
+                "sources": [
+                  "llm"
+                ],
+                "start_line": 12
+              }
+            ],
+            "preexisting": [],
+            "target_resolved": false
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 4,
+          "change_ratio": 0.308,
+          "changed_lines": 2,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "subprocess"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 13,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "ba929b91a974c0ed8e247af0ab26c5c482d09cae6ad0c5cbc37251fcb30deb32",
+          "diff_sha256": "e8b5a51366efb07b6ca609c2d74977f4aaeb5797f32e7af600b47d58648ab553",
+          "digest": "7b6969a0598c8f79fe91b6a2fb8e6a5bf5571a0db29598a751ac47bc074e607d",
+          "finding_anchor": "118fd9735224c3056b35b20c4c837795cf78cef47ec8353066cb25f62c99dbe4",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "747c90decbe6d7d7f983897a2292d5710c4c9fdea9c6ddc77f9334c49872e523",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "failed",
+          "detail": "仍存在：CWE-78 第12行"
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 2979,
+          "input_tokens": 1016,
+          "output_tokens": 220,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 3772,
+          "input_tokens": 1801,
+          "output_tokens": 315,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.post(\"/healthcheck\")\ndef healthcheck():\n    results = {}\n    for host in request.get_json(force=True)[\"hosts\"]:\n        results[host] = subprocess.call(\n            [\"curl\", \"-fsS\", \"--max-time\", \"3\", f\"http://{host}/health\"]\n        )\n    return results\n",
+      "candidate_sha256": "ba929b91a974c0ed8e247af0ab26c5c482d09cae6ad0c5cbc37251fcb30deb32"
+    },
+    {
+      "sample_id": "SRC-CMDI-20-V",
+      "cwe": "CWE-78",
+      "repeat": 1,
+      "first_candidate": false,
+      "success": false,
+      "posthoc": true,
+      "historical_repeat": 2,
+      "repair_id": "a4794bd3-dd0b-4894-86a6-f99d7e1d6870",
+      "status": "candidate",
+      "error_code": null,
+      "validation_status": "unverified",
+      "checks": {
+        "syntax": "passed",
+        "patch": "passed",
+        "roundtrip": "passed",
+        "review": {
+          "error": null,
+          "status": "complete"
+        },
+        "delta": {
+          "model": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          },
+          "rules": {
+            "introduced": [],
+            "persisting": [],
+            "preexisting": [],
+            "target_resolved": true
+          }
+        },
+        "impact": {
+          "added_lines": 6,
+          "change_ratio": 0.462,
+          "changed_lines": 2,
+          "decorator_changed": [],
+          "distance": 0,
+          "forbidden_added": [],
+          "hunks": 2,
+          "imports_added": [
+            "os"
+          ],
+          "removed": [],
+          "risky_added": [],
+          "signature_changed": [],
+          "total_lines": 13,
+          "violations": [],
+          "warnings": []
+        },
+        "contract": {
+          "candidate_sha256": "63287d3d0e3f63fe73b6ea738d63c5f22ccee029df0130f7c36e028a0cea85c4",
+          "diff_sha256": "220ceff2a4658a10a88871774e675fcd49fee66fbad9da0bc97dc3287b543450",
+          "digest": "ac36d2f725cce4edb53bb462d130b950409da93c26ce0cf7e79c59c28ad7f783",
+          "finding_anchor": "8f9186a2f08786f7869b7dea9ba2cf9ad981450c362298a703e66670fe5bad18",
+          "limits": {
+            "call_timeout_seconds": 60.0,
+            "task_timeout_seconds": 180.0
+          },
+          "model": "deepseek-flash",
+          "model_alias": "deepseek",
+          "parameters": {
+            "max_tokens": 4096,
+            "response_format": "json_object",
+            "stream": false,
+            "temperature": 0,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "parent_attempt": 0,
+          "schema_version": "repair-contract-1.0",
+          "source_sha256": "12c6ed121e60b8fa7fc7039cafdfb1cf11ae65a3746f4489ee35f2ac6a14a55c",
+          "versions": {
+            "analysis_prompt": "analysis-1.2",
+            "parser": "inputs-1.2",
+            "patch_review": "patch-review-1.0",
+            "redaction": "redaction-1.2",
+            "repair_prompt": "repair-1.2",
+            "repair_wire": "repair-1.0",
+            "rules": "rules-1.1"
+          }
+        },
+        "patch_diagnostic": null
+      },
+      "gates": [
+        {
+          "id": "syntax",
+          "label": "语法校验",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "patch",
+          "label": "补丁可应用（diff 回放一致）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "structure",
+          "label": "结构保持与改动范围",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_rules",
+          "label": "目标漏洞已消除（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_rules",
+          "label": "未引入新风险（规则）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "target_model",
+          "label": "目标漏洞已消除（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "new_model",
+          "label": "未引入新风险（模型复检）",
+          "state": "passed",
+          "detail": ""
+        },
+        {
+          "id": "dynamic_security",
+          "label": "受控动态验证：安全回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        },
+        {
+          "id": "dynamic_business",
+          "label": "受控动态验证：业务回归",
+          "state": "skipped",
+          "detail": "未请求受控动态验证"
+        }
+      ],
+      "calls": [
+        {
+          "status": "succeeded",
+          "duration_ms": 4845,
+          "input_tokens": 1005,
+          "output_tokens": 271,
+          "prompt_version": "repair-1.2"
+        },
+        {
+          "status": "succeeded",
+          "duration_ms": 2562,
+          "input_tokens": 1856,
+          "output_tokens": 57,
+          "prompt_version": "analysis-1.2"
+        }
+      ],
+      "candidate_source": "import os\nimport subprocess\n\nfrom flask import Flask, request\n\napp = Flask(__name__)\n\n\n@app.post(\"/build\")\ndef build():\n    project = request.form[\"project\"]\n    base = \"/srv/projects/\"\n    target = os.path.realpath(os.path.join(base, project))\n    if os.path.commonpath([base, target]) != os.path.realpath(base):\n        return {\"error\": \"invalid project\"}, 400\n    done = subprocess.run([\"make\", \"release\"], cwd=target)\n    return {\"exit\": done.returncode}\n",
+      "candidate_sha256": "63287d3d0e3f63fe73b6ea738d63c5f22ccee029df0130f7c36e028a0cea85c4"
+    }
+  ],
+  "budget": {
+    "ceiling": 1000,
+    "reservations": 930,
+    "input_tokens": 1253875,
+    "output_tokens": 147524,
+    "statuses": {
+      "MODEL_INVALID_OUTPUT": 68,
+      "MODEL_TRANSPORT": 6,
+      "succeeded": 856
+    },
+    "scopes": {
+      "postdev-ab-20261111": {
+        "allowance": 130,
+        "used": 99
+      },
+      "posthoc-repairs-20261111": {
+        "allowance": 70,
+        "used": 36
+      }
+    },
+    "fees": null,
+    "fees_note": "N/A: no provider invoice/rate receipt; tokens are not currency"
+  },
+  "dynamic_pending": true,
+  "course_acceptance_evaluated": false
+}

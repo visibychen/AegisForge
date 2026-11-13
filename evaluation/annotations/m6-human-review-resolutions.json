@@ -1,0 +1,31 @@
+{
+  "schema_version": "m6-review-resolutions-1.0",
+  "resolved_by": "project implementation based on the user-provided visibywang review; no second human signature implied",
+  "receipt": "evaluation/results/m6-human-review-20261112.json",
+  "Q1": {
+    "status": "resolved_by_dual_classification_annotation",
+    "family": "FAM-SRC-XSS-03",
+    "samples": ["SRC-XSS-03-V", "SRC-XSS-03-S"],
+    "primary_root_cause": "CWE-1336",
+    "impact_category": "CWE-79",
+    "historical_scoring_cwe": "CWE-79",
+    "scope": "Vulnerable case has SSTI root cause and XSS impact; the safe counterpart keeps the same family, not a new vulnerability claim",
+    "reason": "Untrusted input is inserted into Jinja template source before evaluation; HTML can also reach the response",
+    "source": "https://cwe.mitre.org/data/definitions/1336.html",
+    "historical_labels_changed": false,
+    "product_claim": "The course engine still reports its three supported categories; comprehensive SSTI support is not implemented"
+  },
+  "Q2": {"case_id": "h-xss-14", "status": "resolved_with_bound_safe_and_partial_fix_controls", "test": "security_script_element_termination"},
+  "Q3": {"case_id": "h-sqli-12", "status": "resolved_with_bound_safe_and_partial_fix_controls", "tests": ["business_email", "business_timezone", "business_reject_unknown_atomically"]},
+  "Q4": {"case_id": "h-cmdi-09", "status": "resolved_with_bound_safe_and_partial_fix_controls", "tests": ["business_backup_demo", "business_backup_other"]},
+  "validation_evidence": "evaluation/results/m6-review-validation.json",
+  "validation_ci": "https://github.com/visibychen/AegisForge/actions/runs/43224769755",
+  "other_suggestions": [
+    "Theme-name and additional attribute-event boundaries remain limitations of the small fixed suite",
+    "Command business host values demo/other are the synthetic contract, not a general domain-validation policy",
+    "HTTP rejection status codes remain the documented synthetic contract; future normalization is a design change",
+    "Invalid cwd/OSError handling is covered by repair guidance and existing cases; all possible path variants are not exhaustively tested",
+    "Some reference safe variants alter defaults or response shapes; they are not universal drop-in repairs"
+  ],
+  "closure_rule": "Q2-Q4 close only after their safe controls pass and the corresponding partial-fix probes pass legacy tests but fail additive tests in real isolated containers"
+}

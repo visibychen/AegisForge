@@ -6,10 +6,16 @@ RUN python -m pip install --no-cache-dir --require-hashes -r /opt/validator/requ
     && chmod -R a+rX /opt/playwright \
     && printf '#!/bin/sh\nexit 0\n' > /usr/local/bin/ping \
     && chmod 755 /usr/local/bin/ping
-COPY harness.py target.py ping_stub.py target_guard.py /opt/validator/
+COPY harness.py target.py ping_stub.py target_guard.py holdout_cases.py command_stub.py /opt/validator/
 # A /bin/sh wrapper (not a shebang in the copied file) keeps CRLF checkouts from breaking exec.
 RUN printf '#!/bin/sh\nexec /usr/local/bin/python /opt/validator/ping_stub.py "$@"\n' > /usr/local/bin/ping \
     && chmod 755 /usr/local/bin/ping
+RUN for cmd in pg_dump du wc varnishadm curl make; do \
+        printf '#!/bin/sh\nexec /usr/local/bin/python /opt/validator/command_stub.py %s "$@"\n' "$cmd" > "/usr/local/bin/$cmd"; \
+        chmod 755 "/usr/local/bin/$cmd"; \
+    done \
+    && mkdir -p /var/backups /srv/projects/demo /srv/projects/other \
+    && ln -s /tmp/m6-backup.sql /var/backups/latest.sql
 ARG VALIDATOR_FINGERPRINT
 LABEL org.aegisforge.validator=$VALIDATOR_FINGERPRINT
 USER 65532:65532

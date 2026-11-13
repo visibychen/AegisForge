@@ -6,6 +6,7 @@ import {
 import type { ArtifactPreview, FindingFacets, FindingFilters, Repair, Scan, StoredFinding, Strategy } from '../types/api';
 import CoverageLedger from './CoverageLedger';
 import AnalysisReceipt from './AnalysisReceipt';
+import StaticProofs from './StaticProofs';
 import EvidenceViewer from './EvidenceViewer';
 import RepairPanel from './RepairPanel';
 
@@ -231,6 +232,7 @@ export default function ScanPanel({token, aliases, artifacts, onRemove, onAuthLo
       {scan.budget && <p>调用预算：本任务 {scan.budget.scan_used}/{scan.budget.scan_limit} · 今日服务器 {scan.budget.daily_used}/{scan.budget.daily_limit}（次数，不是费用）</p>}
       {scan.result.coverage && scan.result.coverage.length > 0 && <CoverageLedger entries={scan.result.coverage} />}
       <AnalysisReceipt scan={scan} />
+      <StaticProofs result={scan.result} />
       {scan.attempts && scan.attempts.length > 0 && <details><summary>此前尝试（{scan.attempts.length}）</summary><ul>{scan.attempts.map(item => <li key={item.attempt}>第 {item.attempt + 1} 次：{STATUS[item.status as keyof typeof STATUS] ?? item.status}{item.error_code ? ` · ${item.error_code}` : ''} · 发现 {item.summary.finding_count ?? 0} 项</li>)}</ul></details>}
       {scan.error_code && <Alert type="warning" title={`任务错误：${scan.error_code}`} />}
       {scan.result.warnings?.map((warning, index) => <Alert key={index} type="warning" title={warning} />)}

@@ -11,12 +11,15 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.llm.deepseek import DeepSeekProvider
+from app.llm.prompts import PROMPT_VERSION
 from app.llm.repair import REPAIR_PROMPT_VERSION, RepairProvider
 from app.models import Artifact, FindingRecord, Job, ModelCall, Repair, ScanTask
 from app.parsers.inputs import parse_input
 from app.rules.detector import detect
-from app.schemas.contracts import AnalysisRequest
+from app.schemas.contracts import AnalysisRequest, Finding
+from app.services.adjudicate import adjudicate
 from app.services.artifacts import load_artifact, store_artifact
+from app.services.merge import merge_findings
 from app.services.patch_review import (
     PatchScopeError,
     build_gates,
@@ -378,6 +381,9 @@ def store_candidate(engine, settings, lease, wire, candidate, diff, checks, *, f
             job.status, job.lease_token, job.lease_until = "completed", None, None
 
 
+PATCH_DIAGNOSTIC_CATEGORIES = {"patch_conflict", "patch_range", "patch_newline"}
+
+
 def target_location(target) -> tuple:
     location = target["location"]
     return target["cwe"], location["start_line"], location["end_line"]
@@ -476,7 +482,7 @@ async def execute_repair(engine, settings, lease, factory=None):
         # Phase 2: model recheck. A failure here must not discard the paid-for candidate.
         review_error, reviewed = None, None
         try:
-            ledger.version = "analysis-1.1"
+            ledger.version = PROMPT_VERSION  # the recheck is an analysis call; ledger = contract
             reviewer = (
                 factory(settings, ledger)
                 if factory
@@ -499,11 +505,17 @@ async def execute_repair(engine, settings, lease, factory=None):
         if reviewed is not None and not (reviewed.analysis_complete and reviewed.mode == "real"):
             review_error = "MODEL_INCOMPLETE"
         if review_error is None and reviewed is not None:
+            candidate_parsed = parse_input("source", candidate)
+            entries, checks["adjudication"] = adjudicate(
+                merge_findings(reviewed.findings, {str(source_id): candidate_parsed}),
+                {str(source_id): candidate_parsed},
+            )
+            active_findings = [Finding.model_validate(e["finding"]) for e in entries]
             checks["review"] = {"status": "complete", "error": None}
             checks["delta"]["model"] = finding_delta(
                 known,
                 target_loc,
-                locations(reviewed.findings, "llm"),
+                locations(active_findings, "llm"),
                 line_map,
                 parsed.content,
                 candidate,
@@ -533,6 +545,11 @@ async def execute_repair(engine, settings, lease, factory=None):
                 kept["impact"] = impact
             if (kept.get("review") or {}).get("status") == "pending":
                 kept["review"] = {"status": "failed", "error": item.error_code}
+            category, detail = getattr(error, "category", None), getattr(error, "detail", None)
+            if category in PATCH_DIAGNOSTIC_CATEGORIES and detail:
+                # Server-computed integers and fixed words only: explains the refusal without
+                # keeping the model's raw edits, the snapshot text or any credential.
+                kept["patch_diagnostic"] = {"category": category, "detail": detail}
             if kept:
                 item.checks_json = canonical(summarize(kept))
             item.finished_at, job.status, job.lease_token, job.lease_until = (

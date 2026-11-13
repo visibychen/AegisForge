@@ -1,0 +1,73 @@
+{
+  "mode": "5 sequential actual product API/worker real model tasks; no candidate execution",
+  "model": "deepseek-flash",
+  "input_bytes": 91,
+  "rows": [
+    {
+      "sequence": 1,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 3091,
+      "wall_ms": 3109.907899997779,
+      "call_count": 1,
+      "error_code": null
+    },
+    {
+      "sequence": 2,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 4001,
+      "wall_ms": 4017.7466999994067,
+      "call_count": 1,
+      "error_code": null
+    },
+    {
+      "sequence": 3,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 2496,
+      "wall_ms": 2514.6942999999737,
+      "call_count": 1,
+      "error_code": null
+    },
+    {
+      "sequence": 4,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 2321,
+      "wall_ms": 2340.4606000003696,
+      "call_count": 1,
+      "error_code": null
+    },
+    {
+      "sequence": 5,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 4907,
+      "wall_ms": 4923.201900001004,
+      "call_count": 1,
+      "error_code": null
+    }
+  ],
+  "passed": true,
+  "budget": {
+    "ceiling": 1000,
+    "reservations": 700,
+    "input_tokens": 949259,
+    "output_tokens": 111615,
+    "statuses": {
+      "MODEL_INVALID_OUTPUT": 66,
+      "MODEL_TRANSPORT": 4,
+      "succeeded": 630
+    },
+    "fees": null,
+    "fees_note": "N/A: no provider invoice/rate receipt; tokens are not currency"
+  },
+  "platform": {
+    "os": "Windows",
+    "release": "11",
+    "python": "3.13.18",
+    "cpu": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "cpu_count": 24
+  }
+}

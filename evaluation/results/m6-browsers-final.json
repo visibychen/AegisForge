@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "mode": "fake",
+  "external_model_calls": 0,
+  "browsers": [
+    "chromium",
+    "firefox"
+  ],
+  "runs": [
+    {
+      "browser": "chromium",
+      "specs": "all",
+      "exit_code": 0,
+      "runner": {
+        "image": "mcr.microsoft.com/playwright:v1.64.1-noble@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+        "node": "host Node 24, mounted read-only"
+      },
+      "stats": {
+        "expected": 5,
+        "skipped": 1,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "passed": true
+    },
+    {
+      "browser": "firefox",
+      "specs": [
+        "tests/e2e/foundation.spec.ts"
+      ],
+      "exit_code": 0,
+      "runner": {
+        "image": "mcr.microsoft.com/playwright:v1.64.1-noble@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+        "node": "host Node 24, mounted read-only"
+      },
+      "stats": {
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "passed": true
+    }
+  ],
+  "commit": "add1a8570166645bdee6aa7e7bb11b534c1db202",
+  "run_id": "43041838326",
+  "run_attempt": "1",
+  "deployment": "Compose API/worker and trusted Docker controller"
+}

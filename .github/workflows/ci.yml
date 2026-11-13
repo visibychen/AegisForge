@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -79,6 +80,160 @@ jobs:
           name: m4-controlled-summary
           path: data/m4-controls-*/summary.json
 
+  m6-controls:
+    name: M6 registered holdout controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      - run: python scripts/build_validator.py
+      - run: python scripts/m6_validate.py controls
+      - run: python scripts/resource_probes.py
+      # The committed candidate bundle is required (a deleted file fails here, it is never skipped).
+      # Real containers re-execute all 54 frozen candidates. Exit 2 = incomplete or environment
+      # error, 3 = a verdict differs from the committed record, 1 only with --require-threshold.
+      # Current course closure is m6-course-delivery; historical numeric targets are optional.
+      - name: Re-execute all 54 frozen candidates and compare with the committed record
+        run: >
+          python scripts/m6_validate.py candidates
+          --bundle evaluation/results/m6-baseline-candidates.json
+          --compare evaluation/results/m6-repairs-baseline.json
+          --output data/m6-repairs-ci.json
+      - name: Diagnose later candidates separately from formal acceptance
+        run: >
+          python scripts/m6_validate.py diagnostics
+          --bundle evaluation/results/m6-posthoc-candidates.json
+          --output data/m6-posthoc-repairs-ci.json
+      - name: Validate predeclared targeted candidates without changing formal denominators
+        run: >
+          python scripts/m6_validate.py diagnostics --targeted
+          --bundle evaluation/results/m6-targeted-candidates.json
+          --compare evaluation/results/m6-targeted-repairs.json
+          --output data/m6-targeted-repairs-ci.json
+      - name: Validate the separate mutable-container follow-up
+        run: >
+          python scripts/m6_validate.py diagnostics --targeted
+          --bundle evaluation/results/m6-mutation-candidates.json
+          --compare evaluation/results/m6-mutation-repairs.json
+          --output data/m6-mutation-repairs-ci.json
+      - name: Build additive human-reviewed validation profile
+        run: python scripts/build_validator.py --review
+      - name: Run human-review controls, partial-fix probes and all 18 later attempts
+        run: python scripts/m6_review_validate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-controlled-evidence
+          retention-days: 30
+          path: |
+            data/m6-controls-ci.json
+            data/m6-resources-ci.json
+            data/m6-repairs-ci.json
+            data/m6-posthoc-repairs-ci.json
+            data/m6-targeted-repairs-ci.json
+            data/m6-mutation-repairs-ci.json
+            data/m6-review-validation-ci.json
+
+  m6-records:
+    name: M6 record integrity (recomputed, no thresholds)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      # Exit 1 if a baseline file is missing or altered, or a count/flag differs from the numbers
+      # recomputed from its raw rows. A truthful record of unmet thresholds passes this job.
+      - run: python scripts/m6_freeze_guard.py
+      - run: python scripts/m6_verify.py --output data/m6-records-ci.json
+      - run: python scripts/m6_verify_run.py --run evaluation/manifests/m6-targeted-20261112.json
+      - run: python scripts/m6_verify_run.py --run evaluation/manifests/m6-mutation-20261112.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-record-integrity
+          retention-days: 30
+          path: data/m6-records-ci.json
+
+  m6-course-delivery:
+    name: M6 course delivery (explicit authorized profile)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      - run: >
+          python scripts/acceptance.py --profile course-delivery-v1
+          --output data/m6-course-acceptance-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-course-delivery
+          retention-days: 30
+          path: data/m6-course-acceptance-ci.json
+
+  m6-acceptance:
+    name: M6 historical numeric reference audit (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AEGISFORGE_DEEPSEEK_API_KEY: ''
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: AegisForge
+          environment-file: environment.yml
+          auto-activate-base: false
+      - run: python -m pip install -r backend/requirements-dev.lock
+      # Exit 0 only if every threshold is met on recomputed numbers; 1 = valid record, not met;
+      # 2 = invalid record. No continue-on-error, no default pull-request gate.
+      - run: python scripts/acceptance.py --output data/m6-acceptance-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m6-acceptance
+          retention-days: 30
+          path: data/m6-acceptance-ci.json
+
   workbench-e2e:
     name: Workbench Compose E2E
     runs-on: ubuntu-24.04
@@ -103,8 +258,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: python -m pip install -r backend/requirements-dev.lock
       - run: npm --prefix frontend ci
-      - run: npx playwright install --with-deps chromium
-        working-directory: frontend
+      - name: Pull verified Playwright image with browsers and OS dependencies
+        timeout-minutes: 8
+        run: python scripts/ci_workbench.py --pull-browser-image
       - run: python scripts/ci_workbench.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -112,7 +268,7 @@ jobs:
           name: m5-workbench-evidence
           retention-days: 7
           path: |
-            frontend/test-results/*.png
+            frontend/test-results/evidence/*.png
             data/m4-isolation.json
             data/m5-e2e-summary.json
             data/m5-e2e-report.json

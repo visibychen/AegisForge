@@ -1,0 +1,96 @@
+AegisForge 人工复核证据 02：源码行号与 anchor 核对
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+
+一、核对方法
+1. 读取 bundle 中 "#@@ sample <ID>" 分隔行之后的全部内容，去掉样例首尾空行；
+   分隔行本身不计行号，样例第一个非空代码行为第 1 行（与 manifest 的 note 一致）。
+2. 逐条按行计数 manifest.lines，并检查 anchor 是否唯一出现在该区间内。
+3. 行号区间语义按 manifest provenance.note："cover source-to-sink lines"。
+   实际数据中有的区间只覆盖 sink（如 SRC-SQLI-01-V 只标第 12 行，来源在第 10 行），
+   有的覆盖 source→sink（如 SRC-CMDI-06-V 标 9-15）。两种写法都能让 anchor 落在区间内，
+   本复核只要求 anchor 与真实危险行可定位，不要求区间一定包含全部来源行。
+
+二、V 样例逐条核对（manifest.lines、anchor 所在行、结论）
+说明：anchor 所在行按"样例内行号"计；"命中"表示 anchor 文本在该行出现且位于 lines 区间内。
+
+开发集 XSS（samples/dev/source/xss.bundle.txt）
+SRC-XSS-01-V  lines=[8,9]   anchor 行=9   return f"<h1>          命中
+SRC-XSS-02-V  lines=[9,10]  anchor 行=9   html = "<div         命中
+SRC-XSS-03-V  lines=[9,10]  anchor 行=10  render_template_string(template 命中
+SRC-XSS-04-V  lines=[10,10] anchor 行=10  Markup("<span         命中
+SRC-XSS-05-V  lines=[9,10]  anchor 行=10  make_response(body)  命中
+SRC-XSS-06-V  lines=[8,9]   anchor 行=9   '<a href="' + site   命中
+SRC-XSS-07-V  lines=[6,13]  anchor 行=7   <td>{cell}</td>      命中（sink 在 7，来源在 12）
+SRC-XSS-08-V  lines=[12,12] anchor 行=12  <article><h3>%s      命中
+
+开发集 SQLI（samples/dev/source/sqli.bundle.txt）
+SRC-SQLI-01-V lines=[12,12] anchor 行=12  db.execute(f"SELECT  命中
+SRC-SQLI-02-V lines=[14,15] anchor 行=15  cur.execute(sql)     命中（拼接在 14，执行在 15）
+SRC-SQLI-03-V lines=[12,12] anchor 行=12  % customer           命中
+SRC-SQLI-04-V lines=[12,13] anchor 行=12  .format(sort)        命中（执行在 13）
+SRC-SQLI-05-V lines=[9,9]   anchor 行=9   email = '" + email   命中（调用方在 15）
+SRC-SQLI-06-V lines=[12,12] anchor 行=12  db.executescript(f"   命中
+SRC-SQLI-07-V lines=[12,12] anchor 行=12  text(f"SELECT        命中
+SRC-SQLI-08-V lines=[12,13] anchor 行=12  LIKE '%{}%'          命中（执行在 13）
+
+开发集 CMDI（samples/dev/source/cmdi.bundle.txt）
+SRC-CMDI-01-V lines=[11,11] anchor 行=11  os.system(f"ping     命中
+SRC-CMDI-02-V lines=[11,11] anchor 行=11  os.popen("whois " + domain 命中
+SRC-CMDI-03-V lines=[11,12] anchor 行=12  shell=True           命中（拼接在 11，执行在 12）
+SRC-CMDI-04-V lines=[11,11] anchor 行=11  sp.call("libreoffice 命中
+SRC-CMDI-05-V lines=[11,11] anchor 行=11  system("systemctl " + action 命中
+SRC-CMDI-06-V lines=[9,15]  anchor 行=9   "grep -n '" + pattern 命中（helper 在 9，执行在 15）
+SRC-CMDI-07-V lines=[11,12] anchor 行=12  " ".join(args), shell=True 命中
+SRC-CMDI-08-V lines=[11,11] anchor 行=11  subprocess.getoutput("nslookup " + name 命中
+
+原保留集 XSS（samples/holdout/source/xss.bundle.txt）
+SRC-XSS-09-V  lines=[8,8]   anchor 行=8   "<p>Welcome back, {}.</p>".format( 命中
+SRC-XSS-10-V  lines=[8,10]  anchor 行=8   "<li>" + tag         命中
+SRC-XSS-11-V  lines=[8,8]   anchor 行=8   request.cookies.get("theme" 命中
+SRC-XSS-12-V  lines=[8,9]   anchor 行=9   {agent}              命中
+SRC-XSS-13-V  lines=[9,11]  anchor 行=11  <p>{code} is not a valid code.</p> 命中
+SRC-XSS-14-V  lines=[8,9]   anchor 行=9   var initialQuery = '%s' 命中
+SRC-XSS-15-V  lines=[4,9]   anchor 行=4   {{ message|safe }}   命中（模板在 4，渲染在 9）
+SRC-XSS-16-V  lines=[10,17] anchor 行=16  Markup("<p class='flash'>%s</p>" % message) 命中
+SRC-XSS-17-V  lines=[6,8]   anchor 行=8   "<h2>Profile of " + username 命中
+SRC-XSS-18-V  lines=[11,12] anchor 行=12  CARD.substitute(values) 命中
+SRC-XSS-19-V  lines=[9,10]  anchor 行=10  Results for {term}   命中
+SRC-XSS-20-V  lines=[20,20] anchor 行=20  % request.form       命中
+
+原保留集 SQLI（samples/holdout/source/sqli.bundle.txt）
+SRC-SQLI-09-V lines=[12,13] anchor 行=12  ",".join(ids)        命中（执行在 13）
+SRC-SQLI-10-V lines=[11,11] anchor 行=11  WHERE id = " + invoice_id 命中
+SRC-SQLI-11-V lines=[11,11] anchor 行=11  FROM {table}         命中
+SRC-SQLI-12-V lines=[12,15] anchor 行=13  f"{column} = '{value}'" 命中（循环 12-13，执行 15）
+SRC-SQLI-13-V lines=[13,13] anchor 行=13  VALUES (?, '%s')" % event 命中
+SRC-SQLI-14-V lines=[11,11] anchor 行=11  request.headers.get('X-Tenant' 命中
+SRC-SQLI-15-V lines=[12,14] anchor 行=14  WHERE author = '" + author 命中
+SRC-SQLI-16-V lines=[12,13] anchor 行=13  customer = '{username}' 命中
+SRC-SQLI-17-V lines=[13,14] anchor 行=14  LIMIT %s OFFSET %s" % (limit, offset) 命中
+SRC-SQLI-18-V lines=[11,11] anchor 行=11  .format(request.cookies.get("region" 命中
+SRC-SQLI-19-V lines=[12,16] anchor 行=12  sql += " AND city = '" 命中（第二分支 14，执行 16）
+SRC-SQLI-20-V lines=[10,16] anchor 行=10  WHERE status = '" + status 命中（helper 10，调用 16）
+
+原保留集 CMDI（samples/holdout/source/cmdi.bundle.txt）
+SRC-CMDI-09-V lines=[11,12] anchor 行=11  "pg_dump %s > /var/backups/latest.sql" % database 命中
+SRC-CMDI-10-V lines=[10,10] anchor 行=10  os.popen(f"du -sh    命中
+SRC-CMDI-11-V lines=[12,12] anchor 行=12  -resize 128x128     命中
+SRC-CMDI-12-V lines=[10,11] anchor 行=11  ["bash", "-c", "wc -l /var/log/" + target] 命中
+SRC-CMDI-13-V lines=[9,14]  anchor 行=9   "git -C /srv/repo checkout " + branch, shell=True 命中
+SRC-CMDI-14-V lines=[10,10] anchor 行=10  request.headers.get("X-Purge-Host" 命中
+SRC-CMDI-15-V lines=[10,11] anchor 行=11  create_subprocess_shell(f"traceroute 命中
+SRC-CMDI-16-V lines=[7,13]  anchor 行=12  MAIL.substitute(     命中（模板 7，替换 12，执行 13）
+SRC-CMDI-17-V lines=[12,13] anchor 行=13  f"unzip -l {self.root}/{archive}" 命中
+SRC-CMDI-18-V lines=[11,12] anchor 行=12  curl -fsS --max-time 3 http://{host}/health 命中
+SRC-CMDI-19-V lines=[11,15] anchor 行=12  "ffmpeg -y -i %s output.mp3" % source 命中（分支 11-14，执行 15）
+SRC-CMDI-20-V lines=[11,12] anchor 行=11  " && make release"  命中（执行在 12）
+
+三、结论
+1. 60 个 V 样例的 anchor 全部落在 manifest.lines 区间内，且所在行就是真实危险操作行
+   （或紧邻的拼接行/模板行）。未发现错误行号。
+2. S 样例的 lines 与 anchor 均为 null，与"安全对照不声明漏洞位置"一致。
+3. 建议：全部"保持原标注"。没有需要改写行号的样例。
+4. 附注（不构成错误）：SRC-XSS-07-V [6,13]、SRC-SQLI-19-V [12,16]、SRC-CMDI-19-V [11,15]
+   等区间较宽，包含分支或 helper 上下文；SRC-SQLI-01-V 等只标 sink 行。两种写法都能唯一定位，
+   但同一数据集内区间语义不统一，建议以后在 manifest 说明里注明"区间可为 sink-only"。

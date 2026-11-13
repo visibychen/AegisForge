@@ -1,0 +1,23 @@
+{
+  "method": "npm audit --json",
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 68,
+      "dev": 149,
+      "optional": 47,
+      "peer": 13,
+      "peerOptional": 0,
+      "total": 219
+    }
+  },
+  "vulnerabilities": {},
+  "error": null
+}

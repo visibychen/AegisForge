@@ -6,9 +6,36 @@ longer chain two separate sinks together. Each contributor keeps its own judgeme
 primary severity follows a versioned standard instead of whichever source shouts loudest.
 """
 
+from app.rules.flow import CATEGORY, terminal_sink
+from app.rules.semantics import Semantics
 from app.schemas.contracts import Finding
 
 SEVERITY_POLICY = "severity-1.0"
+MERGE_VERSION = "flow-merge-1.1"
+
+
+def _canonical(finding, parsed_by_id, cache):
+    location = finding.location
+    if location.kind != "source":
+        return finding
+    key = str(location.artifact_id)
+    tree = getattr(parsed_by_id.get(key), "private_tree", None)
+    if tree is None:
+        return finding
+    try:
+        if key not in cache:
+            cache[key] = Semantics(tree)
+        target = terminal_sink(
+            tree, cache[key], CATEGORY[finding.cwe], location.start_line, location.end_line
+        )
+        if target is None:
+            return finding
+        result = finding.model_copy(deep=True)
+        result.location.start_line = target.lineno
+        result.location.end_line = target.end_lineno or target.lineno
+        return result
+    except (KeyError, TypeError, ValueError, RecursionError, AttributeError):
+        return finding  # unresolved flow never joins unrelated operations
 
 
 def standard_severity(finding: Finding) -> str:
@@ -44,8 +71,14 @@ def _order(finding: Finding):
 
 
 def merge_findings(findings: list[Finding], parsed_by_id) -> list[dict]:
+    cache, originals = {}, {}
+    normalized = []
+    for original in findings:
+        item = _canonical(original, parsed_by_id, cache)
+        originals[id(item)] = original
+        normalized.append(item)
     groups: list[list[Finding]] = []
-    for finding in sorted(findings, key=_order):
+    for finding in sorted(normalized, key=_order):
         for group in groups:
             if all(overlaps(finding, member) for member in group):
                 group.append(finding)
@@ -54,7 +87,7 @@ def merge_findings(findings: list[Finding], parsed_by_id) -> list[dict]:
             groups.append([finding])
     result = []
     for members in groups:
-        unique = list({item.model_dump_json(): item for item in members}.values())
+        unique = list({originals[id(item)].model_dump_json(): item for item in members}.values())
         # Explanation of the primary comes from the deterministic rule when one exists.
         base = next((m for m in unique if "rule" in m.sources), unique[0])
         primary = base.model_copy(deep=True)
@@ -78,7 +111,8 @@ def merge_findings(findings: list[Finding], parsed_by_id) -> list[dict]:
         result.append(
             {
                 "finding": primary.model_dump(mode="json"),
-                "contributors": [m.model_dump(mode="json") for m in unique],
+                "contributors": [originals[id(m)].model_dump(mode="json") for m in unique],
+                "merge_version": MERGE_VERSION,
                 "severity_disagreement": any(m.severity != primary.severity for m in unique),
                 "severity_policy": SEVERITY_POLICY,
             }

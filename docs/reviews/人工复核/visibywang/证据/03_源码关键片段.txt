@@ -1,0 +1,368 @@
+AegisForge 人工复核证据 03：源码关键片段与防护摘录
+复核人：visibywang    复核日期：2026-11-12    材料版本：69cf069
+====================================================================
+说明：行号按单个样例计（分隔行不计，首个非空代码行为第 1 行）。片段只摘录与数据流/防护
+直接相关的行，完整源码见对应 bundle；"S："给出同族安全对照的关键防护行。
+本文件用于支撑《样例复核记录.txt》的"输入经过的处理过程/已有防护/判断理由"。
+
+一、XSS 源码
+--------------------------------------------------------------------
+[SRC-XSS-09-V] holdout/xss 第 8 行
+8 |     return "<p>Welcome back, {}.</p>".format(request.args.get("user", ""))
+防护：无；format 不转义。
+S：SRC-XSS-09-S 第 9 行 .format(escape(...))，HTML 文本转义。
+
+[SRC-XSS-10-V] holdout/xss 第 8-10 行
+8 |     items = ["<li>" + tag + "</li>" for tag in request.args.getlist("tag")]
+9 |     body = "<ul>" + "".join(items) + "</ul>"
+10|     return Response(body, mimetype="text/html")
+防护：无；列表推导与 join 不转义。
+S：SRC-XSS-10-S 第 9 行对每个 tag 调 escape(tag) 再拼接。
+
+[SRC-XSS-11-V] holdout/xss 第 8 行
+8 |     return "<body class='" + request.cookies.get("theme", "light") + "'>Preferences</body>"
+防护：无；单引号属性上下文未转义引号。
+S：SRC-XSS-11-S 第 9 行 escape(cookie)，引号/尖括号实体化。
+
+[SRC-XSS-12-V] holdout/xss 第 8-9 行
+8 |     agent = request.headers.get("User-Agent", "unknown")
+9 |     return f"<pre>Your browser: {agent}</pre>"
+防护：无；f-string 不转义。
+S：SRC-XSS-12-S 第 10 行 f"... {escape(agent)} ..."。
+
+[SRC-XSS-13-V] holdout/xss 第 9-11 行
+9 |     code = payload.get("code", "")
+10|     if not code.isalnum():
+11|         return f"<h1>Invalid coupon</h1><p>{code} is not a valid code.</p>", 400
+防护：isalnum 只决定分支；非 alnum 的攻击载荷正好进入 HTML 错误页。
+S：SRC-XSS-13-S 第 11 行改为返回 JSON dict（不再拼 HTML）。
+
+[SRC-XSS-14-V] holdout/xss 第 8-9 行
+8 |     query = request.args.get("q", "")
+9 |     return "<script>var initialQuery = '%s';</script><div id='app'></div>" % query
+防护：无；JS 字符串上下文，HTML 转义也不够。
+S：SRC-XSS-14-S 第 10-11 行 json.dumps(q) + replace("<","\\u003c")。
+
+[SRC-XSS-15-V] holdout/xss 第 4、9 行
+4 | BANNER = "<div class='banner'>{{ message|safe }}</div>"
+9 |     return render_template_string(BANNER, message=request.args.get("message", ""))
+防护：自动转义被 |safe 关闭；模板是常量（无 SSTI）。
+S：SRC-XSS-15-S 第 4 行 {{ message }}，去掉 |safe。
+
+[SRC-XSS-16-V] holdout/xss 第 10、16 行
+10|     flash("Project renamed to <b>" + request.form["name"] + "</b>")
+16|     notes = "".join(Markup("<p class='flash'>%s</p>" % message) for message in get_flashed_messages())
+防护：Markup 把含攻击者数据的整串标记为安全；% 在 str 上先拼接。
+S：SRC-XSS-16-S 第 10/16 行 flash 纯文本 + Markup(...).format(message)。
+
+[SRC-XSS-17-V] holdout/xss 第 6、8 行
+6 | @app.route("/u/<username>")
+8 |     return "<h2>Profile of " + username + "</h2><p>No public posts yet.</p>"
+防护：无；路由变量 URL 解码后原样拼接。
+S：SRC-XSS-17-S 第 9 行 escape(username)。
+
+[SRC-XSS-18-V] holdout/xss 第 11-12 行
+11|     values = {"title": request.args.get("title", ""), "summary": request.args.get("summary", "")}
+12|     return CARD.substitute(values)
+防护：string.Template 只做文本替换，不做 HTML 转义。
+S：SRC-XSS-18-S 第 12 行对两个值 escape 后再 substitute。
+
+[SRC-XSS-19-V] holdout/xss 第 9-10 行
+9 |         term = request.args.get("term", "")
+10|         return f"<h1>Results for {term}</h1><ul></ul>"
+防护：无；MethodView 不改变 sink。
+S：SRC-XSS-19-S 第 11 行 escape(term)。
+
+[SRC-XSS-20-V] holdout/xss 第 20 行
+20|     return "<p>%(name)s will attend with %(guests)s guests.</p>" % request.form
+防护：装饰器只检查表单非空；% 字典格式化不转义。
+S：SRC-XSS-20-S 第 21 行对 name/guests escape 后再格式化。
+
+[SRC-XSS-01-V] dev/xss 第 8-9 行
+8 |     name = request.args.get("name", "guest")
+9 |     return f"<h1>Hello, {name}!</h1>"
+防护：无。
+S：SRC-XSS-01-S 第 10 行 f"<h1>Hello, {escape(name)}!</h1>"。
+
+[SRC-XSS-02-V] dev/xss 第 9-10 行
+9 |     html = "<div class='comment'>" + body + "</div>"
+10|     return html
+防护：无。
+S：SRC-XSS-02-S 第 10 行 html.escape(request.form["body"])。
+
+[SRC-XSS-03-V] dev/xss 第 9-10 行
+9 |     template = "<h2>" + title + "</h2><p>{{ note }}</p>"
+10|     return render_template_string(template, note="draft")
+防护：无；用户控制模板源 → SSTI（CWE-1336）并可直接注入 HTML（CWE-79）。
+S：SRC-XSS-03-S 第 4 行常量 PAGE，title 作为上下文变量。
+
+[SRC-XSS-04-V] dev/xss 第 10 行
+10|     return Markup("<span class='badge'>%s</span>" % label)
+防护：无；% 在普通 str 上完成拼接后整体 Markup，绕过转义。
+S：SRC-XSS-04-S 第 10 行 Markup(...).format(label)，format 会转义参数。
+
+[SRC-XSS-05-V] dev/xss 第 9-10 行
+9 |     body = "<p>No results for %s</p>" % query
+10|     response = make_response(body)
+11|     response.headers["Content-Type"] = "text/html; charset=utf-8"
+防护：无；显式 text/html。
+S：SRC-XSS-05-S 第 10 行 % escape(query)。
+
+[SRC-XSS-06-V] dev/xss 第 8-9 行
+8 |     site = request.args.get("site", "")
+9 |     return '<a href="' + site + '">Website</a>'
+防护：无；href 属性，javascript: 或引号闭合均可。
+S：SRC-XSS-06-S 第 9-10 行 urlparse scheme 白名单 + escape(site)。
+
+[SRC-XSS-07-V] dev/xss 第 6-7、12 行
+6 | def render_row(cells):
+7 |     return "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
+12|     values = request.args.getlist("v")
+防护：无；helper + 生成器，跨过程未转义。
+S：SRC-XSS-07-S 第 7 行 f"<td>{escape(cell)}</td>"。
+
+[SRC-XSS-08-V] dev/xss 第 11-12 行
+11|     row = db.execute("SELECT title, body FROM notes WHERE id = ?", (note_id,)).fetchone()
+12|     return "<article><h3>%s</h3>%s</article>" % (row[0], row[1])
+防护：SQL 用了 ?（无 SQLi），但输出端无 HTML 转义（存储型 XSS）。
+S：SRC-XSS-08-S 第 13 行 render_template_string(NOTE, title=row[0], body=row[1])，自动转义。
+
+二、SQL 注入源码
+--------------------------------------------------------------------
+[SRC-SQLI-09-V] holdout/sqli 第 12-13 行
+12|     sql = "SELECT id, name, price FROM items WHERE id IN (" + ",".join(ids) + ")"
+13|     return {"items": db.execute(sql).fetchall()}
+防护：无；join 拼接 IN 列表。
+S：SRC-SQLI-09-S 第 12-14 行生成 ? 占位符 + execute(sql, ids)。
+
+[SRC-SQLI-10-V] holdout/sqli 第 11 行
+11|     row = db.execute("SELECT total, status FROM invoices WHERE id = " + invoice_id).fetchone()
+防护：无；字符串路由变量进未加引号数值上下文。
+S：SRC-SQLI-10-S 第 11 行 str(int(invoice_id))。
+
+[SRC-SQLI-11-V] holdout/sqli 第 11 行
+11|     rows = db.execute(f"SELECT * FROM {table} LIMIT 100").fetchall()
+防护：无；表名标识符拼接。
+S：SRC-SQLI-11-S 第 11-12 行 EXPORTABLE 白名单 + abort(404)。
+
+[SRC-SQLI-12-V] holdout/sqli 第 12-15 行
+12|     for column, value in changes.items():
+13|         assignments.append(f"{column} = '{value}'")
+15|     db.execute(f"UPDATE users SET {', '.join(assignments)} WHERE id = ?", (user_id,))
+防护：仅 WHERE 绑定 id；SET 的列名与值都是拼接。
+S：SRC-SQLI-12-S 第 12-17 行 EDITABLE 白名单 + 全部值绑定。
+
+[SRC-SQLI-13-V] holdout/sqli 第 13 行
+13|     db.executemany("INSERT INTO guests(name, event) VALUES (?, '%s')" % event, [(n,) for n in names])
+防护：部分绑定：name 安全，event 已被 Python % 插入 SQL。
+S：SRC-SQLI-13-S 第 13 行 VALUES (?, ?) + (n, event) 绑定。
+
+[SRC-SQLI-14-V] holdout/sqli 第 11 行
+11|     cursor.execute(f"SELECT title FROM reports WHERE tenant = '{request.headers.get('X-Tenant', '')}'")
+防护：无；自定义请求头可控，f-string 拼接。
+S：SRC-SQLI-14-S 第 11 行 tenant = ? + 参数元组。
+
+[SRC-SQLI-15-V] holdout/sqli 第 14 行
+14|         cursor.execute("SELECT id, title FROM articles WHERE author = '" + author + "'")
+防护：无；类方法内拼接。
+S：SRC-SQLI-15-S 第 14 行 author = ? + (author,)。
+
+[SRC-SQLI-16-V] holdout/sqli 第 12-13 行
+12|     (username,) = db.execute("SELECT username FROM users WHERE id = ?", (session["uid"],)).fetchone()
+13|     rows = db.execute(f"SELECT id, total FROM orders WHERE customer = '{username}'").fetchall()
+防护：第一跳绑定；第二跳把数据库值 f-string 拼回 SQL（二阶）。
+S：SRC-SQLI-16-S 第 13 行 customer = ? + (username,)。
+
+[SRC-SQLI-17-V] holdout/sqli 第 13-14 行
+13|     sql = "SELECT id, body FROM posts ORDER BY id DESC LIMIT %s OFFSET %s" % (limit, offset)
+14|     return {"posts": db.execute(sql).fetchall()}
+防护：无；LIMIT/OFFSET 接受表达式。
+S：SRC-SQLI-17-S 第 10-11 行 int + 夹取，第 13-14 行 LIMIT ?/OFFSET ? 绑定。
+
+[SRC-SQLI-18-V] holdout/sqli 第 11 行
+11|     return {"items": db.execute("SELECT name FROM items WHERE region = '{}'".format(request.cookies.get("region", "eu"))).fetchall()}
+防护：无；Cookie 值 format 进 SQL。
+S：SRC-SQLI-18-S 第 11 行 region = ? + 参数元组。
+
+[SRC-SQLI-19-V] holdout/sqli 第 12、14、16 行
+12|         sql += " AND city = '" + request.args["city"] + "'"
+14|         sql += " AND level = '" + request.args["level"] + "'"
+16|     return {"jobs": db.execute(sql).fetchall()}
+防护：无；两个分支都可追加用户文本。
+S：SRC-SQLI-19-S 第 10-18 行 sql += "... = ?" + params.append + execute(sql, params)。
+
+[SRC-SQLI-20-V] holdout/sqli 第 10、16 行
+10|     return session.execute(text("SELECT COUNT(*) FROM leads WHERE status = '" + status + "'")).scalar()
+16|         return {"count": count_leads(session, request.get_json(force=True)["status"])}
+防护：无；text() 不自动绑定。
+S：SRC-SQLI-20-S 第 10 行 text("... = :status") + {"status": status}。
+
+[SRC-SQLI-01-V] dev/sqli 第 12 行
+12|     row = db.execute(f"SELECT id, email FROM users WHERE name = '{name}'").fetchone()
+防护：无。
+S：SRC-SQLI-01-S 第 12 行 name = ? + (name,)。
+
+[SRC-SQLI-02-V] dev/sqli 第 14-15 行
+14|     sql = "SELECT id FROM users WHERE username = '" + username + "' AND pw_hash = '" + password + "'"
+15|     cur.execute(sql)
+防护：无；两个字段都可注入。
+S：SRC-SQLI-02-S 第 14-15 行两个 ? + (username, password)。
+
+[SRC-SQLI-03-V] dev/sqli 第 12 行
+12|         cur.execute("SELECT id, total FROM orders WHERE customer = '%s'" % customer)
+防护：无；Python % 在驱动前替换（不是绑定）。
+S：SRC-SQLI-03-S 第 12 行 execute("... = %s", (customer,))，由驱动绑定。
+
+[SRC-SQLI-04-V] dev/sqli 第 12-13 行
+12|     query = "SELECT id, name, price FROM products ORDER BY {}".format(sort)
+13|     return {"items": db.execute(query).fetchall()}
+防护：无；ORDER BY 标识符拼接。
+S：SRC-SQLI-04-S 第 12 行 SORT_COLUMNS.get(...) 白名单映射。
+
+[SRC-SQLI-05-V] dev/sqli 第 9 行
+9 |     return conn.execute("SELECT id, name FROM members WHERE email = '" + email + "'").fetchall()
+防护：无；helper 参数直接拼接。
+S：SRC-SQLI-05-S 第 9 行 email = ? + (email,)。
+
+[SRC-SQLI-06-V] dev/sqli 第 12 行
+12|     db.executescript(f"INSERT INTO tags(name) VALUES ('{tag}'); UPDATE stats SET tags = tags + 1;")
+防护：无；executescript 支持多语句且无法参数化。
+S：SRC-SQLI-06-S 第 12-13 行拆分 execute + (tag,) 绑定 + 常量 UPDATE。
+
+[SRC-SQLI-07-V] dev/sqli 第 12 行
+12|         rows = conn.execute(text(f"SELECT qty FROM stock WHERE sku = '{sku}'")).all()
+防护：无；text() 中的 f-string 是原始 SQL。
+S：SRC-SQLI-07-S 第 12 行 text("... = :sku") + {"sku": sku}。
+
+[SRC-SQLI-08-V] dev/sqli 第 12-13 行
+12|     sql = "SELECT title FROM books WHERE title LIKE '%{}%'".format(term)
+13|     return {"titles": [r[0] for r in db.execute(sql)]}
+防护：无；格式化和通配符都由用户控制。
+S：SRC-SQLI-08-S 第 12-13 行通配符放进绑定值 + ESCAPE '\\'。
+
+三、命令注入源码
+--------------------------------------------------------------------
+[SRC-CMDI-09-V] holdout/cmdi 第 11-12 行
+11|     command = "pg_dump %s > /var/backups/latest.sql" % database
+12|     return {"status": os.system(command)}
+防护：无；os.system 恒经 shell，重定向也在命令串内。
+S：SRC-CMDI-09-S 第 11 行 shlex.quote(database)，保留 shell 与重定向。
+
+[SRC-CMDI-10-V] holdout/cmdi 第 10 行
+10|     return {"usage": os.popen(f"du -sh {request.get_json(force=True)['path']}").read()}
+防护：无；os.popen 是 shell 接口。
+S：SRC-CMDI-10-S 第 10-11 行 subprocess.run(["du","-sh","--",path])。
+
+[SRC-CMDI-11-V] holdout/cmdi 第 10-12 行
+10|     upload = request.files["image"]
+11|     upload.save(f"/srv/uploads/{upload.filename}")
+12|     subprocess.run(f"convert /srv/uploads/{upload.filename} -resize 128x128 /srv/thumbs/{upload.filename}", shell=True)
+防护：无；原始文件名进 shell 命令与保存路径。
+S：SRC-CMDI-11-S 第 12-14 行 secure_filename + argv 列表。
+
+[SRC-CMDI-12-V] holdout/cmdi 第 10-11 行
+10|     target = request.args.get("file", "app.log")
+11|     out = subprocess.run(["bash", "-c", "wc -l /var/log/" + target], capture_output=True, text=True)
+防护：无 shell=True，但显式 bash -c 并拼接脚本文本。
+S：SRC-CMDI-12-S 第 11 行 ["wc","-l","--","/var/log/"+target.replace("/","")]。
+
+[SRC-CMDI-13-V] holdout/cmdi 第 9、14 行
+9 |     return subprocess.run("git -C /srv/repo checkout " + branch, shell=True, capture_output=True)
+14|     result = checkout(request.get_json(force=True)["branch"])
+防护：无；helper 内拼接 + shell=True。
+S：SRC-CMDI-13-S 第 9-11 行拒绝 "-" 前缀 + ["git","-C","/srv/repo","switch",branch]。
+
+[SRC-CMDI-14-V] holdout/cmdi 第 10 行
+10|     os.system("varnishadm ban req.http.host == " + request.headers.get("X-Purge-Host", ""))
+防护：无；请求头拼进 shell 命令。
+S：SRC-CMDI-14-S 第 12-15 行 HOST.fullmatch(host) 白名单后仍 os.system。
+
+[SRC-CMDI-15-V] holdout/cmdi 第 10-11 行
+10|     host = request.args.get("host", "127.0.0.1")
+11|     proc = await asyncio.create_subprocess_shell(f"traceroute -m 8 {host}", stdout=asyncio.subprocess.PIPE)
+防护：无；create_subprocess_shell 等价 shell=True。
+S：SRC-CMDI-15-S 第 11 行 create_subprocess_exec("traceroute","-m","8","--",host)。
+
+[SRC-CMDI-16-V] holdout/cmdi 第 7、12-13 行
+7 | MAIL = Template("echo 'Your report is ready' | mail -s '$subject' $address")
+12|     command = MAIL.substitute(subject=request.form["subject"], address=request.form["email"])
+13|     return {"status": os.system(command)}
+防护：无；Template 只做变量替换，subject 可跳出单引号、address 完全裸露。
+S：SRC-CMDI-16-S 第 10-11 行 ["mail","-s",subject,"--",email] + stdin 正文。
+
+[SRC-CMDI-17-V] holdout/cmdi 第 13 行
+13|         proc = subprocess.Popen(f"unzip -l {self.root}/{archive}", shell=True, stdout=subprocess.PIPE)
+防护：无；类方法内拼接 + shell=True。
+S：SRC-CMDI-17-S 第 13 行 ["unzip","-l",f"{self.root}/{archive}"]。
+
+[SRC-CMDI-18-V] holdout/cmdi 第 11-12 行
+11|     for host in request.get_json(force=True)["hosts"]:
+12|         results[host] = os.system(f"curl -fsS --max-time 3 http://{host}/health")
+防护：无；循环内逐个拼接 + os.system。
+S：SRC-CMDI-18-S 第 12-13 行 argv 列表 + subprocess.run。
+
+[SRC-CMDI-19-V] holdout/cmdi 第 11-15 行
+12|         command = "ffmpeg -y -i %s output.mp3" % source
+14|         command = "ffmpeg -y -i %s output.ogg" % source
+15|     return {"exit": subprocess.call(command, shell=True)}
+防护：无；分支汇合到同一个 shell 调用。
+S：SRC-CMDI-19-S 第 12-16 行 argv 列表 + shlex.join + shell=True（正确引用）。
+
+[SRC-CMDI-20-V] holdout/cmdi 第 11-12 行
+11|     script = "cd /srv/projects/" + project + " && make release"
+12|     done = subprocess.run(script, shell=True)
+防护：无；"cd && cmd" 组合，project 可含元字符或 ../。
+S：SRC-CMDI-20-S 第 12-15 行 Path 拼接 + 父目录检查 + ["make","release"] + cwd=project。
+
+[SRC-CMDI-01-V] dev/cmdi 第 11 行
+11|     status = os.system(f"ping -c 1 {host}")
+防护：无。
+S：SRC-CMDI-01-S 第 11 行 subprocess.run(["ping","-c","1","--",host])。
+
+[SRC-CMDI-02-V] dev/cmdi 第 11 行
+11|     output = os.popen("whois " + domain).read()
+防护：无；os.popen 恒经 shell。
+S：SRC-CMDI-02-S 第 11 行 os.popen("whois " + shlex.quote(domain))。
+
+[SRC-CMDI-03-V] dev/cmdi 第 11-12 行
+11|     cmd = "tar -czf /tmp/backup.tgz {}".format(folder)
+12|     subprocess.run(cmd, shell=True, check=True)
+防护：无。
+S：SRC-CMDI-03-S 第 12-15 行 resolve + BASE in parents + argv 列表。
+
+[SRC-CMDI-04-V] dev/cmdi 第 11 行
+11|     sp.call("libreoffice --headless --convert-to pdf uploads/" + name + ".docx", shell=True)
+防护：无；别名导入仍调用 subprocess.call。
+S：SRC-CMDI-04-S 第 11 行 argv 列表。
+
+[SRC-CMDI-05-V] dev/cmdi 第 11 行
+11|     code = system("systemctl " + action + " nginx")
+防护：无；from os import system 的裸名仍是 os.system。
+S：SRC-CMDI-05-S 第 6、11-12 行 ACTIONS 常量字典 + system(常量)。
+
+[SRC-CMDI-06-V] dev/cmdi 第 9、15 行
+9 |     return "grep -n '" + pattern + "' /var/log/app/" + logfile
+15|     out = subprocess.check_output(cmd, shell=True, text=True)
+防护：无；pattern 可跳出单引号，logfile 直接拼接。
+S：SRC-CMDI-06-S 第 9、15 行 argv + "--" + logfile.replace("/","")。
+
+[SRC-CMDI-07-V] dev/cmdi 第 11-12 行
+11|     args = ["convert", payload["src"], "-resize", payload["size"], payload["dst"]]
+12|     proc = subprocess.Popen(" ".join(args), shell=True)
+防护：无；列表被 join 回字符串后 shell=True。
+S：SRC-CMDI-07-S 第 11-12 行保持列表，Popen(args)。
+
+[SRC-CMDI-08-V] dev/cmdi 第 11 行
+11|     return {"answer": subprocess.getoutput("nslookup " + name)}
+防护：无；getoutput 恒经 shell。
+S：SRC-CMDI-08-S 第 12-15 行 ipaddress.ip_address 校验 + getoutput(str(address))。
+
+四、附注
+--------------------------------------------------------------------
+1. 上表 60 个 V 样例的片段均与证据 02 的行号一致；S 片段用于说明防护为何有效，
+   不改变 S 的 label。
+2. 标注"无"表示在该位置没有任何输出编码/shell 隔离；并不表示程序没有其它防护（例如
+   SRC-XSS-16-V 的 flash 机制、SRC-SQLI-16-V 的第一跳绑定），这些在《样例复核记录》的判断理由中
+   已分别说明。
+3. 对"安全对照但不是完全等价重构"的样例（SRC-CMDI-08-S 改参数名、SRC-XSS-20-S 缺失字段默认空串、
+   SRC-XSS-13-S 改 JSON 错误页），片段中保留原样，供修复模型参考时注意业务契约。

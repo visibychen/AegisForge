@@ -8,9 +8,19 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
+**M6已完成课程工程与实验交付，PR #16待审。** 用户明确课程无硬性数值指标，本轮以功能、真实测试、结果分析及证据完整性验收；`python scripts/acceptance.py --profile course-delivery-v1`返回通过并披露局限。人工复核Q1–Q4已通过分类说明和加强测试处置，18个后续候选在新固定容器测试中18/18通过，36个V/S对照与3个部分修复负对照有效。本机513后端通过/1平台skip、56前端通过，累计模型调用仍992/1000。见[M6完成记录](docs/m6-completion.md)。原首次36/54等历史失败完整保留，M7报告/查重/发布及PR集成待后续进行。
+
+以下为此前开发、实验与复核接收的历史记录，当前M6完成状态以上述课程profile及完成记录为准。
+
+**2026-11-12人工复核更新：** 已收到visibywang针对69cf069的完整单人复核材料，180条检测和18条动态记录的ID/哈希已核对。检测179同意/1分歧，动态15同意/3分歧；当前为“复核已完成，4项分歧待处置”，详见[复核接收记录](docs/reviews/README.md)。复核的是已暴露旧数据，尚未形成新的独立测试集；历史报告中的pending保留其当时含义。
+
+**2026-11-12更新：M6质量修复与定向验证已推进，见[本轮证据](docs/m6-quality-2026-11-12.md)。** 新增可达定义、同流合并、可见静态复核和版本化运行审计，修正容器修改导致的漏报及修复业务约束。真实定向首批11/12成功，漏报修正后另作1/1复验，不合并回填；累计992/1000调用。Claude账户遇到验证问题，按用户最新要求改由Codex独立完成，原会话保留。正式三轮验收仍未完成；人工复核的新状态见上一段。以下11月11日数字为保留的历史基线。
+
+**M6 全量实验及 Sonnet5.5/high 三轮协作优化已完成，[PR #16](https://github.com/visibychen/AegisForge/pull/16) 待审。正式验收仍未通过：** 联合源码三轮均值Precision约59.2%、Recall约98.1%，HTTP F1=1；首次修复36/54、SQLi8/18，未达到PLAN门槛，人工标签复核仍pending。改进后开发A/B和后续候选诊断单独保存，不能替代原结果。见[测试报告](docs/test-report.md)、[优化设计](docs/m6-design.md)、[三轮协作](docs/collaboration-2026-11-11.md)。本轮真实模型累计942/1000次，已停止付费调优。M7报告/查重/发布仍待完成。
+
 **M5 完整工作台已完成实现和开发验收，[PR #15](https://github.com/visibychen/AegisForge/pull/15) 待审、未合并。** 总览/历史筛选分页、逻辑移出、服务端风险筛选、证据行号导航、原文候选对比、修复历史、JSON/Markdown报告已实现。创新包括修复说明卡、500行源码窗口和报告完整性校验；原有M4候选补丁与受控验证保留。干净 Compose 完整浏览器验收通过。见[M5设计](docs/m5-design.md)、[验证](docs/m5-verification.md)、[协作](docs/collaboration-2026-11-10.md)。
 
-M1 科技流动视觉继续保留。M3 按用户分工完成三阶段、同一 Claude 会话四次真实调用，并在审查中提出和落实创新：逐块覆盖账本、可下载检测凭证。验证包含三类真实 DeepSeek 开发演示；详见 [M3 验证](docs/m3-verification.md)、[设计](docs/m3-design.md)和 [协作记录](docs/collaboration-2026-11-07.md)。冻结的 120 源码/60 HTTP 样例仍保持原划分，人工标注复核 pending，正式准确率评测留待 M6。
+M1 科技流动视觉继续保留。M3 按用户分工完成三阶段、同一 Claude 会话四次真实调用，并在审查中提出和落实创新：逐块覆盖账本、可下载检测凭证。验证包含三类真实 DeepSeek 开发演示；详见 [M3 验证](docs/m3-verification.md)、[设计](docs/m3-design.md)和 [协作记录](docs/collaboration-2026-11-07.md)。冻结的120源码/60 HTTP样例仍保持原划分；M6真实评测已完成、人工标注复核仍pending。
 
 - [实施与验收计划](PLAN.md)：系统框架、必做加分项、阶段交付、测试数据及验收门槛。
 - [课程要求与评分映射](docs/requirements.md)：原始要求的项目化追踪。
@@ -125,13 +135,13 @@ npm --prefix frontend run test:e2e
 
 当前默认四个浏览器场景覆盖连接/动效、上传/脱敏/规则/HTTP 边界、任务/独立 worker/模拟模式/重试/刷新/凭证下载及手机布局。浏览器测试固定选 fake，不消费真实模型预算；另外可显式开启真实修复 E2E，下面给出命令。其他平台可安装 Playwright Chromium。
 
-`scripts/check.py` 也校验 [冻结清单](samples/freeze.json)。开发代码仅使用 `samples/dev/`；保留集只作完整性、语法和解析预算检查，正式检测评测留待 M6。18 个保留集受控修复例已预登记，正式实验留待 M6；M4另用三个开发例完成动态闭环。不要为适配规则结果改写保留标签或静默重新冻结。
+`scripts/check.py` 也校验[冻结清单](samples/freeze.json)。保留集已在M6完整实验中暴露，后续调优结果不再是独立评测。18个受控修复例三轮首次候选共54次已完成；原标签、源码及失败不回改，原始结果由Git历史守卫和重算审计保护。M4开发闭环与M6正式基线、事后诊断分开记录。
 
 ## 依赖与后续推进
 
 `environment.yml` 管理 conda 运行时，`backend/pyproject.toml` 声明 Python 库范围，`backend/requirements*.lock` 记录精确版本，前端由 `package-lock.json` 锁定。Python 锁文件由同一 conda 环境中的 pip-tools 生成；依赖调整同步声明、锁文件、测试及 PLAN。
 
-**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR 集成状态以 Issue 为准。M3 分支堆叠在仍待审的 M2 PR #12 上，避免重复审查前序改动。M4已交付修复与验证加分项并完成开发验收，完整历史/报告留M5，最终真实模型对比和18例修复实验留M6。
+**[M2 #3](https://github.com/visibychen/AegisForge/issues/3)** 与 **[M3 #4](https://github.com/visibychen/AegisForge/issues/4)** 的实现与本地验收已完成，PR集成状态以Issue为准。M3分支堆叠在M2 PR #12上，避免重复审查前序改动。M4修复/验证加分项、M5完整历史/报告已实现；M6真实模型对比及18例三轮首次修复实验已完成，数值未全达标，见测试报告。
 
 
 ## M4 修复与受控部署
@@ -186,4 +196,21 @@ conda run --no-capture-output -n AegisForge python scripts/verify_report.py repo
 
 若Windows禁止默认8000端口，可在启动Vite的终端设非秘密环境变量`AEGISFORGE_DEV_API_PORT=28000`，同时将API用`python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 28000`启动。只允许回环代理，默认配置保持8000。
 
-新增GitHub `Workbench Compose E2E` 从干净Ubuntu运行迁移、独立服务、隔离探测和完整默认浏览器流程，不传模型key，显式真实模型场景跳过；白名单报告和截图保留为CI artifact。M6正式保留集实验、M7课程模板报告/查重/最终发布仍待完成。
+GitHub `Workbench Compose E2E` 从干净Ubuntu运行迁移、独立服务、隔离探测和完整默认浏览器流程，不传模型key，显式真实模型场景跳过；白名单报告和截图保留为CI artifact。M6新增按浏览器分目录、实际通过/跳过/失败/波动计数，避免Firefox执行清理Chromium证据；实际运行状态见测试报告。M7课程模板报告/查重/最终发布仍待完成。
+
+CI浏览器采用版本匹配、摘要固定的官方Playwright镜像和只读挂载的主机Node24，避免Ubuntu软件源DNS故障阻塞依赖安装。仅受信界面测试使用回环服务的host网络，无模型key/Docker socket；执行候选的无网络隔离容器保持原限制。实际Chromium5通过/1显式skip、Firefox1通过及两浏览器截图保留已验证，来源与固定镜像摘要见测试报告。
+
+## M6 实验与审计
+
+以下Python命令均在`conda activate AegisForge`后运行；审计不调用模型或执行候选：
+
+```powershell
+python scripts/m6_freeze_guard.py     # 与预调优提交比较samples及原始baseline
+python scripts/m6_verify.py           # 从原始行重算、核对JSON/CSV/哈希；记录一致返回0
+python scripts/acceptance.py          # 核心数值门槛：本次实际返回1（未达标）
+python scripts/analyze_detection.py --output data/m6-attribution.json
+```
+
+`acceptance.py`返回0仅表示列出的核心实验门槛满足，1为记录有效但未达标，2为记录无效；性能/覆盖/资源/浏览器等不在其重算范围内。普通CI核验真实54次容器重放与记录一致，严格数值作业只在`workflow_dispatch`执行（工作流进入默认分支后方可从GitHub界面触发），不将记录完整误称课程达标。
+
+完整付费基线命令与恢复约定见[协议](docs/m6-protocol.md)，本轮已经执行，**不要新建账本重跑以绕过1000次上限**。开发A/B、定向回归及后续修复各有固定配置/检查点，结果分文件不可覆盖；它们不具有独立保留集含义。动态候选仅由无模型凭据的固定Docker runner执行，本机Docker引擎不可用时使用GitHub Ubuntu证据。

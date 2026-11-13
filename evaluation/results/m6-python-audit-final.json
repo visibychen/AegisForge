@@ -1,0 +1,328 @@
+{
+  "checked_at": "2026-11-11T13:50:48.786550+00:00",
+  "method": "exact locked transitive versions via public PyPI JSON vulnerability advisories; no package installation or execution",
+  "locks": {
+    "backend/requirements.lock": "a223b25a1281dfce87c20c6b9f56e77889851920911e6a878171d7a7ef40211c",
+    "backend/requirements-dev.lock": "80f9b216fd9ac0c14145b2af97bce00c5d20477dc4376add354a8dd1b5ca3434",
+    "deploy/validator/requirements.lock": "1f1e931bc15319f151ed10f3a989847ce9ec66dfd20b1c87bf83e4511fb5ee94"
+  },
+  "passed": true,
+  "packages": [
+    {
+      "name": "alembic",
+      "version": "1.20.1",
+      "source": "https://pypi.org/pypi/alembic/1.20.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "source": "https://pypi.org/pypi/annotated-doc/0.0.5/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "source": "https://pypi.org/pypi/annotated-types/0.8.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.16.0",
+      "source": "https://pypi.org/pypi/anyio/4.16.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "blinker",
+      "version": "1.9.0",
+      "source": "https://pypi.org/pypi/blinker/1.9.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "build",
+      "version": "1.6.1",
+      "source": "https://pypi.org/pypi/build/1.6.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "source": "https://pypi.org/pypi/certifi/2026.10.23/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "source": "https://pypi.org/pypi/click/8.5.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.1",
+      "source": "https://pypi.org/pypi/click/8.5.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "source": "https://pypi.org/pypi/colorama/0.4.6/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "coverage",
+      "version": "7.17.0",
+      "source": "https://pypi.org/pypi/coverage/7.17.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.162.0",
+      "source": "https://pypi.org/pypi/fastapi/0.162.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "flask",
+      "version": "3.1.3",
+      "source": "https://pypi.org/pypi/flask/3.1.3/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.6",
+      "source": "https://pypi.org/pypi/greenlet/3.5.6/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "source": "https://pypi.org/pypi/h11/0.16.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "source": "https://pypi.org/pypi/httpcore/1.0.9/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "source": "https://pypi.org/pypi/httpx/0.28.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "source": "https://pypi.org/pypi/idna/3.20/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.1",
+      "source": "https://pypi.org/pypi/iniconfig/2.3.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "itsdangerous",
+      "version": "2.2.0",
+      "source": "https://pypi.org/pypi/itsdangerous/2.2.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "source": "https://pypi.org/pypi/jinja2/3.1.6/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "mako",
+      "version": "1.4.3",
+      "source": "https://pypi.org/pypi/mako/1.4.3/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.4",
+      "source": "https://pypi.org/pypi/markupsafe/3.0.4/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.2",
+      "source": "https://pypi.org/pypi/opentelemetry-api/1.45.2/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "source": "https://pypi.org/pypi/packaging/26.3/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pip-tools",
+      "version": "7.6.2",
+      "source": "https://pypi.org/pypi/pip-tools/7.6.2/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "playwright",
+      "version": "1.64.1",
+      "source": "https://pypi.org/pypi/playwright/1.64.1/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pluggy",
+      "version": "1.7.0",
+      "source": "https://pypi.org/pypi/pluggy/1.7.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.2",
+      "source": "https://pypi.org/pypi/pydantic/2.14.2/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.50.2",
+      "source": "https://pypi.org/pypi/pydantic-core/2.50.2/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.16.2",
+      "source": "https://pypi.org/pypi/pydantic-settings/2.16.2/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pyee",
+      "version": "14.0.0",
+      "source": "https://pypi.org/pypi/pyee/14.0.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "source": "https://pypi.org/pypi/pygments/2.21.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pyproject-hooks",
+      "version": "1.3.3",
+      "source": "https://pypi.org/pypi/pyproject-hooks/1.3.3/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pytest",
+      "version": "9.2.0",
+      "source": "https://pypi.org/pypi/pytest/9.2.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "pytest-cov",
+      "version": "7.1.0",
+      "source": "https://pypi.org/pypi/pytest-cov/7.1.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.4",
+      "source": "https://pypi.org/pypi/python-dotenv/1.2.4/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.3",
+      "source": "https://pypi.org/pypi/ruff/0.17.3/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "sqlalchemy",
+      "version": "2.1.6",
+      "source": "https://pypi.org/pypi/sqlalchemy/2.1.6/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.10.0",
+      "source": "https://pypi.org/pypi/starlette/1.10.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "source": "https://pypi.org/pypi/typing-extensions/4.16.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "source": "https://pypi.org/pypi/typing-inspection/0.4.4/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "source": "https://pypi.org/pypi/uvicorn/0.54.0/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "werkzeug",
+      "version": "3.1.9",
+      "source": "https://pypi.org/pypi/werkzeug/3.1.9/json",
+      "status": "checked",
+      "advisories": []
+    },
+    {
+      "name": "wheel",
+      "version": "0.48.0",
+      "source": "https://pypi.org/pypi/wheel/0.48.0/json",
+      "status": "checked",
+      "advisories": []
+    }
+  ],
+  "limitations": "Advisory snapshot only; does not audit OS libraries or unknown vulnerabilities."
+}

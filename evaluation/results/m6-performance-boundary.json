@@ -1,0 +1,39 @@
+{
+  "mode": "50KiB actual product API/worker real model boundary task",
+  "model": "deepseek-flash",
+  "input_bytes": 51200,
+  "rows": [
+    {
+      "sequence": 1,
+      "status": "completed",
+      "analysis_complete": true,
+      "service_ms": 12113,
+      "wall_ms": 12134.945499998139,
+      "call_count": 5,
+      "expected_chunks": 5,
+      "processed_chunks": 5,
+      "error_code": null
+    }
+  ],
+  "passed": true,
+  "budget": {
+    "ceiling": 1000,
+    "reservations": 795,
+    "input_tokens": 1052582,
+    "output_tokens": 128588,
+    "statuses": {
+      "MODEL_INVALID_OUTPUT": 66,
+      "MODEL_TRANSPORT": 4,
+      "succeeded": 725
+    },
+    "fees": null,
+    "fees_note": "N/A: no provider invoice/rate receipt; tokens are not currency"
+  },
+  "platform": {
+    "os": "Windows",
+    "release": "11",
+    "python": "3.13.18",
+    "cpu": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "cpu_count": 24
+  }
+}
