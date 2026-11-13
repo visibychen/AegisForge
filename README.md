@@ -8,6 +8,8 @@ An LLM-powered platform for web code vulnerability detection, remediation, and f
 
 ## 当前状态
 
+**M7课程报告正在完成模板与版式核查。** 已按两份原始教学文件编写详细设计/实现合并报告，包含模块、架构、流程、数据库、接口、安全分析、使用截图及真实实验结果，见[报告源稿与Word生成说明](docs/reports/README.md)和[用户指南](docs/user-guide.md)。含个人封面的Word仅保存在本机忽略目录。查重报告、PR集成及v1.0.0尚未完成，M6历史结果与调用预算不变。
+
 **M6已完成课程工程与实验交付，PR #16待审。** 用户明确课程无硬性数值指标，本轮以功能、真实测试、结果分析及证据完整性验收；`python scripts/acceptance.py --profile course-delivery-v1`返回通过并披露局限。人工复核Q1–Q4已通过分类说明和加强测试处置，18个后续候选在新固定容器测试中18/18通过，36个V/S对照与3个部分修复负对照有效。本机513后端通过/1平台skip、56前端通过，累计模型调用仍992/1000。见[M6完成记录](docs/m6-completion.md)。原首次36/54等历史失败完整保留，M7报告/查重/发布及PR集成待后续进行。
 
 以下为此前开发、实验与复核接收的历史记录，当前M6完成状态以上述课程profile及完成记录为准。
